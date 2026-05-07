@@ -16,6 +16,8 @@ namespace JobPortal_API.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            //__________MODIFICAÇÃO AO CÓDIGO_____________(Roles e SysAdmin criados no SeedDB)
+
             //modelBuilder.Entity<IdentityRole>().HasData(
             //    new IdentityRole
             //    {
