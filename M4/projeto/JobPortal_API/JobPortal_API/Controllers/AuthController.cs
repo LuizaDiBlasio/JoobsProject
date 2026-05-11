@@ -193,29 +193,7 @@ namespace JobPortal_API.Controllers
 
         }
 
-        ////___________ADIÇÃO DE CÓDIGO___________(Recuperação de password)
-        //[Microsoft.AspNetCore.Mvc.HttpPost("GenerateResetPasswordToken")]
-        //public async Task<IActionResult> GenerateResetPasswordToken([FromBody] ResetPasswordDTO resetPasswordDto)
-        //{
-        //    var user = await _userHelper.GetUserByIdAsync(resetPasswordDto.UserId); //verificar user
-
-        //    if (user == null)
-        //    {
-        //        return StatusCode(404, new APIResponse { Message = "User not found", IsSuccess = false });
-        //    }
-
-        //    var response = await _userHelper.ConfirmEmailAsync(user, resetPasswordDto.Token); //resposta do email, ver se user e token dão match
-
-        //    if (!response.Succeeded)
-        //    {
-        //        return StatusCode(404, new APIResponse { Message = "User not found", IsSuccess = false });
-        //    }
-
-        //    //gerar token
-        //    var passwordToken = await _userHelper.GeneratePasswordResetTokenAsync(user);
-
-        //    return StatusCode(200, new APIResponse { PassToken = passwordToken, IsSuccess = true });
-        //}
+      
 
 
         //___________ADIÇÃO DE CÓDIGO___________(Recuperação de password) 
@@ -229,9 +207,8 @@ namespace JobPortal_API.Controllers
                 return StatusCode(404, new APIResponse { Message = "User not found", IsSuccess = false });
             }
 
-            var passwordToken = await _userHelper.GeneratePasswordResetTokenAsync(user);
 
-            var resetPassword = await _userHelper.ResetPasswordAsync(user, passwordToken, resetPasswordDto.Password);
+            var resetPassword = await _userHelper.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.Password);
 
             if (resetPassword.Succeeded)
             {
