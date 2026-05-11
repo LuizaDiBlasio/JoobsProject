@@ -195,6 +195,7 @@ namespace teste_cliente.Controllers
             return View(e);
         }
 
+ 
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
