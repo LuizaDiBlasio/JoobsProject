@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JobPortal_API.Utilities.Interfaces
 {
+    //___________NOVO FICHEIRO________(Gestão de utlizadors com Identity)
     public interface IUserHelper
     {
         Task<ApplicationUser> CreateUser([FromBody] RegisterationRequestDTO model);

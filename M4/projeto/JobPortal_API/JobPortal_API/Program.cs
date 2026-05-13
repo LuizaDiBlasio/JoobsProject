@@ -47,6 +47,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<VerificaCandidatoFilter>();
 builder.Services.AddScoped<VerificaEmpresaFilter>();
 builder.Services.AddScoped<VerificaOfertaDeEmpresaFilter>();
+builder.Services.AddScoped<IMailHelper, MailHelper>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddTransient<SeedDB>();
 
@@ -59,6 +60,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve; // Evita problemas de referência circular
+        //options.JsonSerializerOptions.ReferenceHandler = null;
+        //options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();

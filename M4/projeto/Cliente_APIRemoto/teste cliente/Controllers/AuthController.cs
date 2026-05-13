@@ -1,28 +1,40 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using JobPortal_API.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using teste_cliente.DTOs;
 using teste_cliente.Models;
-using teste_cliente.Services.IServices;
+using teste_cliente.Models.Dto;
 using teste_cliente.Services;
-using JobPortal_API.DTOs;
-using Newtonsoft.Json;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Text;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Identity;
+using teste_cliente.Services.IServices;
+using Vereyon.Web;
 
 namespace teste_cliente.Controllers
 {
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
+        private readonly IFlashMessage _flashMessage;
         
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, HttpClient httpClient, IConfiguration configuration, IFlashMessage flashMessage)
         {
             _authService = authService;
+            _httpClient = httpClient;
+            _configuration = configuration;
+            _flashMessage = flashMessage;
            
         }
        [HttpGet]
@@ -157,7 +169,7 @@ namespace teste_cliente.Controllers
 
                             Console.WriteLine($"Role extraída: {role}");
                         }
-                        catch (JsonException ex)
+                        catch (Newtonsoft.Json.JsonException ex)
                         {
                             // Se a desserialização falhar, usa a role do formulário
                             Console.WriteLine($"Erro ao desserializar resposta: {ex.Message}\nResposta: {apiResponse}");
@@ -176,8 +188,8 @@ namespace teste_cliente.Controllers
                     {
                         // Mostra o erro vindo da API
                         Console.WriteLine($"Erro na API: {apiResponse}");
-                        ModelState.AddModelError(string.Empty, "Erro ao registrar usuário: " + apiResponse);
-                        return View(obj);
+                        ModelState.AddModelError(string.Empty, "Erro ao registrar usuário ");
+                        return View();
                     }
                 }
             }
@@ -276,6 +288,141 @@ namespace teste_cliente.Controllers
         {
             return View();
         }
+
+        //____________ADIÇÃO DE CÓDIGO_____________
+        /// <summary>
+        /// Displays ForgotPassword View
+        /// </summary>
+        /// <returns>IActionResult of the view</returns>
+        //Get da _ForgotPasswordPartial
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        //____________ADIÇÃO DE CÓDIGO_____________
+        /// <summary>
+        /// Call API to send a retrieve password link to user
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns>A json containing the API call outcome</returns>
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPassword model)
+        {
+            var jsonContent = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(model, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+                Encoding.UTF8,
+                "application/json");
+
+            try
+            {
+                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
+
+                if (apiCall.IsSuccessStatusCode)
+                {
+                    _flashMessage.Confirmation("A retrieve password link has been sent to your email");
+                    return View(model);
+                }
+
+                _flashMessage.Danger("Unable to send link, please contact admin.");
+                return View(model);
+            }
+            catch (Exception)
+            {
+                return View("Error500");
+            }
+
+        }
+
+
+        //____________________ADIÇÃO DE CODIGO_________________
+        /// <summary>
+        /// Displays the view for recovering the user's password after email confirmation.
+        /// </summary>
+        /// <param name="userId">The ID of the user.</param>
+        /// <param name="token">The email confirmation token.</param>
+        /// <returns>The password recover view or a "NotAuthorized" view if parameters are invalid.</returns>
+        //Get do RecoverPassword
+        public IActionResult RecoverPassword(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token)) //verificar parâmetros
+            {
+                return View("AccessDenied");
+            }
+
+            var model = new RecoverPassword()
+            {
+                UserId = userId,
+                Token = token,
+                Password = string.Empty  //ainda não foi colocada a senha
+            };
+
+            return View(model);
+        }
+
+
+        //____________________ADIÇÃO DE CODIGO_________________
+        /// <summary>
+        /// Processes the user's password recover request.
+        /// </summary>
+        /// <param name="model">The model containing the username, reset token, and new password.</param>
+        /// <returns>The password recover view with a success or error message.</returns>
+        [HttpPost]
+        public async Task<IActionResult> RequestResetPassword(RecoverPassword model) //recebo modelo preechido com dados para recover da password
+        {
+            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Token)) //verificar parâmetros (se o token for null, quer dizer que processo falhou e não autoriza)
+            {
+                return View("AccessDenied"); ;
+            }
+
+            var dto = new ResetPasswordDTO
+            {
+               Token = model.Token,
+
+               UserId = model.UserId,
+
+               Password = model.Password
+        
+            };
+
+
+            var jsonContent = new StringContent(
+               System.Text.Json.JsonSerializer.Serialize(dto, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+               Encoding.UTF8,
+               "application/json");
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
+            try
+            {
+                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/ResetPassword", jsonContent);
+
+
+                var response = await apiCall.Content.ReadFromJsonAsync<APIResponse>(options);
+
+                if (apiCall.IsSuccessStatusCode)
+                {
+                    _flashMessage.Confirmation(response.Message); 
+
+                    return View("RecoverPassword", new RecoverPassword());
+                }
+
+                    _flashMessage.Danger(response.Message);
+
+                return View("RecoverPassword", new RecoverPassword());
+            }
+            catch (Exception e)
+            {
+                _flashMessage.Danger($"Unable to reset password, please contact admin");
+
+                return View("RecoverPassword", new RecoverPassword());
+            }
+        }
+
 
     }
 }

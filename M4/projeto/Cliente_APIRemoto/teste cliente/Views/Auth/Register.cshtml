@@ -16,16 +16,19 @@
 
             <label for="role">Tipo de Perfil:</label>
             <select asp-for="Role" name="role" id="role" class="form-control mb-3">
-                @if (User.IsInRole(SD.Role_Admin))
+                @if (User.IsInRole(SD.Role_SysAdmin)) // ________MODIFICAÇÃO DO CODIGO_______(Role SysAdmin Adicionado) 
                 {
                     <option value="Admin">Administrativo</option>
 
                 }                
-                else
+                else 
                 {
                     <option value="Candidato">Candidato</option>
                     <option value="Empresa">Empresa</option>
                 }
+
+
+
             </select>
 
             <button type="submit" class="btn-register">Registar</button>

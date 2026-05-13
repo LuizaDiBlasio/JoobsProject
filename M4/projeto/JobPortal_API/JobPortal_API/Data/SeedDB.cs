@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace JobPortal_API.Data
 {
+    //_____________NOVO FICHEIRO________
     public class SeedDB
     {
         private readonly IUserHelper _userHelper;
@@ -178,5 +179,6 @@ namespace JobPortal_API.Data
                 }
             }
         }
+
     }
 }
