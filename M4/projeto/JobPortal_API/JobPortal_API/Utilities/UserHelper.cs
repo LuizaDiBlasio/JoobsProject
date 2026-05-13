@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace JobPortal_API.Utilities
 {
+    //___________NOVO FICHEIRO________(Gestão de utlizadors com Identity)
     public class UserHelper : IUserHelper
     {
         private readonly UserManager<ApplicationUser> _userManager;

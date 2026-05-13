@@ -320,10 +320,12 @@ namespace teste_cliente.Controllers
 
                 if (apiCall.IsSuccessStatusCode)
                 {
-                    return Json(new { Message = "A retrieve password link has been sent to your email" });
+                    _flashMessage.Confirmation("A retrieve password link has been sent to your email");
+                    return View(model);
                 }
 
-                return Json(new { Message = "Unable to send link, please contact admin." });
+                _flashMessage.Danger("Unable to send link, please contact admin.");
+                return View(model);
             }
             catch (Exception)
             {

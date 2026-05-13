@@ -6,6 +6,7 @@ using MailKit;
 
 namespace JobPortal_API.Utilities
 {
+    //___________NOVO FICHEIRO________(Serviço de edição e envio de email)
     public class MailHelper : IMailHelper
     {
         private readonly IConfiguration _configuration;

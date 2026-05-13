@@ -1,5 +1,6 @@
 ﻿namespace JobPortal_API.DTOs
 {
+    // _____________NOVO DTO_____________
     public class ResetPasswordDTO
     {
         public string Token { get; set; }
