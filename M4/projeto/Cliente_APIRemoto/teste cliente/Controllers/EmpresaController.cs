@@ -159,6 +159,42 @@ namespace teste_cliente.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Empresa empresa)
         {
+            // VALIDAÇÕES
+
+            // Validação manual das Redes Sociais no Servidor: Se ambos estiverem vazios
+            if (string.IsNullOrWhiteSpace(empresa.LinkedIn) && string.IsNullOrWhiteSpace(empresa.Facebook))
+            {
+                ModelState.AddModelError("LinkedIn", "Preencher pelo menos o LinkedIn ou o Facebook.");
+                ModelState.AddModelError("Facebook", "Preencher pelo menos o LinkedIn ou o Facebook.");
+            }
+
+
+            // Verifica se as validações (incluindo a das redes sociais) passaram
+            if (!ModelState.IsValid)
+            {
+                // IMPORTANTE: Como a View Details precisa das Reviews, 
+                // temos que carregá-las de novo antes de retornar a view
+                List<Review> reviews = new List<Review>();
+                using (var httpClient = new HttpClient())
+                {
+                    //var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+                    //httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var respRev = await httpClient.GetAsync($"https://localhost:7211/api/review/empresa/{empresa.IdEmpresa}");
+                    if (respRev.IsSuccessStatusCode)
+                    {
+                        var jsonRev = await respRev.Content.ReadAsStringAsync();
+                        reviews = JsonConvert.DeserializeObject<List<Review>>(jsonRev);
+                    }
+                }
+
+                ViewBag.Reviews = reviews;
+                // Retorna explicitamente a View "Details" passando o modelo atual com erros
+                return View("Details", empresa);
+            }
+
+
+            // ---------------------------------------------------------------------------------------------------- //
             Empresa e = new Empresa();
 
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
