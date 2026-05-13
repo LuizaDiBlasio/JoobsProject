@@ -154,12 +154,12 @@
                     <div class="form-group col-md-6">
                         <label asp-for="LinkedIn">LinkedIn</label>
                         <input asp-for="LinkedIn" class="form-control" />
-                        <span asp-validation-for="LinkedIn" class="text-danger"></span>
+                        <span asp-validation-for="LinkedIn" class="text-danger" id="linkedinError"></span>
                     </div>
                     <div class="form-group col-md-6">
                         <label asp-for="Facebook">Facebook</label>
                         <input asp-for="Facebook" class="form-control" />
-                        <span asp-validation-for="Facebook" class="text-danger"></span>
+                        <span asp-validation-for="Facebook" class="text-danger" id="facebookError"></span>
                     </div>
                 </div>
                 <br />
@@ -284,19 +284,52 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var form = document.getElementById('editForm');
-                var emailInput = document.getElementById('emailInput');
-                var emailError = document.getElementById('emailError');
-
+       
                 form.addEventListener('submit', function (event) {
-                    var emailValue = emailInput.value.trim();
+                    // Obter valores dos inputs
+                    var linkedIn = document.getElementsByName('LinkedIn')[0].value.trim();
+                    var facebook = document.getElementsByName('Facebook')[0].value.trim();
+                    var email = document.getElementById('Email');               
+    
+                    // Obter elementos de erro (spans)
+                    var linkedinError = document.getElementById('linkedinError');
+                    var facebookError = document.getElementById('facebookError');
+                    var emailError = document.getElementById('emailError');    
 
-                    // Checar se o email tem "@@" e "."
-                    if (emailValue === '' || !emailValue.includes('@@') || !emailValue.includes('.')) {
-                        event.preventDefault(); // Impede o envio do formulário
-                        emailError.textContent = 'Por favor, insira um email válido.';
-                    } else {
-                        emailError.textContent = ''; // Limpa o erro se o email for válido
+                    // Resetar mensagens de erro no início, antes de validar
+                    if(linkedinError) linkedinError.textContent = '';
+                    if(facebookError) facebookError.textContent = '';
+                    if(emailError) emailError.textContent = '';            
+                    
+                   var hasError = false;
+
+                    // Validação de Redes Sociais        
+                    if (linkedIn === '' && facebook === '') {
+                        event.preventDefault(); // impede que a página mude ou faça refresh
+
+                        var msg = 'Deve preencher pelo menos o LinkedIn ou o Facebook.';
+                        
+                        if(linkedinError) linkedinError.textContent = msg;
+                        if(facebookError) facebookError.textContent = msg;
+
+                        hasError = true;
+                    }                  
+
+
+                    // Validações se o email tem "@@" e "."
+                    if(email) {
+                        var emailValue = email.value.trim();
+                        if (emailValue === '' || !emailValue.includes('@@') || !emailValue.includes('.')) {
+                        if(emailError) emailError.textContent = 'Por favor, insira um email válido.';
+                        hasError = true;
+                        }
+                    }           
+
+                    // Bloqueio final se houver erro, Impede o envio do formulário
+                    if (hasError) {
+                        event.preventDefault();
                     }
+
                 });
             });
         </script>

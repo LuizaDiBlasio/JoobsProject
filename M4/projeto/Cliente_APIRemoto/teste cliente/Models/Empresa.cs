@@ -2,6 +2,26 @@
 
 namespace teste_cliente.Models
 {
+    // Atributo customizado para validar "Um ou Outro": LinkedIn ou Facebook.
+    [AttributeUsage(AttributeTargets.Class)]
+    public class RequiredSocialMediaAttribute : ValidationAttribute
+    {
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        {
+            var empresa = (Empresa)validationContext.ObjectInstance;
+
+            if (string.IsNullOrWhiteSpace(empresa.LinkedIn) && string.IsNullOrWhiteSpace(empresa.Facebook))
+            {
+                return new ValidationResult("Deve preencher pelo menos uma rede social (Facebook ou LinkedIn).",
+                    new[] { nameof(empresa.LinkedIn), nameof(empresa.Facebook) });
+            }
+
+            return ValidationResult.Success;
+        }
+    }
+
+
+    [RequiredSocialMedia] // Aplica a validação
     public class Empresa
     {
         [Key]
