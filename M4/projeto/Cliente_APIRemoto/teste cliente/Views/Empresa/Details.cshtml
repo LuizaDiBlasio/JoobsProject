@@ -109,13 +109,12 @@
                             </div>
                             <input asp-for="Telefone"
                                    class="form-control"
-                                   type="text"
-                                   pattern="\d{9}"
+                                   type="tel"
                                    inputmode="numeric"
                                    maxlength="9"
-                                   minlength="9"
                                    required
-                                   placeholder="Digite o telefone" />
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                                   placeholder="Digite seu telefone" />
                         </div>
                         <span asp-validation-for="Telefone" class="text-danger"></span>
                     </div>
