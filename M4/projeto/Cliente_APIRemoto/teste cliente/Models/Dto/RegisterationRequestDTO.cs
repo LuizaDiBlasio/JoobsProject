@@ -5,6 +5,9 @@ namespace teste_cliente.DTOs
     public class RegisterationRequestDTO
     {
         [Required(ErrorMessage = "O nome de usuário é obrigatório.")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "O username de usuário é obrigatório.")]
         public string UserName { get; set; }
 
         [Required(ErrorMessage = "O e-mail é obrigatório.")]
