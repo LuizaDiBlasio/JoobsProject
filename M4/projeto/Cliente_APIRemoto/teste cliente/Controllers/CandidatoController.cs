@@ -154,6 +154,7 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                 }
+               
                 return RedirectToAction("Details", new { id = candidato.IdCandidato });
             }
         }

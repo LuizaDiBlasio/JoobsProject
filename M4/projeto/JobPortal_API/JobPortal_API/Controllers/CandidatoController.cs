@@ -88,8 +88,8 @@ namespace JobPortal_API.Controllers
             if (candidato == null)
                 return NotFound();
 
-            var userId = candidato.UserId;            // ← pega o link pro AspNetUsers
-            var emailAntigo = candidato.Email;        // ← opcional, só pra você debugar
+            var userId = candidato.UserId;            
+            var emailAntigo = candidato.Email;        
 
             // 2) Atualiza os dados do candidato
             _mapper.Map(candidatoDTO, candidato);
@@ -101,13 +101,6 @@ namespace JobPortal_API.Controllers
             {
                 bool changed = false;
 
-                // sempre que Nome (== UserName) mudar
-                if (user.UserName != candidato.Nome)
-                {
-                    user.UserName = candidato.Nome;
-                    user.NormalizedUserName = candidato.Nome.ToUpperInvariant();
-                    changed = true;
-                }
 
                 // se email mudou
                 if (user.Email != candidato.Email)

@@ -57,7 +57,7 @@ namespace JobPortal_API.Controllers
                     var candidato = new Candidato
                     {
                         UserId = user.Id,
-                        Nome = model.UserName, 
+                        Nome = model.Name, 
                         Email = model.Email
                     };
                     _context.Candidato.Add(candidato);
@@ -67,7 +67,7 @@ namespace JobPortal_API.Controllers
                     var empresa = new Empresa
                     {
                         UserId = user.Id,
-                        Nome = model.UserName,
+                        Nome = model.Name,
                         Email = model.Email
                     };
                     _context.Empresa.Add(empresa);
