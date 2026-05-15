@@ -42,7 +42,8 @@ namespace JobPortal_API.Controllers
                 return NotFound(new {mensagem = $"ID: {id}. Sem conexão com banco de dados." });
             }
 
-            var aplicacao = _context.AplicacaoTrabalho
+            // Busca com AWAIT para obter o dado real.
+            var aplicacao = await _context.AplicacaoTrabalho
                 .ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(m => m.IdAplicacao == id);
 
