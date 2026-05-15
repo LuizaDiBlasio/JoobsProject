@@ -70,6 +70,11 @@ namespace JobPortal_API.Data
                 .HasOne(r => r.Empresa) // Uma Review pertence a uma Empresa
                 .WithMany() // Uma Empresa pode ter muitas Reviews
                 .HasForeignKey(r => r.IdEmpresa); // Chave estrangeira
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .HasOne( tc => tc.TipoContrato) 
+                .WithMany()
+                .HasForeignKey(tc => tc.IdTipoContrato);   
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }

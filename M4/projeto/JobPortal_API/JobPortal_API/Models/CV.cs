@@ -7,12 +7,24 @@ namespace JobPortal_API.Models
     {
         [Key]
         public int IdCV { get; set; }
+
         public string Nome { get; set; }
-        public string Localizacao { get; set; }
+
+        [Key]  
+        public int IdLocalidade { get; set; }   
+
+        public Localidade Localidade { get; set; }
+
+        //public string Localizacao { get; set; } - Normalização da tabela
+
         public string? Educacao { get; set; }
+
         public string? ExpProfissional { get; set; }
+
         public string? Competencias { get; set; }
+
         public string? Interesses { get; set; }
+
         public int? IdCandidatoCv { get; set; }
 
         [ForeignKey("IdCandidatoCv")]
