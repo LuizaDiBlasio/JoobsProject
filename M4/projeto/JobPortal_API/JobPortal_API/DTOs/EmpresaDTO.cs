@@ -1,7 +1,10 @@
-﻿namespace JobPortal_API.DTOs
+﻿using System.Text.Json.Serialization;
+
+namespace JobPortal_API.DTOs
 {
     public class EmpresaDTO
     {
+        [JsonIgnore] // <--- Alteração para ignorar a propriedade "IdEmpresa na serialização JSON.
         public int IdEmpresa { get; set; }
         public string Nome { get; set; }
         public string? Localidade { get; set; }

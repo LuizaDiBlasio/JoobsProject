@@ -50,8 +50,7 @@ namespace JobPortal_API.Controllers
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, model.Role); // "Admin", "Candidato", "Empresa"
-
-                
+                                
                 if (model.Role == "Candidato")
                 {
                     var candidato = new Candidato
@@ -75,10 +74,8 @@ namespace JobPortal_API.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok("User created successfully");
+                return Ok(new { mensagem = "User created successfully"});
             }
-
-
             return BadRequest(result.Errors);
         }
 
@@ -86,10 +83,10 @@ namespace JobPortal_API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO model)
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
-            if (user == null) return Unauthorized("Invalid credentials");
+            if (user == null) return Unauthorized(new { mensagem = "Invalid credentials" });
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-            if (!result.Succeeded) return Unauthorized("Invalid credentials");
+            if (!result.Succeeded) return Unauthorized(new { mensagem = "Invalid credentials"});
 
             var roles = await _userManager.GetRolesAsync(user);
 

@@ -27,31 +27,52 @@ namespace JobPortal_API.Controllers
             _userManager = userManager;
         }
 
-        //Buscar todas as empresas        
-        [Authorize(Roles = "Admin")]
-        [HttpGet("BuscarTodas")]
-        public async Task<IEnumerable<EmpresaDTO>> GetEmpresa()
+        //Buscar todas as empresas
+        [Authorize(Roles = "Admin, Empresa")] // Deixamos ambos entrarem no método. //Nós "fingimos" que a Empresa pode entrar ([Authorize(Roles = "Admin, Empresa")]), mas logo na primeira linha do código nós a barramos com uma mensagem educada.
+        [HttpGet("BuscarTodas")]        
+        public async Task<ActionResult<IEnumerable<EmpresaDTO>>> GetEmpresa()
         {
-            return await _context.Empresa.ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider).ToListAsync();
+            // Verificamos manualmente se não é Admin
+            if (!User.IsInRole("Admin"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    mensagem = "Acesso negado."
+                });
+            }
+
+            // Se for Admin, o código continua normalmente
+            var empresas = await _context.Empresa
+                .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return Ok(empresas);
         }
 
         //Buscar empresa por ID
         [Authorize(Roles = "Admin, Empresa")]
-        [ServiceFilter(typeof(VerificaEmpresaFilter))]
+        [ServiceFilter(typeof(VerificaEmpresaFilter))]  // garante que se o ID não for o da empresa logada não será possível acessar os dados.
         [HttpGet("BuscarPorId/{id}")]
         public async Task<ActionResult<EmpresaDTO>> GetEmpresa(int id)
         {
+            // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.Empresa == null)
             {
-                return NotFound();
-            }
-            var empresa = _context.Empresa.ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresa == id);
-            if (empresa == null)
-            {
-                return NotFound();
+                return NotFound(new {mensagem = $"ID: {id}. Sem conexão com banco de dados."});
             }
 
-            return await empresa;
+            var empresa = await _context.Empresa
+                .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(m => m.IdEmpresa == id);
+
+            // Verifica se a busca que você fez encontrou algum resultado. 
+            // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
+            if (empresa == null)
+            {
+                return NotFound(new {mensagem = $"(ID: {id}). Empresa não foi encontrada no sistema."});
+            }
+
+            return Ok(empresa);
         }
 
 
@@ -62,7 +83,9 @@ namespace JobPortal_API.Controllers
             var empresa = await _context.Empresa
                               .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
                               .FirstOrDefaultAsync(e => e.IdEmpresa == id);
-            if (empresa == null) return NotFound();
+
+            if (empresa == null) return NotFound(new {mensagem = $"(ID: {id}). Empresa não foi encontrada no sistema." });
+
             return Ok(empresa);
         }
 
@@ -83,12 +106,24 @@ namespace JobPortal_API.Controllers
         [HttpPut("EditarEmpresa/{id:int}")]
         public async Task<ActionResult> PutEmpresa(EmpresaDTO empresaDTO, int id)
         {
+            // Se quiser apenas validar o DTO:
+            if (empresaDTO.IdEmpresa != 0 && id != empresaDTO.IdEmpresa)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    mensagem = "Acesso negado."
+                });
+            }
+
+            // Garante que o ID da URL seja usado no objeto no retorno
+            empresaDTO.IdEmpresa = id;
+
             // 1) Busca a empresa no banco
             var empresa = await _context.Empresa
                 .FirstOrDefaultAsync(e => e.IdEmpresa == id);
 
             if (empresa == null)
-                return NotFound();
+                return NotFound(new {mensagem = "Acesso negado."});
 
             // 2) Guarda o UserId para carregar o ApplicationUser
             var userId = empresa.UserId;
@@ -127,7 +162,7 @@ namespace JobPortal_API.Controllers
                 }
             }
 
-            return Ok();
+            return Ok(new {mensagem = "Dados da empresa alterados com sucesso!"});
         }
 
         //Deletar Empresa
@@ -139,7 +174,7 @@ namespace JobPortal_API.Controllers
             // 1) Carrega a empresa
             var empresa = await _context.Empresa.FindAsync(id);
             if (empresa == null)
-                return NotFound();
+                return NotFound(new {mensagem = "Acesso negado."});
 
             // 2) Deleta tudo que depende da empresa, na ordem:
             //    a) aplicações de ofertas dessa empresa
@@ -177,7 +212,7 @@ namespace JobPortal_API.Controllers
 
             // 5) Persiste todas as deleções
             await _context.SaveChangesAsync();
-            return Ok("Empresa e todos os dados relacionados foram deletados.");
+            return Ok(new { mensagem = "Empresa e todos os dados relacionados foram deletados." });
         }
 
         //Mudar senha
@@ -187,7 +222,10 @@ namespace JobPortal_API.Controllers
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordEmpresaDTO dto)
         {
             if (id != dto.IdEmpresa)
-                return Forbid();
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    mensagem = "Acesso negado."
+                });
 
             // 1) Carrega o candidato para obter o UserId
             var empresa = await _context.Empresa
