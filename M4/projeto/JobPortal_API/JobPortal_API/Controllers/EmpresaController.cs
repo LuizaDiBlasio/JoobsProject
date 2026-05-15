@@ -28,11 +28,12 @@ namespace JobPortal_API.Controllers
         }
 
         //Buscar todas as empresas
-        [Authorize(Roles = "Admin, Empresa")] // Deixamos ambos entrarem no método. //Nós "fingimos" que a Empresa pode entrar ([Authorize(Roles = "Admin, Empresa")]), mas logo na primeira linha do código nós a barramos com uma mensagem educada.
+        [Authorize(Roles = "Admin, Empresa")] // Deixamos ambos entrarem no método. Nós "fingimos" que a Empresa pode entrar ([Authorize(Roles = "Admin, Empresa")]), mas logo na primeira linha do código nós a barramos com uma mensagem educada.
         [HttpGet("BuscarTodas")]        
         public async Task<ActionResult<IEnumerable<EmpresaDTO>>> GetEmpresa()
         {
-            // Verificamos manualmente se não é Admin
+            // Bloqueio de segurança: apenas Admin pode listar TUDO do sistema
+            // Verifica manualmente se não é Admin
             if (!User.IsInRole("Admin"))
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new
