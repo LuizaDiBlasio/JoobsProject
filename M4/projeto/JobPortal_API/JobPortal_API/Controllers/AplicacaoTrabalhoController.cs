@@ -26,9 +26,23 @@ namespace JobPortal_API.Controllers
         //Busca todos as aplicações
         [Authorize(Roles = "Admin, Empresa")]
         [HttpGet("BuscarTodas")]
-        public async Task<IEnumerable<AplicacaoTrabalhoDTO>> GetAplicacaoTrabalho()
+        public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoTrabalho()
         {
-            return await _context.AplicacaoTrabalho.ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider).ToListAsync();
+            // Bloqueio de segurança: apenas Admin pode listar TUDO do sistema
+            // Verifica manualmente se não é Admin
+            if (!User.IsInRole("Admin"))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    mensagem = "Acesso negado."
+                });
+            }
+
+            var resultado = await _context.AplicacaoTrabalho
+                                .ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider)
+                                .ToListAsync();
+
+            return Ok(resultado);
         }
 
         //Busca aplicação por ID
@@ -39,7 +53,7 @@ namespace JobPortal_API.Controllers
             // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.AplicacaoTrabalho == null)
             {
-                return NotFound(new {mensagem = $"ID: {id}. Sem conexão com banco de dados." });
+                return NotFound(new {mensagem = $"(ID {id}): Sem conexão com banco de dados." });
             }
 
             // Busca com AWAIT para obter o dado real.
@@ -51,7 +65,7 @@ namespace JobPortal_API.Controllers
             // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
             if (aplicacao == null)
             {
-                return NotFound(new {mensagem = $"A aplicação com o ID {id} não foi encontrada." });
+                return NotFound(new {mensagem = $"(ID {id}): A aplicação não foi encontrada no sistema." });
             }
 
             return Ok(aplicacao) ;
@@ -62,10 +76,12 @@ namespace JobPortal_API.Controllers
         [HttpGet("BuscarPorIdEmpresa")]
         public async Task<ActionResult<AplicacaoTrabalhoDTO>> GetAplicacaoEmpresa(int idEmpresa)
         {
+            // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if (_context.AplicacaoTrabalho == null)
             {
-                return NotFound(new { mensagem = $"ID: {idEmpresa}. Sem conexão com banco de dados." });
+                return NotFound(new { mensagem = $"(ID {idEmpresa}): Sem conexão com banco de dados." });
             }
+
             List<AplicacaoTrabalhoDTO> Listanova = (from a in _context.AplicacaoTrabalho
                                                     join b in _context.OfertaEmprego on a.IdOferta equals b.IdOferta
   
@@ -84,19 +100,25 @@ namespace JobPortal_API.Controllers
 
         //Busca aplicação de um candidato
         [HttpGet("BuscarPorIdCandidato/{id}")]
-        public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoCandidato()
+        public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoCandidato(int id)
         {
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            // Pega o valor do claim primeiro
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (userId == null)
-                return Unauthorized();
+            // Verifica se ele existe e se é um número válido antes de dar Parse
+            // O 'out int userId' já cria a variável e tenta colocar o valor nela
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { mensagem = "Acesso negado." });
+            }     
 
             // Busca o Id do candidato relacionado a esse userId
             var candidato = await _context.Candidato.FirstOrDefaultAsync(c => c.IdCandidato == userId);
 
             if (candidato == null)
-                return NotFound("Candidato não encontrado.");
+                return NotFound(new { mensagem = "Candidato não encontrado."});
 
+            // Busca as candidaturas usando o ID que veio da URL (mantendo a compatibilidade com o Front)
             var candidaturas = await _context.AplicacaoTrabalho
                 .Where(a => a.IdCandidato == candidato.IdCandidato)
                 .ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider)
