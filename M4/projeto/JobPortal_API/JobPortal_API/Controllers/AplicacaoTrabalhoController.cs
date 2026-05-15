@@ -36,17 +36,24 @@ namespace JobPortal_API.Controllers
         [HttpGet("BuscarPorID/{id}")]
         public async Task<ActionResult<AplicacaoTrabalhoDTO>> GetAplicacaoTrabalho(int id)
         {
+            // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.AplicacaoTrabalho == null)
             {
-                return NotFound();
-            }
-            var aplicacao = _context.AplicacaoTrabalho.ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdAplicacao == id);
-            if (aplicacao == null)
-            {
-                return NotFound();
+                return NotFound(new {mensagem = $"ID: {id}. Sem conexão com banco de dados." });
             }
 
-            return await aplicacao;
+            var aplicacao = _context.AplicacaoTrabalho
+                .ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(m => m.IdAplicacao == id);
+
+            // Verifica se a busca que você fez encontrou algum resultado. 
+            // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
+            if (aplicacao == null)
+            {
+                return NotFound(new {mensagem = $"A aplicação com o ID {id} não foi encontrada." });
+            }
+
+            return Ok(aplicacao) ;
         }
 
         //Busca a aplicação por empresa
@@ -56,7 +63,7 @@ namespace JobPortal_API.Controllers
         {
             if (_context.AplicacaoTrabalho == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"ID: {idEmpresa}. Sem conexão com banco de dados." });
             }
             List<AplicacaoTrabalhoDTO> Listanova = (from a in _context.AplicacaoTrabalho
                                                     join b in _context.OfertaEmprego on a.IdOferta equals b.IdOferta
@@ -139,12 +146,12 @@ namespace JobPortal_API.Controllers
             var aplicacao = await _context.AplicacaoTrabalho.FirstOrDefaultAsync(c => c.IdAplicacao == id);
             if (aplicacao == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = "Acesso negado." });
             }
             aplicacao = _mapper.Map(aplicacaoDTO, aplicacao);
 
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { mensagem = "Dados da aplicação alterados com sucesso!" });
         }
 
         //Deletar aplicação
@@ -155,7 +162,7 @@ namespace JobPortal_API.Controllers
             var aplicacao = await _context.AplicacaoTrabalho.FirstOrDefaultAsync(c => c.IdAplicacao == id);
             if (aplicacao == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = "Acesso negado."});
             }
             _context.AplicacaoTrabalho.Remove(aplicacao);
             await _context.SaveChangesAsync();
