@@ -1,4 +1,8 @@
 ﻿@model teste_cliente.DTOs.LoginRequestDTO;
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <div class="modal-overlay" id="loginModal">
     <div class="modal-content" id="modalContent">
@@ -6,7 +10,7 @@
 
         <h3>Login</h3>
 
-        <form asp-controller="Auth" asp-action="Login" method="post">
+        <form asp-controller="Auth" asp-action="Login" method="post" id="loginForm">
             <div asp-validation-summary="All" class="text-danger text-center mb-2"></div>
 
             <input asp-for="UserName" type="text" class="form-control" placeholder="Username..." />
@@ -20,74 +24,94 @@
             </div>
            
         </form>
+
+        <div class="separator">ou</div>
+
+        <div class="google-btn-container">
+            <div id="g_id_onload"
+                 data-client_id="@Configuration["Authentication:GoogleAuth:ClientId"]"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="300">
+            </div>
+        </div>
     </div>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        const modal = document.getElementById('loginModal');
-        const closeBtn = document.getElementById('closeModalBtn');
-        const modalContent = document.getElementById('modalContent');
+<style>
+    .separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #999;
+    font-size: 0.9rem;
+    }
 
-        // Fecha o modal e redireciona
-        closeBtn.addEventListener('click', () => {
-            window.location.href = '/Home/Index'; // ou outra página
-        });
+    .separator::before,
+    .separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+    }
 
-        modal.addEventListener('click', (event) => {
-            if (!modalContent.contains(event.target)) {
-                window.location.href = '/Home/Index';
-            }
+        // modal.addEventListener('click', (event) => {
+        //     if (!modalContent.contains(event.target)) {
+        //         window.location.href = '/Home/Index';
+        //     }
         });
     </script>
 }
 
-<style>
-
-    .btn-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 10px; 
-        margin-top: 1rem;
-        width: 100%; 
+    .separator:not(:empty)::after {
+    margin-left: .5em;
     }
 
-    .button-container {
+    .google-btn-container {
     display: flex;
-    gap: 10px; /* Espaço entre os botões */
     justify-content: center;
-    margin-top: 1rem;
-}
-    
+    margin-top: 10px;
+    }
+
     .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(to bottom right, #00B8D4, #6EE5E9);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease-in-out;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(to bottom right, #00B8D4, #6EE5E9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease-in-out;
     }
 
     .modal-content {
-        background-color: white;
-        border-radius: 20px;
-        padding: 2rem;
-        width: 90%;
-        max-width: 360px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        position: relative;
-        animation: slideDown 0.3s ease-in-out;
+    background-color: white;
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideDown 0.3s ease-in-out;
     }
 
     .form-control {
-        margin-bottom: 1rem;
-        border-radius: 10px;
+    margin-bottom: 1rem;
+    border-radius: 10px;
     }
 
     .btn-register {
@@ -95,74 +119,71 @@
         color: white;
         border: none;
         border-radius: 30px;
-        padding: 0.6rem 0.5rem; 
-        width: 48%; 
-        font-size: 0.85rem; 
+        padding: 0.6rem 1.2rem;
+        width: 50%;
         font-weight: bold;
-        text-align: center;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
+        margin: 0 auto; 
+        display: block;
     }
 
     .btn-register:hover {
-        background-color: #5de4d9;
+    background-color: #5de4d9;
     }
 
     .close-btn {
-        position: absolute;
-        top: 12px;
-        right: 16px;
-        font-size: 1.4rem;
-        cursor: pointer;
-        border: none;
-        background: none;
-        color: #999;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #999;
     }
 
     h3 {
-        text-align: center;
-        margin-bottom: 1rem;
-        font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
     }
 
 </style>
 
-
-
-
-@* @model teste_cliente.DTOs.LoginRequestDTO;
-
-
-<form method="post">
-    <div class="container border p-4">
-        <div class="row text-center">
-            <h1>Login</h1>
-        </div>
-        <div class="row text-center">
-            <div asp-validation-summary="All" class="text-danger"></div>
-        </div>
-        <div class="row">
-            <div class="col-6 offset-3 pb-2">
-                <input asp-for="UserName" type="text" class="form-control" placeholder="Username..." />
-            </div>
-            
-            <div class="col-6 offset-3 pb-2">
-                <input asp-for="Password" type="password" class="form-control" placeholder="Password..." />
-
-            </div>
-            <div class="col-6 offset-3 pb-2">
-                <button type="submit" class="form-control btn-success" value="Submit">Login</button>
-
-            </div>
-        </div>
-    </div>
-
-
-</form>
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-} *@
+
+    <!-- ADICIONADO: Script para processar o callback do Google -->
+    <script>
+        function handleCredentialResponse(response) {
+        // 1. Pega o token JWT gerado pelo Google
+        const googleToken = response.credential;
+
+        // 2. Pega o token de segurança Anti-Forgery gerado automaticamente pelo formulário acima
+        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+        const verificationToken = tokenElement ? tokenElement.value : '';
+
+        // 3. Envia o token via fetch para o Frontend AuthController
+        fetch('/Auth/GoogleLogin', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        'RequestVerificationToken': verificationToken
+        },
+        body: JSON.stringify(googleToken)
+        })
+        .then(res => res.json())
+        .then(data => {
+        if (data.isSuccess) {
+        // Redireciona para a Home em caso de sucesso
+        window.location.href = data.redirectUrl;
+        } else {
+        alert(data.message || 'Erro ao fazer login com o Google.');
+        }
+        })
+        .catch(err => {
+        console.error('Erro no login do Google:', err);
+        alert('Ocorreu um erro ao comunicar com o servidor.');
+        });
+        }
+    </script>
+}

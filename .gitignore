@@ -49,3 +49,5 @@ TestResults/
 
 ## Outros
 *.orig
+/M4/projeto/JobPortal_API/JobPortal_API/appsettings.json
+/M4/projeto/Cliente_APIRemoto/teste cliente/appsettings.json
