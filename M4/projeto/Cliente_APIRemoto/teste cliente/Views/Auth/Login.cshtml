@@ -12,7 +12,13 @@
             <input asp-for="UserName" type="text" class="form-control" placeholder="Username..." />
             <input asp-for="Password" type="password" class="form-control" placeholder="Password..." />
 
-            <button type="submit" class="btn-register">Login</button>
+            <div class="btn-group">
+                <button type="submit" class="btn-register">Login</button>
+
+                @* _________ADIÇÃO DE CÓDIGO__________(ForgotPassword)*@
+                <a href="@Url.Action("ForgotPassword")" class="btn-register">Recuperar Password</a>
+            </div>
+           
         </form>
     </div>
 </div>
@@ -38,6 +44,22 @@
 }
 
 <style>
+
+    .btn-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px; 
+        margin-top: 1rem;
+        width: 100%; 
+    }
+
+    .button-container {
+    display: flex;
+    gap: 10px; /* Espaço entre os botões */
+    justify-content: center;
+    margin-top: 1rem;
+}
+    
     .modal-overlay {
         position: fixed;
         top: 0;
@@ -73,11 +95,16 @@
         color: white;
         border: none;
         border-radius: 30px;
-        padding: 0.6rem 1.2rem;
-        width: 50%;
+        padding: 0.6rem 0.5rem; 
+        width: 48%; 
+        font-size: 0.85rem; 
         font-weight: bold;
-        margin: 0 auto; 
-        display: block;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
     }
 
     .btn-register:hover {
@@ -100,6 +127,7 @@
         margin-bottom: 1rem;
         font-weight: 600;
     }
+
 </style>
 
 

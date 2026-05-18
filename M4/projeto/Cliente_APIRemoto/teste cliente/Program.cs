@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Rotativa.AspNetCore;
 using teste_cliente.Controllers;
 using teste_cliente.Services;
 using teste_cliente.Services.IServices;
-using Rotativa.AspNetCore;
+using Vereyon.Web;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddFlashMessage();
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>(); //adicionado pro login
 builder.Services.AddHttpClient<IAuthService, AuthService>(); //adicionado pro login
@@ -49,6 +51,7 @@ builder.Services.AddSession(options =>
 }); //adicionado pro login
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

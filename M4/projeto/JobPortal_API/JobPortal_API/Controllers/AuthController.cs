@@ -2,9 +2,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Azure;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Models;
+using JobPortal_API.Utilities.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +21,19 @@ namespace JobPortal_API.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
+        private readonly IUserHelper _userHelper;
+        private readonly IConfiguration _configuration;
+        private readonly IMailHelper _mailHelper;
 
-        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ApplicationDbContext context)
+        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ApplicationDbContext context, 
+            IUserHelper userHelper, IConfiguration configuration, IMailHelper mailHelper)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
+            _userHelper = userHelper;
+            _configuration = configuration;
+            _mailHelper = mailHelper;
         }
 
         [HttpPost("register")]
@@ -48,7 +57,7 @@ namespace JobPortal_API.Controllers
                     var candidato = new Candidato
                     {
                         UserId = user.Id,
-                        Nome = model.UserName, 
+                        Nome = model.Name, 
                         Email = model.Email
                     };
                     _context.Candidato.Add(candidato);
@@ -58,7 +67,7 @@ namespace JobPortal_API.Controllers
                     var empresa = new Empresa
                     {
                         UserId = user.Id,
-                        Nome = model.UserName,
+                        Nome = model.Name,
                         Email = model.Email
                     };
                     _context.Empresa.Add(empresa);
@@ -154,5 +163,61 @@ namespace JobPortal_API.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+
+        //___________ADIÇÃO DE CÓDIGO___________(Recuperação de password) 
+        [HttpPost("GenerateForgotPasswordTokenAndEmail")]
+        public async Task<IActionResult> GenerateForgotPasswordTokenAndEmail(ForgotPasswordDTO dto)
+        {
+            var user = await _userHelper.GetUserByEmailAsync(dto.Email);
+
+            if (user == null)
+            {
+                return StatusCode(404, new { Message = "User not found", IsSuccess = false });
+            }
+
+            string myToken = await _userHelper.GeneratePasswordResetTokenAsync(user); //gerar o token
+
+            // gera um link de confirmação para o email
+            string tokenLink = $"http://localhost:5020/Auth/RecoverPassword?userId={user.Id}&token={Uri.EscapeDataString(myToken)}"; // garante que o token seja codificado corretamente mesmo com caracteres especiais
+
+            APIResponse response = _mailHelper.SendEmail(dto.Email, "Retrieve your password", $"<h1>Retrieve your password, token expires in one hour</h1>" +
+           $"<br><br><a href = \"{tokenLink}\">Click here to reset your password</a>"); //Contruir email e enviá-lo com o link
+
+            if (response.IsSuccess) //se conseguiu enviar o email
+            {
+                return StatusCode(200, new { Message = "A link to retrieve password has been sent to your email" });
+            }
+
+            //se não conseguiu enviar email:
+            return StatusCode(500, new { Message = "Unable to retrieve password, please contact admin" });
+
+        }
+
+      
+
+
+        //___________ADIÇÃO DE CÓDIGO___________(Recuperação de password) 
+        [Microsoft.AspNetCore.Mvc.HttpPost("ResetPassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDto)
+        {
+            var user = await _userHelper.GetUserByIdAsync(resetPasswordDto.UserId); //verificar user
+
+            if (user == null)
+            {
+                return StatusCode(404, new APIResponse { Message = "User not found", IsSuccess = false });
+            }
+
+
+            var resetPassword = await _userHelper.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.Password);
+
+            if (resetPassword.Succeeded)
+            {
+                return StatusCode(200, new APIResponse { Message = "Password reset successfully, you can login now", IsSuccess = true });
+            }
+            else
+            {
+                return StatusCode(400, new APIResponse { Message = "An unexpected error occurred while resetting password, please try again", IsSuccess = false});
+            }
+        }
     }
 }

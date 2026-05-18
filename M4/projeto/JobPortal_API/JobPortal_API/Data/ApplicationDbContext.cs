@@ -16,52 +16,54 @@ namespace JobPortal_API.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<IdentityRole>().HasData(
-                new IdentityRole
-                {
-                    Id = "1", // cuidado: Identity usa string como ID
-                    Name = "Admin",
-                    NormalizedName = "ADMIN"
-                },
-                new IdentityRole
-                {
-                    Id = "2",
-                    Name = "Candidato",
-                    NormalizedName = "CANDIDATO"
-                },
-                new IdentityRole
-                {
-                    Id = "3",
-                    Name = "Empresa",
-                    NormalizedName = "EMPRESA"
-                }
-            );
+            //__________MODIFICAÇÃO AO CÓDIGO_____________(Roles e SysAdmin criados no SeedDB)
 
-            // Criar o user admin
-            var hasher = new PasswordHasher<ApplicationUser>();
+            //modelBuilder.Entity<IdentityRole>().HasData(
+            //    new IdentityRole
+            //    {
+            //        Id = "1", // cuidado: Identity usa string como ID
+            //        Name = "Admin",
+            //        NormalizedName = "ADMIN"
+            //    },
+            //    new IdentityRole
+            //    {
+            //        Id = "2",
+            //        Name = "Candidato",
+            //        NormalizedName = "CANDIDATO"
+            //    },
+            //    new IdentityRole
+            //    {
+            //        Id = "3",
+            //        Name = "Empresa",
+            //        NormalizedName = "EMPRESA"
+            //    }
+            //);
 
-            var admin = new ApplicationUser
-            {
-                Id = "10", 
-                UserName = "admin@admin.com",
-                NormalizedUserName = "ADMIN@ADMIN.COM",
-                Email = "admin@admin.com",
-                NormalizedEmail = "ADMIN@ADMIN.COM",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString("D")
-            };
+            //// Criar o user admin
+            //var hasher = new PasswordHasher<ApplicationUser>();
 
-            // Setar a senha
-            admin.PasswordHash = hasher.HashPassword(admin, "Admin123!"); 
+            //var admin = new ApplicationUser
+            //{
+            //    Id = "10", 
+            //    UserName = "admin@admin.com",
+            //    NormalizedUserName = "ADMIN@ADMIN.COM",
+            //    Email = "admin@admin.com",
+            //    NormalizedEmail = "ADMIN@ADMIN.COM",
+            //    EmailConfirmed = true,
+            //    SecurityStamp = Guid.NewGuid().ToString("D")
+            //};
 
-            modelBuilder.Entity<ApplicationUser>().HasData(admin);
+            //// Setar a senha
+            //admin.PasswordHash = hasher.HashPassword(admin, "Admin123!"); 
 
-            // Dar a role de Admin pro user
-            modelBuilder.Entity<IdentityUserRole<string>>().HasData(new IdentityUserRole<string>
-            {
-                RoleId = "1", // o id da role Admin
-                UserId = "10" // o id do user admin
-            });
+            //modelBuilder.Entity<ApplicationUser>().HasData(admin);
+
+            //// Dar a role de Admin pro user
+            //modelBuilder.Entity<IdentityUserRole<string>>().HasData(new IdentityUserRole<string>
+            //{
+            //    RoleId = "1", // o id da role Admin
+            //    UserId = "10" // o id do user admin
+            //});
 
 
             modelBuilder.Entity<Review>()

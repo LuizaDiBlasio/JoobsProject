@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using JobPortal_API.Filters;
 using System.Security.Claims;
 using System.Text;
+using JobPortal_API.Utilities.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,9 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<VerificaCandidatoFilter>();
 builder.Services.AddScoped<VerificaEmpresaFilter>();
 builder.Services.AddScoped<VerificaOfertaDeEmpresaFilter>();
+builder.Services.AddScoped<IMailHelper, MailHelper>();
+builder.Services.AddScoped<IUserHelper, UserHelper>();
+builder.Services.AddTransient<SeedDB>();
 
 builder.Services.AddResponseCaching();
 //builder.Services.AddAutoMapper(typeof(Program));
@@ -56,6 +60,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve; // Evita problemas de referência circular
+        //options.JsonSerializerOptions.ReferenceHandler = null;
+        //options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 // Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -93,6 +99,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -108,6 +115,14 @@ else
 {
     Console.WriteLine("Swagger is not configured in production.");
 }
+
+// Habilitar Seed 
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<SeedDB>();
+    await seeder.SeedAsync();
+}
+
 
 app.UseHttpsRedirection();
 

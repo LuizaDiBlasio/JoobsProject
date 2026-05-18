@@ -103,14 +103,6 @@ namespace JobPortal_API.Controllers
             {
                 bool changed = false;
 
-                // sempre que Nome (== UserName) mudar
-                if (user.UserName != empresa.Nome)
-                {
-                    user.UserName = empresa.Nome;
-                    user.NormalizedUserName = empresa.Nome.ToUpperInvariant();
-                    changed = true;
-                }
-
                 // se email mudou
                 if (user.Email != empresa.Email)
                 {
