@@ -19,6 +19,8 @@ builder.Services.AddHttpClient(); // Adicionado para suportar HttpClient genéric
 builder.Services.AddScoped<IAuthService, AuthService>(); //adicionado pro login
 builder.Services.AddDistributedMemoryCache(); //adicionado pro login
 
+builder.Services.AddRazorPages();
+
 // Adicionar o NoticiasController ao DI
 builder.Services.AddScoped<NoticiasController>();
 
