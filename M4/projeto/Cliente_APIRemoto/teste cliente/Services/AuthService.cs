@@ -43,5 +43,14 @@ namespace teste_cliente.Services
 
             });
         }
+        public Task<T> GoogleLoginAsync<T>(string googleToken)
+        {
+            return SendAsync<T>(new APIRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Data = googleToken, // Envia o token como string direta
+                Url = "https://localhost:7211/api/Auth/google-login",
+            });
+        }
     }
 }

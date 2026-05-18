@@ -186,10 +186,39 @@ namespace teste_cliente.Controllers
                     }
                     else
                     {
-                        // Mostra o erro vindo da API
                         Console.WriteLine($"Erro na API: {apiResponse}");
-                        ModelState.AddModelError(string.Empty, "Erro ao registrar usuário ");
-                        return View();
+
+                        try
+                        {
+                            // Faz o parse do JSON devolvido pela API
+                            using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(apiResponse);
+
+                            // Procura o array "$values" onde estão os erros do Identity
+                            if (doc.RootElement.TryGetProperty("$values", out System.Text.Json.JsonElement values))
+                            {
+                                foreach (System.Text.Json.JsonElement error in values.EnumerateArray())
+                                {
+                                    string code = error.GetProperty("code").GetString();
+                                    string description = error.GetProperty("description").GetString();
+
+                                    // Traduz a mensagem e adiciona-a à View
+                                    string mensagemPt = TraduzirErroIdentity(code, description);
+                                    ModelState.AddModelError(string.Empty, mensagemPt);
+                                }
+                            }
+                            else
+                            {
+                                // Se o JSON não tiver o formato esperado
+                                ModelState.AddModelError(string.Empty, "Ocorreu um erro ao processar o seu registo. Verifique os dados.");
+                            }
+                        }
+                        catch (System.Text.Json.JsonException)
+                        {
+                            // Se a API não devolver um JSON válido (ex: erro de servidor 500)
+                            ModelState.AddModelError(string.Empty, "Ocorreu um erro inesperado no servidor.");
+                        }
+
+                        return View(obj);
                     }
                 }
             }
@@ -299,130 +328,65 @@ namespace teste_cliente.Controllers
         {
             return View();
         }
-
-        //____________ADIÇÃO DE CÓDIGO_____________
-        /// <summary>
-        /// Call API to send a retrieve password link to user
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns>A json containing the API call outcome</returns>
         [HttpPost]
-        public async Task<IActionResult> ForgotPassword(ForgotPassword model)
+        public async Task<IActionResult> GoogleLogin([FromBody] string credential)
         {
-            var jsonContent = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(model, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-                Encoding.UTF8,
-                "application/json");
+            if (string.IsNullOrEmpty(credential))
+                return Json(new { isSuccess = false, message = "Token inválido." });
 
-            try
+            // 1. Envia o token do Google para a Backend API
+            APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(credential);
+
+            if (response != null && response.IsSuccess)
             {
-                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
+                LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
 
-                if (apiCall.IsSuccessStatusCode)
+                // 2. Cria a sessão local com os claims (igual ao seu Login normal)
+                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
+                identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
+
+                if (model.User.Role == SD.Role_Candidato)
                 {
-                    _flashMessage.Confirmation("A retrieve password link has been sent to your email");
-                    return View(model);
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(model.Token);
+                    var idCandidato = jwt.Claims.First(c => c.Type == "IdCandidato").Value;
+                    identity.AddClaim(new Claim("IdCandidato", idCandidato));
                 }
 
-                _flashMessage.Danger("Unable to send link, please contact admin.");
-                return View(model);
-            }
-            catch (Exception)
-            {
-                return View("Error500");
-            }
+                identity.AddClaim(new Claim("JWToken", model.Token));
 
-        }
-
-
-        //____________________ADIÇÃO DE CODIGO_________________
-        /// <summary>
-        /// Displays the view for recovering the user's password after email confirmation.
-        /// </summary>
-        /// <param name="userId">The ID of the user.</param>
-        /// <param name="token">The email confirmation token.</param>
-        /// <returns>The password recover view or a "NotAuthorized" view if parameters are invalid.</returns>
-        //Get do RecoverPassword
-        public IActionResult RecoverPassword(string userId, string token)
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token)) //verificar parâmetros
-            {
-                return View("AccessDenied");
-            }
-
-            var model = new RecoverPassword()
-            {
-                UserId = userId,
-                Token = token,
-                Password = string.Empty  //ainda não foi colocada a senha
-            };
-
-            return View(model);
-        }
-
-
-        //____________________ADIÇÃO DE CODIGO_________________
-        /// <summary>
-        /// Processes the user's password recover request.
-        /// </summary>
-        /// <param name="model">The model containing the username, reset token, and new password.</param>
-        /// <returns>The password recover view with a success or error message.</returns>
-        [HttpPost]
-        public async Task<IActionResult> RequestResetPassword(RecoverPassword model) //recebo modelo preechido com dados para recover da password
-        {
-            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Token)) //verificar parâmetros (se o token for null, quer dizer que processo falhou e não autoriza)
-            {
-                return View("AccessDenied"); ;
-            }
-
-            var dto = new ResetPasswordDTO
-            {
-               Token = model.Token,
-
-               UserId = model.UserId,
-
-               Password = model.Password
-        
-            };
-
-
-            var jsonContent = new StringContent(
-               System.Text.Json.JsonSerializer.Serialize(dto, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-               Encoding.UTF8,
-               "application/json");
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReferenceHandler = ReferenceHandler.Preserve
-            };
-
-            try
-            {
-                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/ResetPassword", jsonContent);
-
-
-                var response = await apiCall.Content.ReadFromJsonAsync<APIResponse>(options);
-
-                if (apiCall.IsSuccessStatusCode)
+                var principal = new ClaimsPrincipal(identity);
+                var props = new AuthenticationProperties
                 {
-                    _flashMessage.Confirmation(response.Message); 
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+                };
 
-                    return View("RecoverPassword", new RecoverPassword());
-                }
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
-                    _flashMessage.Danger(response.Message);
-
-                return View("RecoverPassword", new RecoverPassword());
+                // 3. Retorna sucesso para o JavaScript redirecionar
+                return Json(new { isSuccess = true, redirectUrl = Url.Action("Index", "Home") });
             }
-            catch (Exception e)
-            {
-                _flashMessage.Danger($"Unable to reset password, please contact admin");
 
-                return View("RecoverPassword", new RecoverPassword());
-            }
+            return Json(new { isSuccess = false, message = "Falha ao autenticar com o Google." });
         }
-
-
+        private string TraduzirErroIdentity(string code, string fallbackDescription)
+        {
+            return code switch
+            {
+                "DuplicateUserName" => "Este nome de utilizador já se encontra em uso. Por favor, escolha outro.",
+                "DuplicateEmail" => "Este endereço de email já está registado na nossa plataforma.",
+                "InvalidUserName" => "O nome de utilizador é inválido (só pode conter letras ou números).",
+                "InvalidEmail" => "O email introduzido não é válido.",
+                "PasswordTooShort" => "A palavra-passe é demasiado curta.",
+                "PasswordRequiresNonAlphanumeric" => "A palavra-passe tem de conter pelo menos um caractere especial.",
+                "PasswordRequiresDigit" => "A palavra-passe tem de conter pelo menos um número.",
+                "PasswordRequiresUpper" => "A palavra-passe tem de conter pelo menos uma letra maiúscula.",
+                "PasswordRequiresLower" => "A palavra-passe tem de conter pelo menos uma letra minúscula.",
+                // Adiciona mais casos aqui, se necessário
+                _ => fallbackDescription // Retorna a mensagem original se não houver tradução
+            };
+        }
     }
 }
