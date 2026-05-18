@@ -28,17 +28,17 @@ namespace teste_cliente.Controllers
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IFlashMessage _flashMessage;
-        
+
         public AuthController(IAuthService authService, HttpClient httpClient, IConfiguration configuration, IFlashMessage flashMessage)
         {
             _authService = authService;
             _httpClient = httpClient;
             _configuration = configuration;
             _flashMessage = flashMessage;
-           
+
         }
-       [HttpGet]
-       public IActionResult Login()
+        [HttpGet]
+        public IActionResult Login()
         {
             LoginRequestDTO obj = new();
             return View(obj);
@@ -46,7 +46,7 @@ namespace teste_cliente.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult>Login (LoginRequestDTO obj)
+        public async Task<IActionResult> Login(LoginRequestDTO obj)
         {
             APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
 
@@ -60,13 +60,13 @@ namespace teste_cliente.Controllers
                 var json0 = Convert.ToString(response.Result);
 
                 LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
-                
+
                 Console.WriteLine(model);
 
-                
+
                 ///////////////
                 var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-                identity.AddClaim(new Claim(ClaimTypes.Name,(model.User.UserName).Trim()));
+                identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
 
                 if (model.User.Role == SD.Role_Candidato)
@@ -95,7 +95,7 @@ namespace teste_cliente.Controllers
                 var props = new AuthenticationProperties
                 {
                     IsPersistent = true,                           // persiste além da sessão atual
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3) 
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
                 };
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
@@ -116,7 +116,7 @@ namespace teste_cliente.Controllers
                     ModelState.AddModelError(string.Empty, msg);
                 }
                 return View(obj);
-            }                
+            }
         }
 
         [HttpGet]
@@ -249,7 +249,7 @@ namespace teste_cliente.Controllers
         }
 
 
-        //____________________ADIÇÃO DE CODIGO_________________
+        //_______ADIÇÃO DE CODIGO______
         /// <summary>
         /// Processes the user's password recover request.
         /// </summary>
