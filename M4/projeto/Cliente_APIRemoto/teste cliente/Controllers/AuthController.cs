@@ -422,7 +422,65 @@ namespace teste_cliente.Controllers
                 return View("RecoverPassword", new RecoverPassword());
             }
         }
+        [HttpPost]
+        public async Task<IActionResult> GoogleLogin([FromBody] string credential)
+        {
+            if (string.IsNullOrEmpty(credential))
+                return Json(new { isSuccess = false, message = "Token inválido." });
 
+            // 1. Envia o token do Google para a Backend API
+            APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(credential);
 
+            if (response != null && response.IsSuccess)
+            {
+                LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
+
+                // 2. Cria a sessão local com os claims (igual ao seu Login normal)
+                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
+                identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
+
+                if (model.User.Role == SD.Role_Candidato)
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(model.Token);
+                    var idCandidato = jwt.Claims.First(c => c.Type == "IdCandidato").Value;
+                    identity.AddClaim(new Claim("IdCandidato", idCandidato));
+                }
+
+                identity.AddClaim(new Claim("JWToken", model.Token));
+
+                var principal = new ClaimsPrincipal(identity);
+                var props = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+                };
+
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+
+                // 3. Retorna sucesso para o JavaScript redirecionar
+                return Json(new { isSuccess = true, redirectUrl = Url.Action("Index", "Home") });
+            }
+
+            return Json(new { isSuccess = false, message = "Falha ao autenticar com o Google." });
+        }
+        private string TraduzirErroIdentity(string code, string fallbackDescription)
+        {
+            return code switch
+            {
+                "DuplicateUserName" => "Este nome de utilizador já se encontra em uso. Por favor, escolha outro.",
+                "DuplicateEmail" => "Este endereço de email já está registado na nossa plataforma.",
+                "InvalidUserName" => "O nome de utilizador é inválido (só pode conter letras ou números).",
+                "InvalidEmail" => "O email introduzido não é válido.",
+                "PasswordTooShort" => "A palavra-passe é demasiado curta.",
+                "PasswordRequiresNonAlphanumeric" => "A palavra-passe tem de conter pelo menos um caractere especial.",
+                "PasswordRequiresDigit" => "A palavra-passe tem de conter pelo menos um número.",
+                "PasswordRequiresUpper" => "A palavra-passe tem de conter pelo menos uma letra maiúscula.",
+                "PasswordRequiresLower" => "A palavra-passe tem de conter pelo menos uma letra minúscula.",
+                // Adiciona mais casos aqui, se necessário
+                _ => fallbackDescription // Retorna a mensagem original se não houver tradução
+            };
+        }
     }
 }
