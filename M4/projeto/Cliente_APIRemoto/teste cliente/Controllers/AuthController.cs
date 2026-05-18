@@ -186,155 +186,43 @@ namespace teste_cliente.Controllers
                     }
                     else
                     {
-                        // Mostra o erro vindo da API
                         Console.WriteLine($"Erro na API: {apiResponse}");
-                        ModelState.AddModelError(string.Empty, "Erro ao registrar usuário ");
-                        return View();
+
+                        try
+                        {
+                            // Faz o parse do JSON devolvido pela API
+                            using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(apiResponse);
+
+                            // Procura o array "$values" onde estão os erros do Identity
+                            if (doc.RootElement.TryGetProperty("$values", out System.Text.Json.JsonElement values))
+                            {
+                                foreach (System.Text.Json.JsonElement error in values.EnumerateArray())
+                                {
+                                    string code = error.GetProperty("code").GetString();
+                                    string description = error.GetProperty("description").GetString();
+
+                                    // Traduz a mensagem e adiciona-a à View
+                                    string mensagemPt = TraduzirErroIdentity(code, description);
+                                    ModelState.AddModelError(string.Empty, mensagemPt);
+                                }
+                            }
+                            else
+                            {
+                                // Se o JSON não tiver o formato esperado
+                                ModelState.AddModelError(string.Empty, "Ocorreu um erro ao processar o seu registo. Verifique os dados.");
+                            }
+                        }
+                        catch (System.Text.Json.JsonException)
+                        {
+                            // Se a API não devolver um JSON válido (ex: erro de servidor 500)
+                            ModelState.AddModelError(string.Empty, "Ocorreu um erro inesperado no servidor.");
+                        }
+
+                        return View(obj);
                     }
                 }
             }
         }
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Register(RegisterationRequestDTO obj)
-        //{
-        //    using (var httpClient = new HttpClient())
-        //    {
-        //        // Serializa o objeto de registro em JSON
-        //        StringContent content = new StringContent(
-        //            JsonConvert.SerializeObject(obj),
-        //            Encoding.UTF8,
-        //            "application/json"
-        //        );
-
-        //        // Chamada para o endpoint centralizado da API
-        //        using (var response = await httpClient.PostAsync("https://localhost:7211/api/Auth/register", content))
-        //        {
-        //            string apiResponse = await response.Content.ReadAsStringAsync();
-        //            Console.WriteLine($"Resposta da API: {apiResponse}"); // Log para depuração
-
-        //            if (response.IsSuccessStatusCode)
-        //            {
-        //                string role = obj.Role?.Trim(); // Usa a role enviada no formulário como fallback
-
-        //                try
-        //                {
-        //                    // Tenta desserializar como APIResponse
-        //                    var responseData = JsonConvert.DeserializeObject<APIResponse>(apiResponse);
-        //                    var result = responseData?.Result as JObject;
-
-        //                    // Extrai a role do JSON, se disponível
-        //                    if (result != null)
-        //                    {
-        //                        // Tenta direto no result (ex.: { "role": "Admin" })
-        //                        role = result["role"]?.ToString()?.Trim();
-        //                        // Tenta em um objeto user aninhado (ex.: { "user": { "role": "Admin" } })
-        //                        if (string.IsNullOrEmpty(role))
-        //                        {
-        //                            role = result["user"]?["role"]?.ToString()?.Trim();
-        //                        }
-        //                    }
-
-        //                    Console.WriteLine($"Role extraída: {role}");
-        //                }
-        //                catch (JsonException ex)
-        //                {
-        //                    // Se a desserialização falhar (ex.: resposta é "User created successfully"), usa a role do formulário
-        //                    Console.WriteLine($"Erro ao desserializar resposta: {ex.Message}\nResposta: {apiResponse}");
-        //                    Console.WriteLine($"Usando role do formulário: {role}");
-        //                }
-
-        //                // Verifica a role e redireciona
-        //                if (!string.IsNullOrEmpty(role))
-        //                {
-        //                    if (role == SD.Role_Candidato || role == SD.Role_Empresa)
-        //                    {
-        //                        return RedirectToAction("Login");
-        //                    }
-        //                    else if (role == SD.Role_Admin)
-        //                    {
-        //                        return RedirectToAction("Index", "Home");
-        //                    }
-        //                }
-
-        //                // Fallback para sucesso genérico
-        //                Console.WriteLine("Role não encontrada, usando fallback para Login");
-        //                return RedirectToAction("Login");
-        //            }
-        //            else
-        //            {
-        //                // Mostra o erro vindo da API
-        //                Console.WriteLine($"Erro na API: {apiResponse}");
-        //                ModelState.AddModelError(string.Empty, "Erro ao registrar usuário: " + apiResponse);
-        //                return View(obj);
-        //            }
-        //        }
-        //    }
-        //}
-
-        public async Task<IActionResult> Logout()
-        {
-
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            HttpContext.Session.Clear();
-            return RedirectToAction("Index", "Home");
-            //await HttpContext.SignOutAsync();
-            //HttpContext.Session.SetString(SD.SessionToken, "");
-            //return RedirectToAction("Index", "OfertaEmprego");
-        }
-
-        public async Task<IActionResult> AccessDenied()
-        {
-            return View();
-        }
-
-        //____________ADIÇÃO DE CÓDIGO_____________
-        /// <summary>
-        /// Displays ForgotPassword View
-        /// </summary>
-        /// <returns>IActionResult of the view</returns>
-        //Get da _ForgotPasswordPartial
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
-
-        //____________ADIÇÃO DE CÓDIGO_____________
-        /// <summary>
-        /// Call API to send a retrieve password link to user
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns>A json containing the API call outcome</returns>
-        [HttpPost]
-        public async Task<IActionResult> ForgotPassword(ForgotPassword model)
-        {
-            var jsonContent = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(model, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-                Encoding.UTF8,
-                "application/json");
-
-            try
-            {
-                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
-
-                if (apiCall.IsSuccessStatusCode)
-                {
-                    _flashMessage.Confirmation("A retrieve password link has been sent to your email");
-                    return View(model);
-                }
-
-                _flashMessage.Danger("Unable to send link, please contact admin.");
-                return View(model);
-            }
-            catch (Exception)
-            {
-                return View("Error500");
-            }
-
-        }
-
-
         //____________________ADIÇÃO DE CODIGO_________________
         /// <summary>
         /// Displays the view for recovering the user's password after email confirmation.
@@ -377,12 +265,12 @@ namespace teste_cliente.Controllers
 
             var dto = new ResetPasswordDTO
             {
-               Token = model.Token,
+                Token = model.Token,
 
-               UserId = model.UserId,
+                UserId = model.UserId,
 
-               Password = model.Password
-        
+                Password = model.Password
+
             };
 
 
@@ -406,12 +294,12 @@ namespace teste_cliente.Controllers
 
                 if (apiCall.IsSuccessStatusCode)
                 {
-                    _flashMessage.Confirmation(response.Message); 
+                    _flashMessage.Confirmation(response.Message);
 
                     return View("RecoverPassword", new RecoverPassword());
                 }
 
-                    _flashMessage.Danger(response.Message);
+                _flashMessage.Danger(response.Message);
 
                 return View("RecoverPassword", new RecoverPassword());
             }
