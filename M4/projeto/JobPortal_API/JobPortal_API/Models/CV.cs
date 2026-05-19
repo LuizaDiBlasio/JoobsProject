@@ -10,14 +10,19 @@ namespace JobPortal_API.Models
 
         public string Nome { get; set; }
 
-        [Key]  
-        public int IdLocalidade { get; set; }   
+        [ForeignKey("Concelho")]
+        public int IdConcelho { get; set; }   
 
-        public Localidade Localidade { get; set; }
+        public Concelho Concelho { get; set; }
 
         //public string Localizacao { get; set; } - Normalização da tabela
 
-        public string? Educacao { get; set; }
+        // public string? Educacao { get; set; } - Normalização da tabela
+
+        [ForeignKey("Escolaridade")]
+        public int IdEscolaridade { get; set; }
+
+        public Escolaridade Escolaridade { get; set; }
 
         public string? ExpProfissional { get; set; }
 
@@ -26,6 +31,7 @@ namespace JobPortal_API.Models
         public string? Interesses { get; set; }
 
         public int? IdCandidatoCv { get; set; }
+
 
         [ForeignKey("IdCandidatoCv")]
         public virtual Candidato IdCandidato { get; set; }

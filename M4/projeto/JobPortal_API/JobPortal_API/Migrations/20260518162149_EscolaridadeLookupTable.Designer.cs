@@ -4,6 +4,7 @@ using JobPortal_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobPortal_API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518162149_EscolaridadeLookupTable")]
+    partial class EscolaridadeLookupTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2018,39 +2020,11 @@ namespace JobPortal_API.Migrations
 
                     b.Property<string>("Tipo")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdTipoContrato");
 
                     b.ToTable("TipoContrato");
-
-                    b.HasData(
-                        new
-                        {
-                            IdTipoContrato = 1,
-                            Tipo = "Sem Termo"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 2,
-                            Tipo = "A Termo"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 3,
-                            Tipo = "Prestação de Serviços"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 4,
-                            Tipo = "Tempo Parcial"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 5,
-                            Tipo = "Curta Duração"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

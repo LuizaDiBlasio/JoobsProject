@@ -4,6 +4,7 @@ using JobPortal_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobPortal_API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260515143638_InitCreate")]
+    partial class InitCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1719,6 +1721,9 @@ namespace JobPortal_API.Migrations
                     b.Property<string>("Competencias")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Educacao")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ExpProfissional")
                         .HasColumnType("nvarchar(max)");
 
@@ -1726,9 +1731,6 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("IdConcelho")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdEscolaridade")
                         .HasColumnType("int");
 
                     b.Property<string>("Interesses")
@@ -1743,8 +1745,6 @@ namespace JobPortal_API.Migrations
                     b.HasIndex("IdCandidatoCv");
 
                     b.HasIndex("IdConcelho");
-
-                    b.HasIndex("IdEscolaridade");
 
                     b.ToTable("CV");
                 });
@@ -1794,51 +1794,6 @@ namespace JobPortal_API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Empresa");
-                });
-
-            modelBuilder.Entity("JobPortal_API.Models.Escolaridade", b =>
-                {
-                    b.Property<int>("IdEscolaridade")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEscolaridade"), 1L, 1);
-
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.HasKey("IdEscolaridade");
-
-                    b.ToTable("Escolaridade");
-
-                    b.HasData(
-                        new
-                        {
-                            IdEscolaridade = 1,
-                            Tipo = "Ensino Básico"
-                        },
-                        new
-                        {
-                            IdEscolaridade = 2,
-                            Tipo = "Ensino Secundário"
-                        },
-                        new
-                        {
-                            IdEscolaridade = 3,
-                            Tipo = "Licenciatura"
-                        },
-                        new
-                        {
-                            IdEscolaridade = 4,
-                            Tipo = "Mestrado"
-                        },
-                        new
-                        {
-                            IdEscolaridade = 5,
-                            Tipo = "Doutoramento"
-                        });
                 });
 
             modelBuilder.Entity("JobPortal_API.Models.FileCV", b =>
@@ -2018,39 +1973,11 @@ namespace JobPortal_API.Migrations
 
                     b.Property<string>("Tipo")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdTipoContrato");
 
                     b.ToTable("TipoContrato");
-
-                    b.HasData(
-                        new
-                        {
-                            IdTipoContrato = 1,
-                            Tipo = "Sem Termo"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 2,
-                            Tipo = "A Termo"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 3,
-                            Tipo = "Prestação de Serviços"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 4,
-                            Tipo = "Tempo Parcial"
-                        },
-                        new
-                        {
-                            IdTipoContrato = 5,
-                            Tipo = "Curta Duração"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -2224,15 +2151,7 @@ namespace JobPortal_API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("JobPortal_API.Models.Escolaridade", "Escolaridade")
-                        .WithMany()
-                        .HasForeignKey("IdEscolaridade")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Concelho");
-
-                    b.Navigation("Escolaridade");
 
                     b.Navigation("IdCandidato");
                 });

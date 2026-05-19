@@ -21,10 +21,11 @@ namespace JobPortal_API.Models
 
         //public string? Localização { get; set; } - Normalização da Tabela
 
-        [ForeignKey("IdLocalidade")]
-        public int? IdLocalidade { get; set; }
+        [ForeignKey("Concelho")]
+        public int? IdConcelho { get; set; }
 
-        public Localidade Localidade { get; set; }
+        public Concelho? Concelho { get; set; }
+
 
         //public string? RegimeTrabalho { get; set; } - Propriedade calculada com boolean IsPresencial
 
@@ -60,6 +61,8 @@ namespace JobPortal_API.Models
             false => "Remoto",
             null => "Híbrido"
         };
+
+
 
         public virtual ICollection<AplicacaoTrabalho>? AplicacaoTrabalho { get; set; }
     }

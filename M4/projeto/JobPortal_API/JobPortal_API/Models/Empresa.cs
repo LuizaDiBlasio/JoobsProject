@@ -20,10 +20,10 @@ namespace JobPortal_API.Models
 
         //public string? Localidade { get; set; } - normalização da tabela
 
-        [Key]
-        public int IdLocalidade { get; set; } 
+        [ForeignKey("Concelho")]
+        public int IdConcelho { get; set; } 
 
-        public Localidade Localidade { get; set; }  
+        public Concelho Concelho { get; set; }  
 
         public string Email { get; set; }
 
