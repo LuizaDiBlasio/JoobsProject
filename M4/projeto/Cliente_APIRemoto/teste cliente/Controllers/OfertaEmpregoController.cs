@@ -1,21 +1,27 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Common;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text;
 using teste_cliente.Models;
+using teste_cliente.Models.Dto;
 
 namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(string? search, string? localidade, string? regimeTrabalho, int page = 1)
+        public async Task<IActionResult> Index(string? search, string? concelho, string? regimeTrabalho, int page = 1)
         {
             int pageSize = 10;
             List<OfertaEmprego> ofertaList = new List<OfertaEmprego>();
+            List<Concelho> concelhosList = new List<Concelho>();
+
             //AQUI NÃO É PRECISO O TOKEN
             using (var httpClient = new HttpClient())
             {
@@ -24,8 +30,8 @@ namespace teste_cliente.Controllers
                 List<string> queryParams = new List<string>();
                 if (!string.IsNullOrEmpty(search))
                     queryParams.Add($"search={search}");
-                if (!string.IsNullOrEmpty(localidade))
-                    queryParams.Add($"localidade={localidade}");
+                if (!string.IsNullOrEmpty(concelho))
+                    queryParams.Add($"concelho={concelho}");
                 if (!string.IsNullOrEmpty(regimeTrabalho))
                     queryParams.Add($"regimeTrabalho={regimeTrabalho}");
 
@@ -69,7 +75,7 @@ namespace teste_cliente.Controllers
 
                     // Associar as reviews da empresa à oferta via ViewData ou uma propriedade temporária
                     ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
-                }
+                }    
             }
 
             int totalItems = ofertaList.Count;
@@ -99,13 +105,21 @@ namespace teste_cliente.Controllers
                 }
             }
 
+            //Buscar listas 
+            var listas = await LoadListsIndex();
+            
+
             // 🔽 Enviar info para a View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             ViewBag.Search = search;
-            ViewBag.Localidade = localidade;
+            ViewBag.Concelho = concelho;
             ViewBag.RegimeTrabalho = regimeTrabalho;
             ViewBag.Favoritos = favoritos;
+            ViewBag.ConcelhosList = listas.SelectListConcelhos;
+            ViewBag.JornadasList = listas.SelectListJornada;
+            ViewBag.RegimeTrabalhoList = listas.SelectListRegimeTrabalho;
+
 
             return View(ofertaList);
         }
@@ -208,43 +222,62 @@ namespace teste_cliente.Controllers
             return View(oferta);
         }
 
+        //___________MODIFICAÇÃO DE CODIGO_________(Get com lista de comboboxes)
+        //[HttpGet]
+        //public ActionResult Create()
+        //{
+        //    return View();
+        //}
+
+        // ______________ADIÇÃO DE CÓDIGO____________
         [HttpGet]
-        public ActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var model = new OfertaEmprego();
+
+            LoadListsOfertaEmprego(model);
+
+            return View(model);
+               
         }
 
 
         [HttpPost]
         public async Task<IActionResult> Create(Models.OfertaEmprego oferta)
         {
-            
-            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
-            if (string.IsNullOrEmpty(token))
-                return RedirectToAction("Login", "Auth");
-            using (var httpClient = new HttpClient())
+            if (ModelState.IsValid)
             {
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
-                    
-                using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
+                var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+                if (string.IsNullOrEmpty(token))
+                    return RedirectToAction("Login", "Auth");
+                using (var httpClient = new HttpClient())
                 {
-                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
+
+                    using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
-                        return Forbid();
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        {
+                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
+                            return Forbid();
+                        }
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            return NotFound();
+                        }
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+                        oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                     }
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        return NotFound();
-                    }
-                    string apiResponse = await response.Content.ReadAsStringAsync();
-                    oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                 }
+
+                return RedirectToAction("Index");
             }
-            
-            return RedirectToAction("Index");
+
+            LoadListsOfertaEmprego(oferta);
+            return View(oferta);
+           
         }
 
         [HttpGet]
@@ -516,6 +549,106 @@ namespace teste_cliente.Controllers
 
             return Json(ofertasFavoritas);
         }
+
+        //ADIÇÃO DE CÓDIGO (métodos auxiliares)
+
+        private async void LoadListsOfertaEmprego(OfertaEmprego model)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                //Buscar concelhos na API
+                var apiCallConcelhos = await httpClient.GetAsync("https://localhost:7211/api/LookUps/Concelhos");
+
+                if (!apiCallConcelhos.IsSuccessStatusCode)
+                    return;
+
+                string responseConcelhos = await apiCallConcelhos.Content.ReadAsStringAsync();
+                var listaConcelhos = JsonConvert.DeserializeObject<List<Concelho>>(responseConcelhos);
+
+
+                //Criar lista para preencher o modelo da View
+                if (listaConcelhos != null && listaConcelhos.Any())
+                {
+                    model.SelectListConcelhos = listaConcelhos.Select(c => new SelectListItem
+                    {
+                        Value = c.IdConcelho.ToString(),
+                        Text = c.NomeConcelho.ToString()
+                    }).ToList();
+                }
+
+                //Buscar contratos na API
+                var apiCallContratos = await httpClient.GetAsync("https://localhost:7211/api/LookUps/TiposContratos");
+
+                if (!apiCallContratos.IsSuccessStatusCode)
+                    return;
+
+                string responseContratos = await apiCallContratos.Content.ReadAsStringAsync();
+                var listaContratos = JsonConvert.DeserializeObject<List<TipoContrato>>(responseContratos);
+
+
+                //Criar lista para preencher o modelo da View
+                if (listaContratos != null && listaContratos.Any())
+                {
+                    model.SelectListTiposContratos = listaContratos.Select(c => new SelectListItem
+                    {
+                        Value = c.IdTipoContrato.ToString(),
+                        Text = c.Tipo.ToString()
+                    }).ToList();
+                }
+            }
+        }
+
+            private async Task<IndexListsDTO> LoadListsIndex()
+            {
+                var indexListsDTO = new IndexListsDTO();
+
+                using (var httpClient = new HttpClient())
+                {
+                    //Buscar concelhos na API
+                    var apiCallConcelhos = await httpClient.GetAsync("https://localhost:7211/api/LookUps/Concelhos");
+
+                if (!apiCallConcelhos.IsSuccessStatusCode)
+                    return indexListsDTO;
+
+                    string responseConcelhos = await apiCallConcelhos.Content.ReadAsStringAsync();
+                    var listaConcelhos = JsonConvert.DeserializeObject<List<Concelho>>(responseConcelhos);
+
+
+                    var selectConcelhosList = new List<SelectListItem>();
+
+                    //Criar lista para preencher o modelo da View
+                    if (listaConcelhos != null && listaConcelhos.Any())
+                    {
+                        selectConcelhosList = listaConcelhos.Select(c => new SelectListItem
+                        {
+                            Value = c.IdConcelho.ToString(),
+                            Text = c.NomeConcelho.ToString()
+                        }).ToList();
+                    }
+
+                    indexListsDTO.SelectListConcelhos = selectConcelhosList;
+;
+                    var selectRegimeList = new List<SelectListItem>
+                    {
+                        new SelectListItem { Value = "True", Text = "Presencial" },
+                        new SelectListItem { Value = "False", Text = "Remoto" },
+                        new SelectListItem { Value = "", Text = "Híbrido" }
+                    };
+
+                    indexListsDTO.SelectListRegimeTrabalho = selectRegimeList;
+
+                    var selectJornadaList = new List<SelectListItem>
+                        {
+                            new SelectListItem { Value = "True", Text = "Full time" },
+                            new SelectListItem { Value = "False", Text = "Part time" },
+                            new SelectListItem { Value = "", Text = "Flexível" }
+                        };
+
+                    indexListsDTO.SelectListJornada = selectJornadaList;
+                }
+
+                return indexListsDTO;   
+            }
 
     }
 }
