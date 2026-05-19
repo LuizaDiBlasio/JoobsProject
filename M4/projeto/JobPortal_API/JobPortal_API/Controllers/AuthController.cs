@@ -1,8 +1,4 @@
-﻿using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Azure;
+﻿using Google.Apis.Auth;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Models;
@@ -11,6 +7,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace JobPortal_API.Controllers
 {
@@ -162,6 +162,44 @@ namespace JobPortal_API.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin([FromBody] string idToken)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string> { "303073276434-pfajifssqgdsag2vlnoveidu0c97ejds.apps.googleusercontent.com" }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+
+                // 2. Check if user exists
+                var user = await _userManager.FindByEmailAsync(payload.Email);
+
+                if (user == null)
+                {
+                    user = new ApplicationUser
+                    {
+                        UserName = payload.Email,
+                        Email = payload.Email,
+                        EmailConfirmed = true
+                    };
+
+                    var result = await _userManager.CreateAsync(user);
+                    if (!result.Succeeded) return BadRequest("Error creating user.");
+
+                    await _userManager.AddToRoleAsync(user, "Candidato");
+
+                    var candidato = new Candidato
+                    {
+                        UserId = user.Id,
+                        Nome = payload.Name,
+                        Email = payload.Email
+                    };
+                    _context.Candidato.Add(candidato);
+                    await _context.SaveChangesAsync();
+                }
 
 
         //___________ADIÇÃO DE CÓDIGO___________(Recuperação de password) 
