@@ -418,20 +418,23 @@ namespace teste_cliente.Controllers
                 return View("RecoverPassword", new RecoverPassword());
             }
         }
-
+        [HttpPost]
         public async Task<IActionResult> GoogleLogin([FromBody] string credential)
         {
             if (string.IsNullOrEmpty(credential))
                 return Json(new { isSuccess = false, message = "Token inválido." });
 
-            // 1. Envia o token do Google para a Backend API
-            APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(credential);
+            var googleDto = new GoogleLoginDTO
+            {
+                IdToken = credential
+            };
+
+            APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(googleDto);
 
             if (response != null && response.IsSuccess)
             {
                 LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
 
-                // 2. Cria a sessão local com os claims (igual ao seu Login normal)
                 var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
                 identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
@@ -455,7 +458,6 @@ namespace teste_cliente.Controllers
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
-                // 3. Retorna sucesso para o JavaScript redirecionar
                 return Json(new { isSuccess = true, redirectUrl = Url.Action("Index", "Home") });
             }
 

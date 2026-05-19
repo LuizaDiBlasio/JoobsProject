@@ -8,6 +8,6 @@ namespace teste_cliente.Services.IServices
     {
         Task<T> LoginAsync<T>(LoginRequestDTO objToCreate);
         Task<T> RegisterAsync<T>(RegisterationRequestDTO objToCreate);
-        Task<T> GoogleLoginAsync<T>(string googleToken);
+        Task<T> GoogleLoginAsync<T>(GoogleLoginDTO dto);
     }
 }
