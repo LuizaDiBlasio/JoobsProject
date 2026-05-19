@@ -16,30 +16,6 @@ using teste_cliente.Models.Dto;
 using teste_cliente.Services.IServices;
 using Vereyon.Web;
 
-teste cliente luiza:
-
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using JobPortal_API.DTOs;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using teste_cliente.DTOs;
-using teste_cliente.Models;
-using teste_cliente.Models.Dto;
-using teste_cliente.Services;
-using teste_cliente.Services.IServices;
-using Vereyon.Web;
-
 namespace teste_cliente.Controllers
 {
     public class AuthController : Controller
