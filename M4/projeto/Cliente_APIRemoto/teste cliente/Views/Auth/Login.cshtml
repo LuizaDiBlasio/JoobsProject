@@ -29,7 +29,7 @@
 
         <div class="google-btn-container">
             <div id="g_id_onload"
-                 data-client_id="@Configuration["Authentication:GoogleAuth:ClientId"]"
+                 data-client_id="@Configuration["Authentication:Google:ClientId"]"
                  data-context="signin"
                  data-ux_mode="popup"
                  data-callback="handleCredentialResponse"
@@ -51,67 +51,59 @@
 
 <style>
     .separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 1.5rem 0;
-    color: #999;
-    font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+        color: #999;
+        font-size: 0.9rem;
     }
 
     .separator::before,
     .separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #ddd;
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #ddd;
     }
 
-        // modal.addEventListener('click', (event) => {
-        //     if (!modalContent.contains(event.target)) {
-        //         window.location.href = '/Home/Index';
-        //     }
-        });
-    </script>
-}
-
     .separator:not(:empty)::after {
-    margin-left: .5em;
+        margin-left: .5em;
     }
 
     .google-btn-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
     }
 
     .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(to bottom right, #00B8D4, #6EE5E9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    animation: fadeIn 0.3s ease-in-out;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(to bottom right, #00B8D4, #6EE5E9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease-in-out;
     }
 
     .modal-content {
-    background-color: white;
-    border-radius: 20px;
-    padding: 2rem;
-    width: 90%;
-    max-width: 360px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    position: relative;
-    animation: slideDown 0.3s ease-in-out;
+        background-color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 360px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        position: relative;
+        animation: slideDown 0.3s ease-in-out;
     }
 
     .form-control {
-    margin-bottom: 1rem;
-    border-radius: 10px;
+        margin-bottom: 1rem;
+        border-radius: 10px;
     }
 
     .btn-register {
@@ -124,66 +116,63 @@
         font-weight: bold;
         margin: 0 auto; 
         display: block;
+        text-align: center;
+        text-decoration: none; /* Keeps the 'a' tag from having an underline */
     }
 
     .btn-register:hover {
-    background-color: #5de4d9;
+        background-color: #5de4d9;
+        color: white;
     }
 
     .close-btn {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    font-size: 1.4rem;
-    cursor: pointer;
-    border: none;
-    background: none;
-    color: #999;
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-size: 1.4rem;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: #999;
     }
 
     h3 {
-    text-align: center;
-    margin-bottom: 1rem;
-    font-weight: 600;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
     }
-
 </style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- ADICIONADO: Script para processar o callback do Google -->
     <script>
         function handleCredentialResponse(response) {
-        // 1. Pega o token JWT gerado pelo Google
-        const googleToken = response.credential;
+            const googleToken = response.credential;
 
-        // 2. Pega o token de segurança Anti-Forgery gerado automaticamente pelo formulário acima
-        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
-        const verificationToken = tokenElement ? tokenElement.value : '';
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+            const verificationToken = tokenElement ? tokenElement.value : '';
 
-        // 3. Envia o token via fetch para o Frontend AuthController
-        fetch('/Auth/GoogleLogin', {
-        method: 'POST',
-        headers: {
-        'Content-Type': 'application/json',
-        'RequestVerificationToken': verificationToken
-        },
-        body: JSON.stringify(googleToken)
-        })
-        .then(res => res.json())
-        .then(data => {
-        if (data.isSuccess) {
-        // Redireciona para a Home em caso de sucesso
-        window.location.href = data.redirectUrl;
-        } else {
-        alert(data.message || 'Erro ao fazer login com o Google.');
-        }
-        })
-        .catch(err => {
-        console.error('Erro no login do Google:', err);
-        alert('Ocorreu um erro ao comunicar com o servidor.');
-        });
+            fetch('/Auth/GoogleLogin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': verificationToken
+                },
+                body: JSON.stringify(googleToken)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.isSuccess) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert(data.message || 'Erro ao fazer login com o Google.');
+                }
+            })
+            .catch(err => {
+                console.error('Erro no login do Google:', err);
+                alert('Ocorreu um erro ao comunicar com o servidor.');
+            });
         }
     </script>
 }

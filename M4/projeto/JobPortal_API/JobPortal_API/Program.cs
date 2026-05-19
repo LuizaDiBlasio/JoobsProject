@@ -20,7 +20,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://localhost:5070") // Your Razor Pages URL
+        policy.WithOrigins("https://localhost:5020") // Your Razor Pages URL
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -36,7 +36,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 
 // 3. Merged Authentication & JWT Bearer Configuration
-var jwtSecretKey = builder.Configuration["Jwt:Key"] ?? "minha-chave-jwt-supersecreta";
+var jwtSecretKey = builder.Configuration["Jwt:Key"] ?? "minha-chave-jwt-supersecreta-32bytes!";
 
 builder.Services.AddAuthentication(options =>
 {
