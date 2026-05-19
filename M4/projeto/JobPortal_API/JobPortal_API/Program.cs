@@ -15,7 +15,18 @@ using JobPortal_API.Utilities.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 1. Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://localhost:5020") // Your Razor Pages URL
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// 2. Add DbContext & Identity
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
@@ -23,6 +34,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+// 3. Merged Authentication & JWT Bearer Configuration
+var jwtSecretKey = builder.Configuration["Jwt:Key"] ?? "minha-chave-jwt-supersecreta-32bytes!";
 
 builder.Services.AddAuthentication(options =>
 {
@@ -34,16 +48,22 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+
+        // Validation rules (Adjust true/false based on your strictness needs)
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidIssuer = "JobPortalAPI",
+        ValidAudience = "JobPortalAPI",
+
+        // Map roles correctly for [Authorize(Roles="Admin")]
         RoleClaimType = ClaimTypes.Role
     };
 });
 
+// 4. Register Services & Repositories
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-
 builder.Services.AddScoped<VerificaCandidatoFilter>();
 builder.Services.AddScoped<VerificaEmpresaFilter>();
 builder.Services.AddScoped<VerificaOfertaDeEmpresaFilter>();
@@ -52,24 +72,21 @@ builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddTransient<SeedDB>();
 
 builder.Services.AddResponseCaching();
-//builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
-
+// 5. Add Controllers & JSON Options
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve; // Evita problemas de referência circular
-        //options.JsonSerializerOptions.ReferenceHandler = null;
-        //options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve; // Prevents circular reference issues
     });
-// Configuração do Swagger
+
+// 6. Swagger Configuration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "JobPortal_API", Version = "v1" });
 
-    // Configuração de segurança para o cadeado (JWT)
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -91,11 +108,10 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 });
-
 
 var app = builder.Build();
 
@@ -116,6 +132,8 @@ else
     Console.WriteLine("Swagger is not configured in production.");
 }
 
+app.UseStaticFiles();
+app.UseRouting();
 // Habilitar Seed 
 using (var scope = app.Services.CreateScope())
 {
@@ -126,8 +144,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
+// IMPORTANT: CORS must be between UseRouting and UseAuthentication
+app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -1,22 +1,18 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Net.Http;
+﻿using JobPortal_API.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Policy;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using JobPortal_API.DTOs;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using teste_cliente.DTOs;
 using teste_cliente.Models;
 using teste_cliente.Models.Dto;
-using teste_cliente.Services;
 using teste_cliente.Services.IServices;
 using Vereyon.Web;
 
@@ -28,17 +24,17 @@ namespace teste_cliente.Controllers
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IFlashMessage _flashMessage;
-        
+
         public AuthController(IAuthService authService, HttpClient httpClient, IConfiguration configuration, IFlashMessage flashMessage)
         {
             _authService = authService;
             _httpClient = httpClient;
             _configuration = configuration;
             _flashMessage = flashMessage;
-           
+
         }
-       [HttpGet]
-       public IActionResult Login()
+        [HttpGet]
+        public IActionResult Login()
         {
             LoginRequestDTO obj = new();
             return View(obj);
@@ -46,7 +42,7 @@ namespace teste_cliente.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult>Login (LoginRequestDTO obj)
+        public async Task<IActionResult> Login(LoginRequestDTO obj)
         {
             APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
 
@@ -60,13 +56,13 @@ namespace teste_cliente.Controllers
                 var json0 = Convert.ToString(response.Result);
 
                 LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
-                
+
                 Console.WriteLine(model);
 
-                
+
                 ///////////////
                 var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-                identity.AddClaim(new Claim(ClaimTypes.Name,(model.User.UserName).Trim()));
+                identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
 
                 if (model.User.Role == SD.Role_Candidato)
@@ -95,7 +91,7 @@ namespace teste_cliente.Controllers
                 var props = new AuthenticationProperties
                 {
                     IsPersistent = true,                           // persiste além da sessão atual
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3) 
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
                 };
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
 
@@ -116,7 +112,7 @@ namespace teste_cliente.Controllers
                     ModelState.AddModelError(string.Empty, msg);
                 }
                 return View(obj);
-            }                
+            }
         }
 
         [HttpGet]
@@ -289,7 +285,7 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-        //____________ADIÇÃO DE CÓDIGO_____________
+        //_____ADIÇÃO DE CÓDIGO____
         /// <summary>
         /// Displays ForgotPassword View
         /// </summary>
@@ -300,7 +296,7 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-        //____________ADIÇÃO DE CÓDIGO_____________
+        //_____ADIÇÃO DE CÓDIGO____
         /// <summary>
         /// Call API to send a retrieve password link to user
         /// </summary>
@@ -335,7 +331,7 @@ namespace teste_cliente.Controllers
         }
 
 
-        //____________________ADIÇÃO DE CODIGO_________________
+        //_______ADIÇÃO DE CODIGO______
         /// <summary>
         /// Displays the view for recovering the user's password after email confirmation.
         /// </summary>
@@ -361,7 +357,7 @@ namespace teste_cliente.Controllers
         }
 
 
-        //____________________ADIÇÃO DE CODIGO_________________
+        //_______ADIÇÃO DE CODIGO______
         /// <summary>
         /// Processes the user's password recover request.
         /// </summary>
@@ -377,12 +373,12 @@ namespace teste_cliente.Controllers
 
             var dto = new ResetPasswordDTO
             {
-               Token = model.Token,
+                Token = model.Token,
 
-               UserId = model.UserId,
+                UserId = model.UserId,
 
-               Password = model.Password
-        
+                Password = model.Password
+
             };
 
 
@@ -406,12 +402,12 @@ namespace teste_cliente.Controllers
 
                 if (apiCall.IsSuccessStatusCode)
                 {
-                    _flashMessage.Confirmation(response.Message); 
+                    _flashMessage.Confirmation(response.Message);
 
                     return View("RecoverPassword", new RecoverPassword());
                 }
 
-                    _flashMessage.Danger(response.Message);
+                _flashMessage.Danger(response.Message);
 
                 return View("RecoverPassword", new RecoverPassword());
             }
@@ -422,7 +418,68 @@ namespace teste_cliente.Controllers
                 return View("RecoverPassword", new RecoverPassword());
             }
         }
+        [HttpPost]
+        public async Task<IActionResult> GoogleLogin([FromBody] string credential)
+        {
+            if (string.IsNullOrEmpty(credential))
+                return Json(new { isSuccess = false, message = "Token inválido." });
 
+            var googleDto = new GoogleLoginDTO
+            {
+                IdToken = credential
+            };
+
+            APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(googleDto);
+
+            if (response != null && response.IsSuccess)
+            {
+                LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
+
+                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
+                identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
+
+                if (model.User.Role == SD.Role_Candidato)
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(model.Token);
+                    var idCandidato = jwt.Claims.First(c => c.Type == "IdCandidato").Value;
+                    identity.AddClaim(new Claim("IdCandidato", idCandidato));
+                }
+
+                identity.AddClaim(new Claim("JWToken", model.Token));
+
+                var principal = new ClaimsPrincipal(identity);
+                var props = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
+                };
+
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+
+                return Json(new { isSuccess = true, redirectUrl = Url.Action("Index", "Home") });
+            }
+
+            return Json(new { isSuccess = false, message = "Falha ao autenticar com o Google." });
+        }
+        private string TraduzirErroIdentity(string code, string fallbackDescription)
+        {
+            return code switch
+            {
+                "DuplicateUserName" => "Este nome de utilizador já se encontra em uso. Por favor, escolha outro.",
+                "DuplicateEmail" => "Este endereço de email já está registado na nossa plataforma.",
+                "InvalidUserName" => "O nome de utilizador é inválido (só pode conter letras ou números).",
+                "InvalidEmail" => "O email introduzido não é válido.",
+                "PasswordTooShort" => "A palavra-passe é demasiado curta.",
+                "PasswordRequiresNonAlphanumeric" => "A palavra-passe tem de conter pelo menos um caractere especial.",
+                "PasswordRequiresDigit" => "A palavra-passe tem de conter pelo menos um número.",
+                "PasswordRequiresUpper" => "A palavra-passe tem de conter pelo menos uma letra maiúscula.",
+                "PasswordRequiresLower" => "A palavra-passe tem de conter pelo menos uma letra minúscula.",
+                // Adiciona mais casos aqui, se necessário
+                _ => fallbackDescription // Retorna a mensagem original se não houver tradução
+            };
+        }
 
     }
 }
