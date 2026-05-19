@@ -34,20 +34,38 @@ namespace JobPortal_API.Controllers
 
         //Buscas todas as ofertas
         [HttpGet("TodasOfertas")]
-        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, string? regimeTrabalho, string? localidade)
+        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, string? regimeTrabalho, string? concelho)
         {
             var oferta = _context.OfertaEmprego
+                         .Include(o => o.Concelho)
+                         .Include(o=> o.TipoContrato)
                          .Where(o => o.VagaDisponivel == true)
                          .AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
+                //oferta = oferta.Where(b =>
+                //    b.Titulo.Contains(search) ||
+                //    b.IsFullTime == true && "Full time".Contains(search) ||
+                //    b.IsFullTime == false && "Part time".Contains(search) ||
+                //    b.IsFullTime == null && "Flexível".Contains(search) ||
+                //    b.Concelho.NomeConcelho.Contains(search) ||
+                //    b.IsPresencial == true && "Presencial".Contains(search) ||
+                //    b.IsPresencial == false && "Remoto".Contains(search) ||
+                //    b.IsPresencial == null && "Hbrido".Contains(search) ||
+                //    b.TipoContrato.Tipo.Contains(search) ||
+                //    b.Requisitos.Contains(search));
+
                 oferta = oferta.Where(b =>
                     b.Titulo.Contains(search) ||
-                    b.Jornada.Contains(search) ||
-                    b.Localização.Contains(search) ||
-                    b.RegimeTrabalho.Contains(search) ||
-                    b.TipoContrato.Contains(search) ||
+                    (b.IsFullTime == true && "Full time".Contains(search)) ||
+                    (b.IsFullTime == false && "Part time".Contains(search)) ||
+                    (b.IsFullTime == null && "Flexível".Contains(search)) ||
+                    b.Concelho.NomeConcelho.Contains(search) ||
+                    (b.IsPresencial == true && "Presencial".Contains(search)) ||
+                    (b.IsPresencial == false && "Remoto".Contains(search)) ||
+                    (b.IsPresencial == null && "Hibrido".Contains(search)) || // Dica: considere usar "Híbrido".Contains(search) se usar acento
+                    b.TipoContrato.Tipo.Contains(search) ||
                     b.Requisitos.Contains(search));
             }
 
@@ -56,9 +74,9 @@ namespace JobPortal_API.Controllers
                 oferta = oferta.Where(b => b.RegimeTrabalho.Contains(regimeTrabalho));
             }
 
-            if (!string.IsNullOrEmpty(localidade))
+            if (!string.IsNullOrEmpty(concelho))
             {
-                oferta = oferta.Where(b => b.Localização.Contains(localidade));
+                oferta = oferta.Where(b => b.Concelho.NomeConcelho.Contains(concelho));
             }
 
             return await oferta

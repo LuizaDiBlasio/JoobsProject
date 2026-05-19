@@ -8,18 +8,33 @@ namespace JobPortal_API.Models
     {
         [Key]
         public int IdEmpresa { get; set; }
-        [Required]
 
-        public string UserId { get; set; }
+        [Required]
         [ForeignKey("UserId")]
+        public string UserId { get; set; }
+       
         public ApplicationUser User { get; set; }
+
         public string Nome { get; set; }
-        public string? Localidade { get; set; }
+
+
+        //public string? Localidade { get; set; } - normalização da tabela
+
+        [ForeignKey("Concelho")]
+        public int IdConcelho { get; set; } 
+
+        public Concelho Concelho { get; set; }  
+
         public string Email { get; set; }
+
         public int? Telefone { get; set; }
+
         public int? NoFuncionarios { get; set; }
+
         public string? ZonaAtuacao { get; set; }
+
         public string? LinkedIn { get; set; }
+
         public string? Facebook { get; set; }
 
         public virtual ICollection<LogoEmpresa>? LogoEmpresa { get; set; }
