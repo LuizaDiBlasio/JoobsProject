@@ -39,14 +39,14 @@ namespace JobPortal_API.Controllers
         {
             if (_context.Foto == null)
             {
-                return NotFound(new { mensagem = "404: Tabela de fotos não encontrada." });
+                return NotFound();
             }
 
             var foto = await _context.Foto.ProjectTo<FotoDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdCandidatoFoto == idCandidato);
             
             if (foto == null)
             {
-                return NotFound(new { mensagem = $"404: Nenhuma foto encontrada para o candidato com o ID {idCandidato}." });
+                return NotFound();
             }
 
             return Ok(foto);
@@ -62,7 +62,7 @@ namespace JobPortal_API.Controllers
 
             if (foto == null || foto.FotoPerfil == null)
             {
-                return NotFound(new { mensagem = $"404: Ficheiro de imagem não encontrado para o candidato {idCandidato}." });
+                return NotFound();
             }
 
             return File(foto.FotoPerfil, "image/jpeg");
@@ -88,12 +88,12 @@ namespace JobPortal_API.Controllers
             var jaTemFoto = await _context.Foto.AnyAsync(f => f.IdCandidatoFoto == fotoDTO.IdCandidatoFoto);
             if (jaTemFoto)
             {
-                return BadRequest(new { mensagem = $"400: O Candidato {fotoDTO.IdCandidatoFoto} já possui uma foto de perfil registada. Utilize o método PUT para atualizar." });
+                return BadRequest();
             }
             var foto = _mapper.Map<Foto>(fotoDTO);
             _context.Add(foto);
             await _context.SaveChangesAsync();
-            return Ok(new { mensagem = "Foto de perfil criada com sucesso!" });
+            return Ok();
         }
 
         //editar candidato
@@ -104,7 +104,7 @@ namespace JobPortal_API.Controllers
             var foto = await _context.Foto.FirstOrDefaultAsync(c => c.Id == id);
             if (foto == null)
             {
-                return NotFound(new { mensagem = $"404: Registo de foto com o ID {id} não foi encontrado." });
+                return NotFound();
             }
 
             // SEGURANÇA INTERNA EM LINHA: Tranca para que o candidato só mexa na sua própria foto
@@ -123,7 +123,7 @@ namespace JobPortal_API.Controllers
             // Verificar se o IdCandidatoFoto corresponde
             if (foto.IdCandidatoFoto != fotoDTO.IdCandidatoFoto)
             {
-                return BadRequest(new { mensagem = "400: O IdCandidatoFoto não pode ser alterado." });
+                return BadRequest();
             }
 
             // 🎯 O TRUQUE CIRÚRGICO: Força o ID da URL de volta no DTO
@@ -133,7 +133,7 @@ namespace JobPortal_API.Controllers
             foto = _mapper.Map(fotoDTO, foto);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensagem = $"Foto de perfil atualizada com sucesso!" });
+            return Ok();
         }
 
         //delete
@@ -144,7 +144,7 @@ namespace JobPortal_API.Controllers
             var foto = await _context.Foto.FirstOrDefaultAsync(c => c.IdCandidatoFoto == id);
             if (foto == null)
             {
-                return NotFound(new { mensagem = $"404: Nenhuma foto encontrada para o candidato {id}." });
+                return NotFound();
             }
 
             // SEGURANÇA INTERNA EM LINHA: Impede o Candidato X de apagar a foto do Candidato Y
@@ -163,7 +163,7 @@ namespace JobPortal_API.Controllers
             _context.Foto.Remove(foto);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensagem = $"Foto do candidato {id} removida com sucesso!" });
+            return Ok();
         }
 
         [AllowAnonymous] // <- Mantido para garantir que a rota continua pública como no teu original
@@ -172,7 +172,7 @@ namespace JobPortal_API.Controllers
         {
             if (_context.Foto == null)
             {
-                return NotFound(new { mensagem = "404: Tabela de fotos inexistente." });
+                return NotFound();
             }
 
             var foto = await _context.Foto
@@ -181,7 +181,7 @@ namespace JobPortal_API.Controllers
 
             if (foto == null)
             {
-                return NotFound(new { mensagem = $"404: Foto não encontrada para o candidato {idCandidato}." });
+                return NotFound();
             }
 
             return Ok(foto);
