@@ -24,7 +24,7 @@ namespace JobPortal_API.Controllers
         }
 
         //Busca todos as aplicações
-        [Authorize(Roles = "Admin, Empresa")]
+        [Authorize(Roles = "Admin, Empresa")]  // ??? O BuscarTodas deve ser exclusivo para Admin. Deixar Empresa ali é uma brecha de segurança.???
         [HttpGet("BuscarTodas")]
         public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoTrabalho()
         {
@@ -125,6 +125,8 @@ namespace JobPortal_API.Controllers
         // RESUMO: "No método BuscarPorIdCandidato/{id}, o parâmetro id da URL não serve apenas para filtrar o banco de dados. Ele funciona como uma camada de segurança.
         // Nós usamos o ID extraído do Token para validar se o usuário logado tem permissão real de acessar o id solicitado na URL. Isso impede que um candidato mude o
         // ID na URL para espionar as candidaturas de outra pessoa, ao mesmo tempo em que permite que um Admin consulte o histórico de qualquer candidato passando o ID pela rota."
+
+        // BuscarPorIdCandidato de forma brilhante. Fizeste a validação cruzada do ID da rota com o ID do Token (e abrindo exceção para o Admin).
         [HttpGet("BuscarPorIdCandidato/{id}")]
         public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoCandidato(int id)
         {
