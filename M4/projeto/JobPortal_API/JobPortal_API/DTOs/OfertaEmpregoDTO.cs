@@ -4,9 +4,15 @@ namespace JobPortal_API.DTOs
 {
     public class OfertaEmpregoDTO
     {
-        [JsonIgnore] // <--- ISTO ESCONDE O CAMPO NO SWAGGER!
+        /// <summary>
+        /// Identificador único da Oferta de Emprego.
+        /// Nota de Fluxo: Gerado automaticamente pela base de dados. Deve ser omitido no POST, mas é obrigatório na rota do PUT.
+        /// </summary>
         public int IdOferta { get; set; }
-        [JsonIgnore] // <--- ISTO ESCONDE O CAMPO NO SWAGGER!
+        /// <summary>
+        /// Identificador da Empresa que publicou a vaga.
+        /// Nota de Fluxo: Em operações de escrita (POST/PUT), o sistema ignora o valor enviado pelo cliente e injeta de forma segura o ID extraído das Claims do Token JWT do utilizador autenticado.
+        /// </summary>
         public int IdEmpresa { get; set; }
         public string Titulo { get; set; }
         public float? Salario { get; set; }

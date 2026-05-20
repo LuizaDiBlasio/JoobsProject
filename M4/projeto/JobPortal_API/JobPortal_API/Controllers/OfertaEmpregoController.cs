@@ -169,12 +169,18 @@ namespace JobPortal_API.Controllers
                 }
             }
 
-            // mapeamento e o Update ...
-            var oferta = _mapper.Map<OfertaEmprego>(ofertaDTO);
-            _context.Update(oferta);
+            // 1) Carrega a oferta existente para rastreamento (tracking) do EF
+            var ofertaNoBanco = await _context.OfertaEmprego.FirstOrDefaultAsync(c => c.IdOferta == id);
+            if (ofertaNoBanco == null)
+            {
+                return NotFound();
+            }
+
+            // 2) Mapeia as alterações do DTO por cima do objeto rastreado
+            _mapper.Map(ofertaDTO, ofertaNoBanco);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensagem = "Oferta alterada com sucesso!" });
+            return Ok(); // Retorno limpo padrão da main
         }
 
         [Authorize(Roles = "Admin,Empresa")]
