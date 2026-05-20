@@ -40,6 +40,26 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = false,
         RoleClaimType = ClaimTypes.Role
     };
+
+    // ALTERAÇÃO: add de msg padrão.
+    // Trata o erro 403 (Forbidden) quando o usuário está autenticado, mas tenta 
+    // acessar um recurso de outra Role (ex: Empresa tentando editar Candidato).
+    // Garante que o Swagger e o Cliente recebam uma mensagem amigável em JSON.
+    options.Events = new JwtBearerEvents
+    {
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = 403;
+            context.Response.ContentType = "application/json";
+
+            var result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                mensagem = "403: Acesso negado. Não tem permissão para acessar este recurso."
+            });
+
+            return context.Response.WriteAsync(result);
+        }
+    };
 });
 
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
@@ -69,8 +89,14 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "JobPortal_API", Version = "v1" });
 
-    // Configuração de segurança para o cadeado (JWT)
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+// ---- ALTERAÇÃO: Corrige saída no gráfico confuso do IFormFile (FileController) ----
+// (Ela vai limpar o ecrã de TODOS os teus uploads automaticamente)
+    c.OperationFilter<SwaggerFileOperationFilter>();
+
+// ----- fim ALTERAÇÃO
+
+// Configuração de segurança para o cadeado (JWT)
+c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,

@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace JobPortal_API.DTOs
 {
     public class CandidatoDTO
     {
+        [JsonIgnore] // <--- Isto faz o ID desaparecer do JSON do Swagger!
         public int IdCandidato { get; set; }
         public string Nome { get; set; }
         public string Email { get; set; }

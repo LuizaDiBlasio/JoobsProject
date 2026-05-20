@@ -34,6 +34,10 @@ namespace JobPortal_API.Utilities
 
             CreateMap<ReviewDTO, Review>();
             CreateMap<Review, ReviewDTO>();
+
+            CreateMap<AplicacaoTrabalho, AplicacaoTrabalhoExibirDTO>();
+
+            CreateMap<CV, CVExibirDTO>();
         }
     }
 }

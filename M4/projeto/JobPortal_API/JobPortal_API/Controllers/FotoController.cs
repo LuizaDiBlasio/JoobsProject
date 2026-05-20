@@ -6,16 +6,18 @@ using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
-
+    [Authorize] // <- Adicionado para proteger o controller por padrão
     [ApiController]
     [Route("api/foto")]
     public class FotoController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+
         public FotoController(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
@@ -23,11 +25,13 @@ namespace JobPortal_API.Controllers
         }
 
         //todos os registros
+        [Authorize(Roles = "Admin")]
         [HttpGet("TodasFotos")]
         public async Task<IEnumerable<FotoDTO>> GetFoto()
         {
             return await _context.Foto.ProjectTo<FotoDTO>(_mapper.ConfigurationProvider).ToListAsync();
         }
+
         //busca por ID do candidato
         [AllowAnonymous]
         [HttpGet("FotoPorId{id}")]
@@ -35,12 +39,14 @@ namespace JobPortal_API.Controllers
         {
             if (_context.Foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = "404: Tabela de fotos não encontrada." });
             }
+
             var foto = await _context.Foto.ProjectTo<FotoDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdCandidatoFoto == idCandidato);
+            
             if (foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"404: Nenhuma foto encontrada para o candidato com o ID {idCandidato}." });
             }
 
             return Ok(foto);
@@ -56,65 +62,117 @@ namespace JobPortal_API.Controllers
 
             if (foto == null || foto.FotoPerfil == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"404: Ficheiro de imagem não encontrado para o candidato {idCandidato}." });
             }
 
             return File(foto.FotoPerfil, "image/jpeg");
         }
 
-        
+
         //Criar candidato
+        [Authorize(Roles = "Candidato,Admin")]
         [HttpPost("CriarFoto")]
         public async Task<ActionResult> PostFoto(FotoDTO fotoDTO)
         {
+            // SEGURANÇA: Se for candidato, força o ID do Token para evitar fraudes
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            var roleLogada = identity?.FindFirst(ClaimTypes.Role)?.Value;
+            var idLogadoClaim = identity?.FindFirst("IdCandidato")?.Value;
+
+            if (roleLogada == "Candidato" && !string.IsNullOrEmpty(idLogadoClaim))
+            {
+                fotoDTO.IdCandidatoFoto = int.Parse(idLogadoClaim);
+            }
+
+            // VALIDAÇÃO DE DUPLICADO: Evita criar duas fotos para o mesmo candidato
+            var jaTemFoto = await _context.Foto.AnyAsync(f => f.IdCandidatoFoto == fotoDTO.IdCandidatoFoto);
+            if (jaTemFoto)
+            {
+                return BadRequest(new { mensagem = $"400: O Candidato {fotoDTO.IdCandidatoFoto} já possui uma foto de perfil registada. Utilize o método PUT para atualizar." });
+            }
             var foto = _mapper.Map<Foto>(fotoDTO);
             _context.Add(foto);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new { mensagem = "Foto de perfil criada com sucesso!" });
         }
 
         //editar candidato
+        [Authorize(Roles = "Candidato,Admin")]
         [HttpPut("{id:int}")]
         public async Task<ActionResult> PutFoto(int id, FotoDTO fotoDTO)
         {
             var foto = await _context.Foto.FirstOrDefaultAsync(c => c.Id == id);
             if (foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"404: Registo de foto com o ID {id} não foi encontrado." });
+            }
+
+            // SEGURANÇA INTERNA EM LINHA: Tranca para que o candidato só mexa na sua própria foto
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            var roleLogada = identity?.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (roleLogada == "Candidato")
+            {
+                var idsLogados = identity?.FindAll("IdCandidato").Select(c => c.Value) ?? Enumerable.Empty<string>();
+                if (!idsLogados.Contains(foto.IdCandidatoFoto.ToString()))
+                {
+                    return Forbid(); // 403 Bloqueado se tentar alterar a foto de outro
+                }
             }
 
             // Verificar se o IdCandidatoFoto corresponde
             if (foto.IdCandidatoFoto != fotoDTO.IdCandidatoFoto)
             {
-                return BadRequest("O IdCandidatoFoto não pode ser alterado.");
+                return BadRequest(new { mensagem = "400: O IdCandidatoFoto não pode ser alterado." });
             }
+
+            // 🎯 O TRUQUE CIRÚRGICO: Força o ID da URL de volta no DTO
+            // Isto impede o AutoMapper de tentar zerar o ID e quebrar o Entity Framework!
+            fotoDTO.Id = id;
 
             foto = _mapper.Map(fotoDTO, foto);
             await _context.SaveChangesAsync();
-            return Ok();
+
+            return Ok(new { mensagem = $"Foto de perfil atualizada com sucesso!" });
         }
 
         //delete
+        [Authorize(Roles = "Candidato,Admin")]
         [HttpDelete("DeletarFoto/{id:int}")]
         public async Task<ActionResult> DeleteFoto(int id)
         {
             var foto = await _context.Foto.FirstOrDefaultAsync(c => c.IdCandidatoFoto == id);
             if (foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"404: Nenhuma foto encontrada para o candidato {id}." });
             }
+
+            // SEGURANÇA INTERNA EM LINHA: Impede o Candidato X de apagar a foto do Candidato Y
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            var roleLogada = identity?.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (roleLogada == "Candidato")
+            {
+                var idsLogados = identity?.FindAll("IdCandidato").Select(c => c.Value) ?? Enumerable.Empty<string>();
+                if (!idsLogados.Contains(id.ToString()))
+                {
+                    return Forbid(); // 403 Forbidden
+                }
+            }
+
             _context.Foto.Remove(foto);
             await _context.SaveChangesAsync();
 
-            return Ok();
+            return Ok(new { mensagem = $"Foto do candidato {id} removida com sucesso!" });
         }
 
+        [AllowAnonymous] // <- Mantido para garantir que a rota continua pública como no teu original
         [HttpGet("ByCandidato/{idCandidato}")]
         public async Task<ActionResult<FotoDTO>> GetFotoJson(int idCandidato)
         {
             if (_context.Foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = "404: Tabela de fotos inexistente." });
             }
 
             var foto = await _context.Foto
@@ -123,11 +181,10 @@ namespace JobPortal_API.Controllers
 
             if (foto == null)
             {
-                return NotFound();
+                return NotFound(new { mensagem = $"404: Foto não encontrada para o candidato {idCandidato}." });
             }
 
             return Ok(foto);
         }
-
     }
 }

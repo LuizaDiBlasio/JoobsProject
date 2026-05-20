@@ -28,6 +28,7 @@ namespace JobPortal_API.Controllers
         {
             return await _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).ToListAsync();
         }
+
         //busca por ID da Empresa
         [AllowAnonymous]
         [HttpGet("{idEmpresa}")]
@@ -45,7 +46,6 @@ namespace JobPortal_API.Controllers
 
             return await logo;
         }
-
         
         //Criar logo
         [HttpPost]
@@ -59,9 +59,9 @@ namespace JobPortal_API.Controllers
 
         //Edit/Update pelo id da empresa
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> PutLogo(LogoEmpresaDTO logoDTO, int id)
+        public async Task<ActionResult> PutLogo(LogoEmpresaDTO logoDTO, int idEmpresa)
         {
-            var logo = await _context.LogoEmpresa.FirstOrDefaultAsync(c => c.IdEmpresaFoto == id);
+            var logo = await _context.LogoEmpresa.FirstOrDefaultAsync(c => c.IdEmpresaFoto == idEmpresa);
             if (logo == null)
             {
                 return NotFound();
@@ -71,6 +71,7 @@ namespace JobPortal_API.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
         //delete
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> DeleteLogo(int id)
@@ -137,8 +138,5 @@ namespace JobPortal_API.Controllers
             // Se for outro formato, ajusta o content-type conforme necessário.
             return File(logo.Logo, "image/jpeg");
         }
-
-
     }
-
 }

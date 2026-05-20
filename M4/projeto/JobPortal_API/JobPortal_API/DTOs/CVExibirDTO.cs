@@ -1,12 +1,8 @@
-﻿using System.Text.Json.Serialization;
-
-namespace JobPortal_API.DTOs
+﻿namespace JobPortal_API.DTOs
 {
-    public class CVDTO
+    public class CVExibirDTO
     {
-        [JsonIgnore] // Escondido: Gerado automaticamente pelo banco
         public int IdCV { get; set; }
-        [JsonIgnore] // Escondido: Injetado via Token JWT por segurança
         public int IdCandidatoCv { get; set; }
         public string Nome { get; set; }
         public string Localizacao { get; set; }

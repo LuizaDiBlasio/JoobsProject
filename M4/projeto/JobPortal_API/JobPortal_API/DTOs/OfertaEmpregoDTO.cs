@@ -1,8 +1,12 @@
-﻿namespace JobPortal_API.DTOs
+﻿using System.Text.Json.Serialization;
+
+namespace JobPortal_API.DTOs
 {
     public class OfertaEmpregoDTO
     {
+        [JsonIgnore] // <--- ISTO ESCONDE O CAMPO NO SWAGGER!
         public int IdOferta { get; set; }
+        [JsonIgnore] // <--- ISTO ESCONDE O CAMPO NO SWAGGER!
         public int IdEmpresa { get; set; }
         public string Titulo { get; set; }
         public float? Salario { get; set; }

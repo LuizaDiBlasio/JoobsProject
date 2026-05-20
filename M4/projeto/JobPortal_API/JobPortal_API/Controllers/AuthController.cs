@@ -50,8 +50,9 @@ namespace JobPortal_API.Controllers
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, model.Role); // "Admin", "Candidato", "Empresa"
-                                
-                if (model.Role == "Candidato")
+
+                // ALTERAÇÃO: Validação para Candidato (ignora maiúsculas/minúsculas)
+                if (model.Role != null && model.Role.Equals("Candidato", StringComparison.OrdinalIgnoreCase))
                 {
                     var candidato = new Candidato
                     {
@@ -61,7 +62,8 @@ namespace JobPortal_API.Controllers
                     };
                     _context.Candidato.Add(candidato);
                 }
-                else if (model.Role == "Empresa")
+                // ALTERAÇÃO: Validação para Empresa (ignora maiúsculas/minúsculas tbm)
+                else if (model.Role != null && model.Role.Equals("Empresa", StringComparison.OrdinalIgnoreCase))
                 {
                     var empresa = new Empresa
                     {
@@ -145,6 +147,10 @@ namespace JobPortal_API.Controllers
             {
                 claims.Add(new Claim("IdEmpresa", idEmpresa));
             }
+
+            // Adiciona os IDs de negócio aos Claims para que os filtros (ex: VerificaCandidatoFilter) de autorização consigam validar o proprietário dos dados.
+            if (!string.IsNullOrEmpty(idCandidato)) claims.Add(new Claim("IdCandidato", idCandidato));
+            if (!string.IsNullOrEmpty(idEmpresa)) claims.Add(new Claim("IdEmpresa", idEmpresa));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("minha-chave-jwt-supersecreta"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
