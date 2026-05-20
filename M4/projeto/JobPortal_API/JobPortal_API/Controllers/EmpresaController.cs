@@ -27,18 +27,16 @@ namespace JobPortal_API.Controllers
             _userManager = userManager;
         }
 
-        //Buscar todas as empresas
-        [Authorize(Roles = "Admin")] 
-        [HttpGet("BuscarTodas")]        
-        public async Task<ActionResult<IEnumerable<EmpresaDTO>>> GetEmpresa()
+        //Buscar todas as empresas        
+        [Authorize(Roles = "Admin")]
+        [HttpGet("BuscarTodas")]
+        public async Task<IEnumerable<EmpresaDTO>> GetEmpresa()
         {
-            // Se for Admin, o código continua normalmente
-            var empresas = await _context.Empresa
+            return await _context.Empresa
                 .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-
-            return Ok(empresas);
         }
+
 
         //Buscar empresa por ID
         [Authorize(Roles = "Admin, Empresa")]
@@ -153,7 +151,7 @@ namespace JobPortal_API.Controllers
                 }
             }
 
-            return Ok(new {mensagem = "Dados da empresa alterados com sucesso!"});
+            return Ok();
         }
 
         //Deletar Empresa
@@ -203,7 +201,7 @@ namespace JobPortal_API.Controllers
 
             // 5) Persiste todas as deleções
             await _context.SaveChangesAsync();
-            return Ok(new { mensagem = "Empresa e todos os dados relacionados foram deletados." });
+            return Ok("Empresa e todos os dados relacionados foram deletados.");
         }
 
         //Mudar senha
@@ -213,10 +211,7 @@ namespace JobPortal_API.Controllers
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordEmpresaDTO dto)
         {
             if (id != dto.IdEmpresa)
-                return StatusCode(StatusCodes.Status403Forbidden, new
-                {
-                    mensagem = "Acesso negado."
-                });
+                return Forbid();
 
             // 1) Carrega o candidato para obter o UserId
             var empresa = await _context.Empresa

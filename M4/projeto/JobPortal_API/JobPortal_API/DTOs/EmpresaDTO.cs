@@ -1,10 +1,15 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace JobPortal_API.DTOs
 {
     public class EmpresaDTO
     {
-        [JsonIgnore] // <--- Alteração para ignorar a propriedade "IdEmpresa na serialização JSON.
+        /// <summary>
+        /// Identificador único da empresa. 
+        /// Nota de Fluxo: Este campo é gerado automaticamente pelo banco de dados. Deve ser omitido/ignorado no payload de criação (POST) e edição (PUT), mas é obrigatório e retornado nos fluxos de leitura (GET) para consumo do Front-end e validação de filtros.
+        /// </summary>
+        [Description("ID único da Empresa - Ignorar em mutações (POST/PUT), obrigatório em consultas (GET)")]
         public int IdEmpresa { get; set; }
         public string Nome { get; set; }
         public string? Localidade { get; set; }
