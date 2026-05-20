@@ -27,16 +27,16 @@ namespace JobPortal_API.Controllers
         // GET api/cv
         [Authorize(Roles = "Admin")] // ALTERAÇÃO: Apenas Admin deve listar todos os CVs do sistema
         [HttpGet]
-        public async Task<IEnumerable<CVExibirDTO>> GetAll()
+        public async Task<IEnumerable<CVDTO>> GetAll()
         {
             return await _context.CV
-                .ProjectTo<CVExibirDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<CVDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }
 
         // GET api/cv/idCandidato?idCandidato=123
         [HttpGet("idCandidato")]
-        public async Task<ActionResult<CVExibirDTO>> GetByCandidato([FromQuery] int idCandidato)
+        public async Task<ActionResult<CVDTO>> GetByCandidato([FromQuery] int idCandidato)
         {
             // ALTERAÇÃO: Validação de Segurança: Candidato só vê o próprio CV (Admin ignora o bloqueio)
             var identity = HttpContext.User.Identity as ClaimsIdentity;
@@ -48,16 +48,16 @@ namespace JobPortal_API.Controllers
 
             if (idCandidatoLogado != idCandidato && !User.IsInRole("Admin") && !User.IsInRole("Empresa"))
             {
-                return StatusCode(403, new { mensagem = "Acesso negado: Você não pode ver o currículo de terceiros." });
+                return Forbid();
             }
             // Fim da ALTERAÇÃO
 
             var cv = await _context.CV
                 .Where(c => c.IdCandidatoCv == idCandidato)
-                .ProjectTo<CVExibirDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<CVDTO>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
-            if (cv == null) return NotFound(new { mensagem = "Currículo não encontrado para este candidato." });
+            if (cv == null) return NotFound();
 
             return Ok(cv);
         }
@@ -73,7 +73,7 @@ namespace JobPortal_API.Controllers
 
             if (string.IsNullOrEmpty(idCandidatoClaim))
             {
-                return Unauthorized(new { mensagem = "Candidato não autenticado." });
+                return Unauthorized();
             }
 
             int idCandidatoLogado = int.Parse(idCandidatoClaim);
@@ -85,9 +85,8 @@ namespace JobPortal_API.Controllers
             var jaExiste = await _context.CV.AnyAsync(c => c.IdCandidatoCv == idCandidatoLogado);
             if (jaExiste)
             {
-                return BadRequest(new { mensagem = "Você já possui um currículo cadastrado. Use o método PUT para atualizar." });
+                return BadRequest();
             }
-            // Fim da ALTERAÇÃO
 
             var cv = _mapper.Map<CV>(cvDTO);
             _context.CV.Add(cv);
@@ -104,9 +103,11 @@ namespace JobPortal_API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<CVDTO>> PutCv(int id, [FromBody] CVDTO cvDTO)
         {
+            if (id != cvDTO.IdCV) return BadRequest();
+
             // 1. Busca o currículo alvo no banco
             var cvNoBanco = await _context.CV.FindAsync(id);
-            if (cvNoBanco == null) return NotFound(new { mensagem = "Currículo não encontrado." });
+            if (cvNoBanco == null) return NotFound();
 
             // 2. Captura a identidade do Token
             var identity = HttpContext.User.Identity as ClaimsIdentity;
@@ -118,7 +119,7 @@ namespace JobPortal_API.Controllers
             // 3. SEGURANÇA CHAVE: O currículo pertence ao candidato logado?
             if (cvNoBanco.IdCandidatoCv != idCandidatoLogado && !User.IsInRole("Admin"))
             {
-                return StatusCode(403, new { mensagem = "Acesso negado: Você não tem permissão para alterar este currículo." });
+                return Forbid();
             }
 
             // Garante consistência de IDs antes do mapeamento
