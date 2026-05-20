@@ -126,7 +126,7 @@ namespace JobPortal_API.Controllers
         // Nós usamos o ID extraído do Token para validar se o usuário logado tem permissão real de acessar o id solicitado na URL. Isso impede que um candidato mude o
         // ID na URL para espionar as candidaturas de outra pessoa, ao mesmo tempo em que permite que um Admin consulte o histórico de qualquer candidato passando o ID pela rota."
         [HttpGet("BuscarPorIdCandidato/{id}")]
-        public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoExibirDTO>>> GetAplicacaoCandidato(int id)
+        public async Task<ActionResult<IEnumerable<AplicacaoTrabalhoDTO>>> GetAplicacaoCandidato(int id)
         {
             // Pega o valor do claim primeiro
             // 1. O Claim de NameIdentifier no Identity é uma STRING (GUID), não um int.
@@ -154,12 +154,12 @@ namespace JobPortal_API.Controllers
 
             // 3. BUSCA REAL
             // Busca usando o DTO de Exibir para o Entity Framework trazer o IdAplicacao do banco
-            var candidaturasExibir = await _context.AplicacaoTrabalho
+            var candidaturas = await _context.AplicacaoTrabalho
                 .Where(a => a.IdCandidato == id)
-                .ProjectTo<AplicacaoTrabalhoExibirDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<AplicacaoTrabalhoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
           
-            return Ok(candidaturasExibir);
+            return Ok(candidaturas);
         }
         /*public async Task<ActionResult<AplicacaoTrabalhoDTO>> GetAplicacaoCandidato(int idCandidato)
         {

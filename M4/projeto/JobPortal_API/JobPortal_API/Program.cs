@@ -89,14 +89,23 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "JobPortal_API", Version = "v1" });
 
-// ---- ALTERAÇÃO: Corrige saída no gráfico confuso do IFormFile (FileController) ----
-// (Ela vai limpar o ecrã de TODOS os teus uploads automaticamente)
+    // =======================================================================
+    // VINCULAÇÃO DO XML DE DOCUMENTAÇÃO AO SWAGGER UI
+    // =======================================================================
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+    // =======================================================================
+
+    // ---- ALTERAÇÃO: Corrige saída no gráfico confuso do IFormFile (FileController) ----
     c.OperationFilter<SwaggerFileOperationFilter>();
 
-// ----- fim ALTERAÇÃO
 
-// Configuração de segurança para o cadeado (JWT)
-c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    // Configuração de segurança para o cadeado (JWT)
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,

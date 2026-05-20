@@ -1,16 +1,40 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace JobPortal_API.DTOs
 {
     public class AplicacaoTrabalhoDTO
     {
-        [JsonIgnore] // Esconde o ID da aplicação (gerado pelo banco) - Isso faz o campo sumir do Swagger e do JSON de entrada
+        /// <summary>
+        /// ATENÇÃO: Campo gerado automaticamente pela Base de Dados. 
+        /// Ignorar no POST (Criação). Necessário no PUT (Edição) se enviado no corpo.
+        /// </summary>
+        [Description("Identificador único da aplicação. Gerado automaticamente pelo banco no POST.")]
         public int IdAplicacao { get; set; }
+
+        /// <summary>
+        /// ID da Oferta de Emprego à qual o candidato se está a candidatar.
+        /// </summary>
+        [Description("ID da vaga/oferta de emprego (Obrigatório).")]
         public int IdOferta { get; set; }
-        [JsonIgnore] // ALTERAÇÃO: Esconde o ID do Candidato (injetado via Token JWT)
+
+        /// <summary>
+        /// ATENÇÃO: No POST/PUT este campo é ignorado e preenchido automaticamente via Token JWT.
+        /// </summary>
+        [Description("Injetado automaticamente pelo Back-end via Token JWT.")]
         public int IdCandidato { get; set; }
+
+        /// <summary>
+        /// Data em que a candidatura foi realizada. Preenchida automaticamente com o horário atual.
+        /// </summary>
+        [Description("Data da candidatura. Gerada automaticamente como o horário atual.")]
         public DateTime DataAplicacao { get; set; } = DateTime.Now;
-        [JsonIgnore] // ALTERAÇÃO: Esconde o status (controlado apenas pela Empresa no futuro)
+
+        /// <summary>
+        /// Estado da candidatura (Aceite/Recusado/Pendente). 
+        /// ATENÇÃO: No POST este campo nasce como null e só deve ser alterado pela Empresa no futuro.
+        /// </summary>
+        [Description("Status da candidatura. Controlado apenas pela Empresa. Nasce como null.")]
         public string? aplicacaoAceite { get; set; } = null;
     }
 }
