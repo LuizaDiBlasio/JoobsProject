@@ -6,10 +6,11 @@ using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
-
+    //[Authorize] // <- Adicionado para proteger os endpoints por padrão
     [ApiController]
     [Route("api/logo")]
     public class LogoController : ControllerBase
@@ -38,36 +39,58 @@ namespace JobPortal_API.Controllers
             {
                 return NotFound();
             }
-            var logo = _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresaFoto == idEmpresa);
+            var logo = await _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresaFoto == idEmpresa);
             if (logo == null)
             {
                 return NotFound();
             }
 
-            return await logo;
+            return Ok(logo);
         }
         
         //Criar logo
         [HttpPost]
         public async Task<ActionResult> PostLogo(LogoEmpresaDTO logoDTO)
         {
+            // ALTERAÇÃO: SEGURANÇA: Injeta o ID da Empresa logada se for o perfil Empresa
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    logoDTO.IdEmpresaFoto = int.Parse(idEmpresaClaim);
+                }
+            }
+
             var logo = _mapper.Map<LogoEmpresa>(logoDTO);
             _context.Add(logo);
             await _context.SaveChangesAsync();
-            return Ok(logo);
+            return Ok();
         }
 
         //Edit/Update pelo id da empresa
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> PutLogo(LogoEmpresaDTO logoDTO, int idEmpresa)
+        public async Task<ActionResult> PutLogo(LogoEmpresaDTO logoDTO, int id)
         {
-            var logo = await _context.LogoEmpresa.FirstOrDefaultAsync(c => c.IdEmpresaFoto == idEmpresa);
+            var logo = await _context.LogoEmpresa.FirstOrDefaultAsync(c => c.IdEmpresaFoto == id);
             if (logo == null)
             {
                 return NotFound();
             }
-            logo = _mapper.Map(logoDTO, logo);
 
+            // ALTERAÇÃO: SEGURANÇA: Impede que uma empresa edite o logo de outra
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim) && int.Parse(idEmpresaClaim) != logo.IdEmpresaFoto)
+                {
+                    return Forbid();
+                }
+            }
+
+            _mapper.Map(logoDTO, logo);
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -94,7 +117,18 @@ namespace JobPortal_API.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest("Nenhum ficheiro foi enviado.");
+                return BadRequest();
+            }
+
+            // ALTERAÇÃO:SEGURANÇA: Força o ID do token se for perfil Empresa
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    IdEmpresaFoto = int.Parse(idEmpresaClaim);
+                }
             }
 
             byte[] logoBytes;
@@ -110,7 +144,7 @@ namespace JobPortal_API.Controllers
             {
                 existingLogo.Logo = logoBytes;
                 await _context.SaveChangesAsync();
-                return Ok(existingLogo);
+                return Ok();
             }
             else
             {
@@ -121,7 +155,7 @@ namespace JobPortal_API.Controllers
                 };
                 _context.LogoEmpresa.Add(newLogo);
                 await _context.SaveChangesAsync();
-                return Ok(newLogo);
+                return Ok();
             }
         }
 
