@@ -59,11 +59,7 @@ namespace JobPortal_API.Controllers
             // 3. SAÍDA PERSONALIZADA PARA O 404
             if (dto == null)
             {
-                return NotFound(new
-                {
-                    sucesso = false,
-                    mensagem = $"404: Nenhum currículo foi encontrado para o candidato com o ID {idCandidato}."
-                });
+                return NotFound();
             }
 
             // 4. RETORNO COM SUCESSO (200 OK)
@@ -84,7 +80,7 @@ namespace JobPortal_API.Controllers
             // Validação limpa de segurança (ajustada a mensagem para Bad Request padrão)
             // se o ficheiro vier corrompido ou vazio, a API avisa o utilizador de forma limpa em vez de mandar um erro genérico 500.
             if (file == null || file.Length == 0)
-                return BadRequest("400: Ficheiro inválido.");
+                return BadRequest();
 
             // PEGAR INFORMAÇÃO DO TOKEN
             var identity = HttpContext.User.Identity as ClaimsIdentity;
@@ -102,11 +98,8 @@ namespace JobPortal_API.Controllers
 
             if (jaTemCv)
             {
-                return BadRequest(new
-                {
-                    mensagem = $"400: O Candidato {idCandidatoAlvo} já possui um currículo registado. Não é possível adicionar um novo. Utilize o método PUT."
-                });
-            }            
+                return BadRequest();
+            }
 
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);           
@@ -121,17 +114,9 @@ namespace JobPortal_API.Controllers
             };
 
             _context.FileCV.Add(ent);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();     
 
-            // // RETORNO DINÂMICO CONFORME A REALIDADE: MELHORIA NA MENSAGEM DE RETORNO 
-            if (foiViaToken)
-            {
-                return Ok(new { mensagem = $"Ficheiro guardado com sucesso via Token para o Candidato {ent.IdCandidatoFile}!" });
-            }
-            else
-            {
-                return Ok(new { mensagem = $"Ficheiro guardado com sucesso via Formulário (Admin) para o Candidato {idCandidatoFile}!" });
-            }
+            return Ok();
         }
 
 
@@ -162,7 +147,7 @@ namespace JobPortal_API.Controllers
 
             // Validação de segurança do ficheiro: se o ficheiro vier corrompido ou vazio, a API avisa o utilizador de forma limpa em vez de mandar um erro genérico 500.
             if (file == null || file.Length == 0)
-                return BadRequest("400: Ficheiro inválido ou vazio.");
+                return BadRequest();
 
             // Procura se o candidato já tem um arquivo salvo
             var ent = await _context.FileCV
@@ -171,10 +156,7 @@ namespace JobPortal_API.Controllers
             // Se o registo não existir na tabela, manda a mensagem de orientação amigável
             if (ent == null)
             {
-                return NotFound(new
-                {
-                    mensagem = $"O Candidato {idCandidato} ainda não possui um currículo registado na base de dados. Não é possível atualizar um registo inexistente. Por favor, utilize o método POST para realizar o primeiro envio do ficheiro."
-                });
+                return NotFound();
             }
 
             // Processamento seguro do Stream
@@ -189,10 +171,7 @@ namespace JobPortal_API.Controllers
             await _context.SaveChangesAsync();
 
             // Retorno amigável
-            return Ok(new
-            {
-                mensagem = $"Ficheiro de currículo do Candidato {idCandidato} atualizado com sucesso!"
-            });
+            return Ok();
         }
 
 
@@ -207,12 +186,12 @@ namespace JobPortal_API.Controllers
 
             if (ent == null)
             {
-                return NotFound(new { mensagem = $"Nenhum currículo encontrado para o Candidato {idCandidato} para ser removido." });
+                return NotFound();
             }
             _context.FileCV.Remove(ent);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensagem = $"Ficheiro de currículo do Candidato {idCandidato} removido com sucesso!" });
+            return Ok();
         }
     }
 }
