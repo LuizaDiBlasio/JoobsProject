@@ -30,15 +30,13 @@ namespace JobPortal_API.Controllers
         //Buscar todos os registros de candidatos
         [Authorize(Roles = "Admin")]
         [HttpGet("BuscarTodos")]
-        public async Task<ActionResult<IEnumerable<CandidatoDTO>>> GetCandidato()
+        public async Task<IEnumerable<CandidatoDTO>> GetCandidato()
         {
-            // Se for Admin, o código continua normalmente
-            var candidatos = await _context.Candidato
+            return await _context.Candidato
                 .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-
-            return Ok(candidatos);
         }
+
 
         //Buscar por ID
         [Authorize(Roles = "Admin, Candidato")]
@@ -146,7 +144,7 @@ namespace JobPortal_API.Controllers
                 }
             }
 
-            return Ok(new { mensagem = "Dados do candidato alterados com sucesso!"});
+            return Ok();
         }
 
         //Deletar candidato
@@ -181,7 +179,7 @@ namespace JobPortal_API.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensagem = "Candidato e dados associados deletados com sucesso." });
+            return Ok("Candidato e dados associados deletados com sucesso.");
         }
 
         [Authorize(Roles = "Candidato, Admin")]
@@ -207,7 +205,7 @@ namespace JobPortal_API.Controllers
                              dto.NewPassword);
             if (!result.Succeeded) return BadRequest(result.Errors);
 
-            return Ok(new { mensagem = "Password alterada com sucesso" });
+            return Ok("Password alterada com sucesso");
         }
     }
 }
