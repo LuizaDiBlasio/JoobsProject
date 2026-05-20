@@ -47,7 +47,7 @@ namespace JobPortal_API.Controllers
             // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.Candidato == null)
             {
-                return NotFound(new { mensagem = $"(ID: {id}): Sem conexão com banco de dados." });
+                return NotFound();
             }
 
             var candidato = await _context.Candidato
@@ -58,7 +58,7 @@ namespace JobPortal_API.Controllers
             // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
             if (candidato == null)
             {
-                return NotFound(new { mensagem = $"(ID: {id}): Candidato não foi encontrado no sistema."});
+                return NotFound();
             }
 
             return Ok(candidato);
@@ -72,7 +72,7 @@ namespace JobPortal_API.Controllers
         public async Task<ActionResult<CandidatoDTO>> GetByEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new {mensagem = "Email não pode ser vazio."});
+                return BadRequest();
 
             // procura no banco
             var cand = await _context.Candidato
@@ -80,7 +80,7 @@ namespace JobPortal_API.Controllers
                               .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
                               .FirstOrDefaultAsync();
             if (cand == null)
-                return NotFound(new {mensagem = $"Candidato com email '{email}' não encontrado." });
+                return NotFound();
 
             return Ok(cand);
         }
@@ -93,22 +93,17 @@ namespace JobPortal_API.Controllers
         public async Task<ActionResult> PutCandidato(CandidatoDTO candidatoDTO, int id)
         {
             // SEGURANÇA: O ID do DTO deve ser igual ao da URL antes de salvar
+            // Garante que o ID da URL tenha precedência absoluta sobre o objeto
             candidatoDTO.IdCandidato = id;
 
-            if (candidatoDTO.IdCandidato != 0 && id != candidatoDTO.IdCandidato)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = "Acesso negado." });
-            }
-
-            // 1) Carrega o candidato EXISTENTE, incluindo o UserId
+           // 1) Carrega o candidato EXISTENTE, incluindo o UserId
             var candidato = await _context.Candidato
                 .FirstOrDefaultAsync(c => c.IdCandidato == id);
 
             if (candidato == null)
-                return NotFound(new { mensagem = "Acesso negado."});
+                return NotFound();
 
             var userId = candidato.UserId;            
-            //var emailAntigo = candidato.Email;        
 
             // 2) Atualiza os dados do candidato
             _mapper.Map(candidatoDTO, candidato);
@@ -155,7 +150,7 @@ namespace JobPortal_API.Controllers
         {
             var candidato = await _context.Candidato.FindAsync(id);
             if (candidato == null)
-                return NotFound(new { mensagem = "Acesso negado." });
+                return NotFound();
 
             // Deleta dados relacionados
             var aplicacoes = _context.AplicacaoTrabalho.Where(a => a.IdCandidato == id);
@@ -188,7 +183,7 @@ namespace JobPortal_API.Controllers
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDTO dto)
         {
             if (id != dto.IdCandidato)
-                return StatusCode(StatusCodes.Status403Forbidden, new { mensagem = "Acesso negado." });
+                return Forbid();
 
             // 1) Carrega o candidato para obter o UserId
             var candidato = await _context.Candidato.FirstOrDefaultAsync(c => c.IdCandidato == dto.IdCandidato);
