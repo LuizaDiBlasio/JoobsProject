@@ -1,14 +1,16 @@
 ﻿
+using System.Linq;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace JobPortal_API.Controllers
 {
@@ -34,9 +36,9 @@ namespace JobPortal_API.Controllers
 
         //Buscas todas as ofertas
         [HttpGet("TodasOfertas")]
-        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, string? regimeTrabalho, string? concelho)
+        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, int? regimeTrabalho, int? concelho)
         {
-            var oferta = _context.OfertaEmprego
+            var query = _context.OfertaEmprego
                          .Include(o => o.Concelho)
                          .Include(o=> o.TipoContrato)
                          .Where(o => o.VagaDisponivel == true)
@@ -44,42 +46,28 @@ namespace JobPortal_API.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                //oferta = oferta.Where(b =>
-                //    b.Titulo.Contains(search) ||
-                //    b.IsFullTime == true && "Full time".Contains(search) ||
-                //    b.IsFullTime == false && "Part time".Contains(search) ||
-                //    b.IsFullTime == null && "Flexível".Contains(search) ||
-                //    b.Concelho.NomeConcelho.Contains(search) ||
-                //    b.IsPresencial == true && "Presencial".Contains(search) ||
-                //    b.IsPresencial == false && "Remoto".Contains(search) ||
-                //    b.IsPresencial == null && "Hbrido".Contains(search) ||
-                //    b.TipoContrato.Tipo.Contains(search) ||
-                //    b.Requisitos.Contains(search));
 
-                oferta = oferta.Where(b =>
+                query = query.Where(b =>
                     b.Titulo.Contains(search) ||
-                    (b.IsFullTime == true && "Full time".Contains(search)) ||
-                    (b.IsFullTime == false && "Part time".Contains(search)) ||
-                    (b.IsFullTime == null && "Flexível".Contains(search)) ||
                     b.Concelho.NomeConcelho.Contains(search) ||
-                    (b.IsPresencial == true && "Presencial".Contains(search)) ||
-                    (b.IsPresencial == false && "Remoto".Contains(search)) ||
-                    (b.IsPresencial == null && "Hibrido".Contains(search)) || // Dica: considere usar "Híbrido".Contains(search) se usar acento
                     b.TipoContrato.Tipo.Contains(search) ||
                     b.Requisitos.Contains(search));
             }
 
-            if (!string.IsNullOrEmpty(regimeTrabalho))
+            // 2. Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
+            if (regimeTrabalho.HasValue && regimeTrabalho.Value > 0)
             {
-                oferta = oferta.Where(b => b.RegimeTrabalho.Contains(regimeTrabalho));
+                var regimeEnum = (RegimeTrabalhoEnum)regimeTrabalho.Value;
+                query = query.Where(b => b.RegimeTrabalho == regimeEnum);
             }
 
-            if (!string.IsNullOrEmpty(concelho))
+            // 3. Filtro Específico por Concelho (Combobox envia o ID)
+            if (concelho.HasValue && concelho.Value > 0)
             {
-                oferta = oferta.Where(b => b.Concelho.NomeConcelho.Contains(concelho));
+                query = query.Where(b => b.IdConcelho == concelho.Value);
             }
 
-            return await oferta
+            return await query
                 .ProjectTo<OfertaEmpregoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
         }

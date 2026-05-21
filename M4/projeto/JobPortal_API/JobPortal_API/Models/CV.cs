@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using JobPortal_API.Models.Enums;
 
 namespace JobPortal_API.Models
 {
@@ -17,12 +18,9 @@ namespace JobPortal_API.Models
 
         //public string Localizacao { get; set; } - Normalização da tabela
 
-        // public string? Educacao { get; set; } - Normalização da tabela
+        // public string? Educacao { get; set; } - Enum
 
-        [ForeignKey("Escolaridade")]
-        public int IdEscolaridade { get; set; }
-
-        public Escolaridade Escolaridade { get; set; }
+        public EscolaridadeEnum Escolaridade { get; set; }
 
         public string? ExpProfissional { get; set; }
 

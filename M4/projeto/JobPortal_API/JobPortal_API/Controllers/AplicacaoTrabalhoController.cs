@@ -192,10 +192,10 @@ namespace JobPortal_API.Controllers
                                 IdOferta = o.IdOferta,
                                 Titulo = o.Titulo,
                                 NomeConcelho = c.NomeConcelho,
-                                RegimeTrabalho = o.RegimeTrabalho,
+                                RegimeTrabalho = o.RegimeTrabalho.ToString(),
                                 TipoContrato = tc.Tipo,
                                 Salario = o.Salario,
-                                Jornada = o.Jornada,
+                                Jornada = o.Jornada.ToString(),
 
                                 NomeEmpresa = e.Nome
                             };

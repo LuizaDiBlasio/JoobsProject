@@ -20,7 +20,9 @@ namespace JobPortal_API.Utilities
             CreateMap<Empresa, EmpresaDTO>();
             CreateMap<EmpresaDTO, Empresa>();
 
-            CreateMap<OfertaEmprego, OfertaEmpregoDTO>();
+            CreateMap<OfertaEmprego, OfertaEmpregoDTO>()
+                .ForMember(dest => dest.RegimeTrabalho, opt => opt.MapFrom(src => src.RegimeTrabalho.ToString()))
+                .ForMember(dest => dest.Jornada, opt => opt.MapFrom(src => src.Jornada.ToString()));
             CreateMap<OfertaEmpregoDTO, OfertaEmprego>();
 
             CreateMap<Foto, FotoDTO>();
@@ -34,6 +36,13 @@ namespace JobPortal_API.Utilities
 
             CreateMap<ReviewDTO, Review>();
             CreateMap<Review, ReviewDTO>();
+
+            CreateMap<ConcelhoDTO, Concelho>();
+            CreateMap<Concelho, ConcelhoDTO>();
+
+            CreateMap<TipoContratoDTO, TipoContrato>();
+            CreateMap<TipoContrato, TipoContratoDTO>();
+
         }
     }
 }

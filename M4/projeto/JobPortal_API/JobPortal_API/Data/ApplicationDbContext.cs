@@ -90,14 +90,21 @@ namespace JobPortal_API.Data
                 .HasForeignKey(c => c.IdConcelho);
 
             modelBuilder.Entity<CV>()
-                .HasOne(c => c.Escolaridade)
-                .WithMany()
-                .HasForeignKey(c => c.IdEscolaridade);
+                .Property(cv => cv.Escolaridade)
+                .HasConversion<string>();
 
             modelBuilder.Entity<Empresa>()
                 .HasOne(c => c.Concelho)
                 .WithMany()
                 .HasForeignKey(c => c.IdConcelho);
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.RegimeTrabalho)
+                .HasConversion<string>(); // O EF converte o enum para string ao salvar
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.Jornada)
+                .HasConversion<string>();
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }

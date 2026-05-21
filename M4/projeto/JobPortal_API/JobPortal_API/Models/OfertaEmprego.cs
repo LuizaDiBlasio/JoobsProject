@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using JobPortal_API.Models.Enums;
 
 namespace JobPortal_API.Models
 {
@@ -44,23 +45,9 @@ namespace JobPortal_API.Models
 
         public int Contagem { get; set; } = 0;
 
-        public bool? IsFullTime { get; set; }
+        public  JornadaEnum Jornada { get; set; }
 
-        public string Jornada => IsFullTime switch
-        {
-            true => "Full time",
-            false => "Part time",
-            null => "Flexível"
-        };
-
-        public bool? IsPresencial { get; set; }
-
-        public string RegimeTrabalho => IsPresencial switch
-        {
-            true => "Presencial",
-            false => "Remoto",
-            null => "Híbrido"
-        };
+        public RegimeTrabalhoEnum RegimeTrabalho { get; set; }
 
 
 

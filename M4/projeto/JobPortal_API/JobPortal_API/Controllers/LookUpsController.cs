@@ -25,11 +25,14 @@ namespace JobPortal_API.Controllers
         [HttpGet("Concelhos")]
         public async Task<IEnumerable<ConcelhoDTO>> GetAllConcelhos()
         {
-            return await  _context.Concelho
+            return await _context.Concelho
                     .OrderBy(c => c.NomeConcelho)
                     .ProjectTo<ConcelhoDTO>(_mapper.ConfigurationProvider)
                     .ToListAsync();
+
+            
         }
+        
 
         [HttpGet("TiposContratos")]
         public async Task<IEnumerable<TipoContratoDTO>> GetAllTiposContratos()
