@@ -23,48 +23,49 @@
                         <input asp-for="Titulo" class="form-control" placeholder="Título..." required />
                         <span asp-validation-for="Titulo" class="text-danger"></span>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="Localização" class="form-label">Localização:</label>
-                        <input asp-for="Localização" class="form-control" placeholder="Localização..." />
-                        <span asp-validation-for="Localização" class="text-danger"></span>
-                    </div>
+
                     <div class="col-md-3 mb-3">
                         <label asp-for="TipoContrato" class="form-label">Tipo de Contrato:</label>
-                        <input asp-for="TipoContrato" class="form-control" placeholder="Tipo de Contrato..." />
+                        <select asp-for="TipoContrato" class="form-select" asp-items="Model.SelectListTiposContratos">
+                            <option value="">Selecione tipo de contrato...</option>
+                        </select>
                         <span asp-validation-for="TipoContrato" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="Concelho" class="form-label">Concelho:</label>
+                        <select asp-for="Concelho" class="form-select" asp-items="Model.SelectListConcelhos">
+                            <option value="">Selecione um concelho...</option>
+                        </select>
+                        <span asp-validation-for="Concelho" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="Jornada" class="form-label">Jornada:</label>
+                        <select asp-for="Jornada" class="form-select" asp-items="Model.SelectListJornada">
+                            <option value="">Selecione a jornada de trabalho...</option>
+                        </select>
+                        <span asp-validation-for="Jornada" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label asp-for="RegimeTrabalho" class="form-label">Regime de Trabalho:</label>
+                        <select asp-for="RegimeTrabalho" class="form-select" asp-items="Model.SelectListRegimeTrabalho">
+                            <option value="">Selecione um regime de trabalho...</option>
+                        </select>
+                        <span asp-validation-for="RegimeTrabalho" class="text-danger"></span>
                     </div>
                     <div class="col-md-3 mb-3">
                         <label asp-for="Salario" class="form-label">Salário:</label>
                         <input asp-for="Salario" class="form-control" placeholder="Salário..." />
                         <span asp-validation-for="Salario" class="text-danger"></span>
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="Jornada" class="form-label">Jornada:</label>
-                        <input asp-for="Jornada" class="form-control" placeholder="Jornada..." />
-                        <span asp-validation-for="Jornada" class="text-danger"></span>
-                    </div>
                     <div class="col-md-3 mb-3">
                         <label asp-for="Requisitos" class="form-label">Requisitos:</label>
-                        <input asp-for="Requisitos" class="form-control" placeholder="Requisitos..." />
+                        <input asp-for="Requisitos" class="form-control" rows="10" placeholder="Requisitos..." />
                         <span asp-validation-for="Requisitos" class="text-danger"></span>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="RegimeTrabalho" class="form-label">Regime de Trabalho:</label>
-                        <input asp-for="RegimeTrabalho" class="form-control" placeholder="Regime de Trabalho..." />
-                        <span asp-validation-for="RegimeTrabalho" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label asp-for="VagaDisponivel" class="form-label fw-bold">Oferta Disponível:</label>
-                        <select asp-for="VagaDisponivel" class="form-control">
-                            <option value="">Selecione...</option>
-                            <option value="true">Sim</option>
-                            <option value="false">Não</option>
-                        </select>
-                        <span asp-validation-for="VagaDisponivel" class="text-danger"></span>
-                    </div>
-                </div>
+               
+                <div class="row">
+            </div>
+        </div>
             </div>
         </div>
 

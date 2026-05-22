@@ -65,44 +65,41 @@ namespace JobPortal_API.Data
             //    UserId = "10" // o id do user admin
             //});
 
-            // Regista automaticamente todos os IEntityTypeConfiguration da assembly,
-            // aplica as configurações
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Empresa) // Uma Review pertence a uma Empresa
                 .WithMany() // Uma Empresa pode ter muitas Reviews
                 .HasForeignKey(r => r.IdEmpresa); // Chave estrangeira
 
             modelBuilder.Entity<OfertaEmprego>()
-                .HasOne( tc => tc.TipoContrato) 
-                .WithMany()
-                .HasForeignKey(tc => tc.IdTipoContrato);
-
-            modelBuilder.Entity<OfertaEmprego>()
-                .HasOne(c => c.Concelho)
-                .WithMany()
-                .HasForeignKey(c => c.IdConcelho);
+                .Property(o => o.TipoContrato)
+                .HasConversion<string>();
 
             modelBuilder.Entity<CV>()
-                .HasOne(c => c.Concelho)
-                .WithMany()
-                .HasForeignKey(c => c.IdConcelho);
+                .Property(cv => cv.Concelho)
+                .HasConversion<string>();
 
             modelBuilder.Entity<CV>()
-                .HasOne(c => c.Escolaridade)
-                .WithMany()
-                .HasForeignKey(c => c.IdEscolaridade);
+                .Property(cv => cv.Escolaridade)
+                .HasConversion<string>();
 
             modelBuilder.Entity<Empresa>()
-                .HasOne(c => c.Concelho)
-                .WithMany()
-                .HasForeignKey(c => c.IdConcelho);
+                .Property(e => e.Concelho)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.RegimeTrabalho)
+                .HasConversion<string>(); // O EF converte o enum para string ao salvar
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.Jornada)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<OfertaEmprego>()
+               .Property(o => o.Concelho)
+               .HasConversion<string>();
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }
-        public virtual DbSet<TipoContrato> TipoContrato { get; set; }
-        public virtual DbSet<Concelho> Concelho { get; set; }
         public virtual DbSet<Candidato> Candidato { get; set; }
         public virtual DbSet<CV> CV { get; set; }
         public virtual DbSet<Empresa> Empresa { get; set; }

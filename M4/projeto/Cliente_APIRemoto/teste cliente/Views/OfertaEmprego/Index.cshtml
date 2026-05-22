@@ -1,44 +1,61 @@
-﻿@model IEnumerable<teste_cliente.Models.OfertaEmprego>
+﻿@model teste_cliente.Models.IndexOfertaViewModel
 
+<!-- Font Awesome e CSS do Select2 para o filtro dinâmico -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 @{
     ViewData["Title"] = "Resultados de Emprego";
 }
 
 <div class="search-barra">
-    <div class="container search-container mt-5">
+    <div class="container search-container pt-4">
         <form asp-controller="OfertaEmprego" asp-action="Index" method="get">
-            <div class="row">
-                <div class="col-md-4">
+            <!-- Mudamos para uma row com alinhamento vertical centralizado e espaçamento controlado -->
+            <div class="row g-2 align-items-end">
+                
+                <!-- Campo de Busca por Texto -->
+                <div class="col-xl-3 col-lg-3 col-md-6">
+                    <label for="search" class="form-label fw-bold text-muted small">Palavra-chave</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white">
-                            <i class="fas fa-search"></i>
+                            <i class="fas fa-search text-muted"></i>
                         </span>
-                        <input type="text" class="form-control" id="search" name="search" placeholder="Função" value="@Context.Request.Query["search"]">
+                        <input type="text" class="form-control" id="search" name="search" placeholder="Ex: Programador, Gestor..." value="@Context.Request.Query["search"]">
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" class="form-control" id="localidade" name="localidade" placeholder="Localidade" value="@Context.Request.Query["localidade"]">
-                    </div>
+
+                <!-- Campo de Concelho (Com pesquisa inteligente) -->
+                <div class="col-xl-3 col-lg-3 col-md-6">
+                    <label asp-for="Concelho" class="form-label fw-bold text-muted small">Concelho</label>
+                    <select asp-for="Concelho" class="form-select select2-searchable" asp-items="ViewBag.ConcelhosList">
+                        <option value="">Todos os concelhos...</option>
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" class="form-control" id="regimeTrabalho" name="regimeTrabalho" placeholder="Regime Trabalho" value="@Context.Request.Query["regimeTrabalho"]">
-                    </div>
+
+                <!-- Campo de Jornada -->
+                <div class="col-xl-2 col-lg-2 col-md-4">
+                    <label asp-for="Jornada" class="form-label fw-bold text-muted small">Jornada de trabalho</label>
+                    <select asp-for="Jornada" class="form-select custom-select-filter" asp-items="ViewBag.JornadasList">
+                        <option value="">Todas as jornadas...</option>
+                    </select>
                 </div>
-                <div class="col-md-1">
-                    <div>
-                        <button type="submit" class="btn text-white custom-link-button">Search</button>
-                    </div>
+
+                <!-- Campo de Regime de Trabalho -->
+                <div class="col-xl-2 col-lg-2 col-md-4">
+                    <label asp-for="RegimeTrabalho" class="form-label fw-bold text-muted small">Regime de trabalho</label>
+                    <select asp-for="RegimeTrabalho" class="form-select custom-select-filter" asp-items="ViewBag.RegimeTrabalhoList">
+                        <option value="">Todos os regimes...</option>
+                    </select>
                 </div>
+
+                <!-- Botão de Submit -->
+                <div class="col-xl-2 col-lg-2 col-md-4">
+                    <button type="submit" class="btn text-white custom-link-button w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+
             </div>
         </form>
     </div>
@@ -54,7 +71,7 @@
         </div>
     }
 
-    @foreach (var item in Model)
+    @foreach (var item in Model.OfertaEmpregosList)
     {
         <div class="card mb-4 shadow-sm">
             <div class="card-body">
@@ -69,17 +86,6 @@
                             <img src="~/img/icone_perfil.png" alt="Logo Empresa" class="img-fluid company-logo" style="max-width: 120px;">
                         }
                         <div class="d-flex flex-column align-items-center mt-4">
-                            @* <div class="rating">
-                                <div class="stars mb-1">
-                                    <i class="fas fa-star text-warning"></i>
-                                    <i class="fas fa-star text-warning"></i>
-                                    <i class="fas fa-star text-warning"></i>
-                                    <i class="fas fa-star text-warning"></i>
-                                    <i class="fas fa-star text-warning"></i>
-                                </div>
-                            </div> *@
-
-                            <!-- Verificar e exibir a média de avaliações usando a partial -->
                             @{
                                 var reviews = ViewData[$"Reviews_{item.IdOferta}"] as List<teste_cliente.Models.Review> ?? new List<teste_cliente.Models.Review>();
                             }
@@ -97,13 +103,13 @@
                         <h4 class="mb-3 job-title">@item.Titulo</h4>
                         <div class="row job-details">
                             <div class="col-6 small">
-                                <p class="mb-1"><i class="far fa-clock me-2"></i> @item.Jornada</p>
-                                <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> @item.Localização</p>
-                                <p class="mb-1"><i class="fas fa-home me-2"></i> @item.RegimeTrabalho</p>
+                                <p class="mb-1"><i class="far fa-clock me-2"></i>@(item.Jornada != null ? ((Enum)item.Jornada).GetDisplayName() : " ")</p>
+                                <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> @(item.Concelho != null ? ((Enum)item.Concelho).GetDisplayName() : " ")</p>
+                                <p class="mb-1"><i class="fas fa-home me-2"></i> @(item.RegimeTrabalho != null ? ((Enum)item.RegimeTrabalho).GetDisplayName() : " ")</p>
                             </div>
                             <div class="col-6 small">
                                 <p class="mb-1"><i class="fas fa-euro-sign me-2"></i> @item.Salario</p>
-                                <p class="mb-1"><i class="fas fa-user-tie me-2"></i> @item.TipoContrato</p>
+                                <p class="mb-1"><i class="fas fa-user-tie me-2"></i> @(item.TipoContrato != null ? ((Enum)item.TipoContrato).GetDisplayName() : " ")</p>
                                 <p class="mb-1"><i class="fas fa-briefcase me-2"></i> @item.Requisitos</p>
                             </div>
                         </div>
@@ -198,7 +204,7 @@
                         <a class="page-link" href="@Url.Action("Index", new {
                         page = i,
                         search = ViewBag.Search,
-                        localidade = ViewBag.Localidade,
+                        concelho = ViewBag.Concelho,
                         regimeTrabalho = ViewBag.RegimeTrabalho
                     })">@i</a>
                     </li>
@@ -207,214 +213,201 @@
         </nav>
     </div>
 </div>
-    @section Styles {
-        <style>
-            .search-barra {
-                background-color: #f0f0f0;
-                padding-top: 20px;
-                padding-bottom: 60px;
-                width: 100%;
-                margin-left: 0;
-                margin-right: 0;
-            }
 
-            .search-container .input-group {
-                border-radius: 25px;
-            }
+@section Styles {
+    <style>
+        .search-barra {
+            background-color: #f8f9fa;
+            padding-top: 25px;
+            padding-bottom: 25px;
+            width: 100%;
+            border-bottom: 1px solid #e9ecef;
+        }
 
-            .search-container .form-control {
-                border-radius: 25px;
-                height: 45px;
-            }
+        /* Padronização visual dos inputs e select nativos */
+        .search-container .form-control,
+        .search-container .form-select,
+        .search-container .input-group-text {
+            border-radius: 8px !important;
+            height: 45px;
+            border: 1px solid #ced4da;
+            font-size: 0.95rem;
+        }
 
-            .search-container .input-group-text {
-                border-radius: 25px;
-            }
+        .search-container .input-group-text {
+            background-color: #fff;
+            border-right: none;
+        }
 
-            .search-container .btn {
-                border-radius: 20px;
-                padding: 0.5rem 2rem;
-            }
+        .search-container .input-group .form-control {
+            border-left: none;
+        }
 
-            .form-control:focus {
-                border-color: #F2994A;
-                box-shadow: 0 0 0 0.1rem rgba(242, 153, 74, 0.35);
-                outline: 0;
-            }
+        .form-control:focus, .form-select:focus {
+            border-color: #5de4d9;
+            box-shadow: 0 0 0 0.2rem rgba(93, 228, 217, 0.25);
+            outline: 0;
+        }
 
-            .card {
-                border-radius: 10px;
-                border: none;
-                background-color: #f9f9f9;
-            }
+        /* Customização Estética do Select2 (Para ficar igual ao Bootstrap original) */
+        .select2-container--default .select2-selection--single {
+            height: 45px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 8px !important;
+            padding-top: 8px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 43px !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #212529 !important;
+            font-size: 0.95rem;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            border-radius: 6px !important;
+        }
+        .select2-dropdown {
+            border: 1px solid #ced4da !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
 
-            .job-title {
-                font-weight: 600;
-                border-bottom: 2px solid #5de4d9;
-                display: inline-block;
-                padding-bottom: 5px;
-            }
+        /* Estilo dos Botões */
+        .custom-link-button {
+            background-color: #5de4d9;
+            border: none;
+            height: 45px;
+            border-radius: 8px !important;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-            .job-details p {
-                color: #6c757d;
-            }
+        .custom-link-button:hover {
+            background-color: #F2994A;
+            color: white !important;
+        }
 
-            .btn {
-                border-radius: 20px;
-                padding: 0.5rem 1.5rem;
-            }
+        /* Resto dos seus estilos originais mantidos abaixo... */
+        .card {
+            border-radius: 10px;
+            border: none;
+            background-color: #f9f9f9;
+        }
 
-            .custom-link-button {
-                background-color: #5de4d9;
-                border: none;
-                padding: 10px 30px;
-                border-radius: 30px;
-                font-size: 1rem;
-                cursor: pointer;
-                text-align: center;
-                transition: background-color 0.3s ease;
-                display: inline-block;
-            }
+        .job-title {
+            font-weight: 600;
+            border-bottom: 2px solid #5de4d9;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
 
-            .custom-link-button:hover {
-                background-color: #F2994A;
-            }
+        .job-details p {
+            color: #6c757d;
+        }
 
-            .company-logo {
-                max-height: 60px;
-                object-fit: contain;
-            }
+        .company-logo {
+            max-height: 60px;
+            object-fit: contain;
+        }
 
-            /* Personalizando o botão "Voltar" */
-            .btn-secondary {
-                background-color: #F2994A;
-                color: white;
-                border: none;
-            }
+        .btn-secondary {
+            background-color: #F2994A;
+            color: white;
+            border: none;
+        }
 
-            /* Personalizando o botão "Inserir" */
-            .btn-primary {
-                background-color: #5de4d9;
-                color: white;
-                border: none;
-            }
+        .btn-primary {
+            background-color: #5de4d9;
+            color: white;
+            border: none;
+        }
 
-            /* Mudando a cor de fundo no hover */
-            .btn-secondary:hover {
-                background-color: #FF9F00;
-            }
+        .btn-secondary:hover { background-color: #FF9F00; }
+        .btn-primary:hover { background-color: #4fb3bf; }
 
-            .btn-primary:hover {
-                background-color: #4fb3bf;
-            }
+        .pagination .page-item .page-link {
+            background-color: #5de4d9 !important;
+            color: white !important;
+            border: 1px solid #5de4d9 !important;
+            transition: background-color 0.3s, color 0.3s;
+        }
 
-            /* Cor do botão de paginação normal */
-            .pagination .page-item .page-link {
-                background-color: #5de4d9 !important;
-                color: white !important;
-                border: 1px solid #5de4d9 !important;
-                transition: background-color 0.3s, color 0.3s;
-            }
+        .pagination .page-item .page-link:hover {
+            background-color: #F2994A !important;
+            color: white !important;
+            border-color: #F2994A !important;
+        }
 
-            /* Hover nos botões de paginação */
-            .pagination .page-item .page-link:hover {
-                background-color: #F2994A !important;
-                color: white !important;
-                border-color: #F2994A !important;
-            }
+        .pagination .page-item.active .page-link {
+            background-color: #29A2A6 !important;
+            border-color: #29A2A6 !important;
+            color: white !important;
+        }
 
-            /* Cor do botão ativo (a página atual) */
-            .pagination .page-item.active .page-link {
-                background-color: #29A2A6 !important;
-                border-color: #29A2A6 !important;
-                color: white !important;
-            }
+        .pagination .page-item .page-link:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
 
-            /* Remover o contorno do link da paginação ao ser focado */
-            .pagination .page-item .page-link:focus {
-                outline: none !important;
-                box-shadow: none !important;
-            }
+        .rating-stars {
+            font-size: 18px;
+            cursor: pointer;
+            display: inline-block;
+        }
 
-            /* Estilo do sistema de estrelas no modal */
-            .rating-stars {
-                font-size: 18px;
-                cursor: pointer;
-                display: inline-block;
-            }
+        .rating-stars i {
+            margin-right: 2px;
+            color: #ccc;
+            transition: color 0.2s ease;
+        }
 
-                .rating-stars i {
-                    margin-right: 2px;
-                    color: #ccc;
-                    transition: color 0.2s ease;
-                }
+        .rating-stars i.fas.fa-star, .rating-stars i:hover { color: #f5c518; }
+        .rating-stars svg { display: none; }         
+    </style>
+}
 
-                    .rating-stars i.far.fa-star {
-                        color: #ccc;
-                    }
-
-                    .rating-stars i.fas.fa-star {
-                        color: #f5c518;
-                    }
-
-                    .rating-stars i:hover {
-                        color: #f5c518;
-                    }
-
-                .rating-stars svg {
-                    display: none;
-                }         
-        </style>
-    }
-
-    @section Scripts {
-        <partial name="_ValidationScriptsPartial" />        
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" /> 
+    <!-- Script do Select2 adicionado aqui -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <script>
         $(document).ready(function () {
             console.log('jQuery carregado e pronto!');
 
-            // // Adiciona classe active ao clicar em favorito
-            // $('.favorite').on('click', function () {
-            //     $(this).find('i').toggleClass('far fas text-warning');
-            // });
+            // Ativa a pesquisa inteligente no campo Concelho
+            $('.select2-searchable').select2({
+                placeholder: "Selecione ou digite um concelho...",
+                allowClear: true,
+                width: '100%'
+            });
 
-            // Reinicia o estado das estrelas ao abrir o modal
+            // Código dos modais e reset de estrelas original mantido intacto...
             $(document).on('show.bs.modal', '.modal', function () {
                 var modalId = $(this).attr('id').replace('reviewModal-', '');
                 var ratingStars = $('#rating-stars-' + modalId);
                 var stars = ratingStars.find('.fa-star');
 
-                console.log('Modal aberto para ID:', modalId);
-                console.log('HTML do rating-stars:', ratingStars.html());
-                console.log('Elementos estrelas encontrados:', stars.length);
-
-                if (stars.length === 0) {
-                    console.log('Atenção: Nenhum elemento <i> encontrado dentro de #rating-stars-' + modalId);
-                    return;
-                }
+                if (stars.length === 0) return;
 
                 var ratingInput = ratingStars.find('input[name="Rating"]');
                 stars.removeClass('fas').addClass('far');
                 ratingInput.val(0);
-                console.log('Rating resetado para:', ratingInput.val());
-                console.log('Classes das estrelas após reset:', stars.map(function() { return $(this).attr('class'); }).get());
             });
 
-            // Evento de clique para as estrelas
             $(document).on('click', '.rating-stars .fa-star', function (e) {
                 e.preventDefault();
-                e.stopPropagation();
-
                 var $star = $(this);
-                console.log('Evento de clique disparado em:', $star);
-
                 var modalId = $star.closest('.modal').attr('id').replace('reviewModal-', '');
                 var ratingStars = $('#rating-stars-' + modalId);
                 var value = parseInt($star.data('value'));
                 var ratingInput = ratingStars.find('input[name="Rating"]');
                 var stars = ratingStars.find('.fa-star');
-
-                console.log('Clicou em valor:', value);
 
                 ratingInput.val(value);
                 ratingStars.siblings('#rating-error-' + modalId).text('');
@@ -427,11 +420,8 @@
                         $(this).removeClass('fas').addClass('far');
                     }
                 });
-                console.log('Rating atualizado para:', ratingInput.val());
-                console.log('Classes das estrelas após clique:', stars.map(function() { return $(this).attr('class'); }).get());
             });
 
-            // Hover nas estrelas
             $(document).on('mouseenter', '.rating-stars .fa-star', function () {
                 var $star = $(this);
                 var hoverValue = parseInt($star.data('value'));
@@ -448,7 +438,6 @@
                 });
             }).on('mouseleave', '.rating-stars', function () {
                 var ratingStars = $(this);
-                var modalId = ratingStars.closest('.modal').attr('id').replace('reviewModal-', '');
                 var ratingInput = ratingStars.find('input[name="Rating"]');
                 var currentValue = parseInt(ratingInput.val()) || 0;
                 var stars = ratingStars.find('.fa-star');
@@ -463,54 +452,43 @@
                 });
             });
 
-            // Validação do formulário ao enviar
             $(document).on('submit', 'form', function (e) {
-                console.time('submitHandler');
-                console.log('Iniciando submit handler');
-
                 var ratingInput = $(this).find('input[name="Rating"]');
+                if(ratingInput.length === 0) return; // Ignora se for o form de pesquisa principal
+                
                 var ratingValue = parseInt(ratingInput.val());
                 var ratingError = $(this).find('#rating-error-' + ratingInput.attr('id').split('-')[2]);
-                console.log('Rating verificado:', ratingValue);
 
                 if (ratingValue === 0 || isNaN(ratingValue)) {
-                    console.log('Rating inválido, cancelando submit');
                     ratingError.text('Por favor, selecione um rating de 1 a 5.');
                     e.preventDefault();
-                } else {
-                    console.log('Rating válido, ajustando valor');
-                    ratingInput.val(Math.max(1, Math.min(5, ratingValue)));
                 }
-
-                console.log('Finalizando submit handler');
-                console.timeEnd('submitHandler');
             });
-        });
 
-                //Botão dos favoritos.
-                document.querySelectorAll('.toggle-favorito').forEach(el => {
+            // Botão dos favoritos
+            document.querySelectorAll('.toggle-favorito').forEach(el => {
                 el.addEventListener('click', function () {
                     const id = parseInt(this.dataset.id);
                     if (id <= 0) return;
-                                fetch('/OfertaEmprego/ToggleFavorito', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: `idOferta=${encodeURIComponent(id)}`
-            })
+                    fetch('/OfertaEmprego/ToggleFavorito', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: `idOferta=${encodeURIComponent(id)}`
+                    })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
                             this.classList.toggle('fas');
                             this.classList.toggle('far');
                             this.style.color = data.isFavorito ? "#FFD700" : "#ccc";
-
-                            atualizarBadgeFavoritos();
+                            if(typeof atualizarBadgeFavoritos === "function") atualizarBadgeFavoritos();
                         }
                     });
                 });
             });
-    </script>      
+        });
+    </script>     
 }

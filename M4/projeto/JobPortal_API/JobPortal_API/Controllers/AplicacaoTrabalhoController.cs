@@ -179,8 +179,6 @@ namespace JobPortal_API.Controllers
         {
             var resultado = from a in _context.AplicacaoTrabalho
                             join o in _context.OfertaEmprego on a.IdOferta equals o.IdOferta
-                            join tc in _context.TipoContrato on o.IdTipoContrato equals tc.IdTipoContrato
-                            join c in _context.Concelho on o.IdConcelho equals c.IdConcelho
                             join e in _context.Empresa on o.IdEmpresa equals e.IdEmpresa
                             where a.IdCandidato == idCandidato
                             select new HistoricoCandidaturaDTO
@@ -191,11 +189,11 @@ namespace JobPortal_API.Controllers
 
                                 IdOferta = o.IdOferta,
                                 Titulo = o.Titulo,
-                                NomeConcelho = c.NomeConcelho,
-                                RegimeTrabalho = o.RegimeTrabalho,
-                                TipoContrato = tc.Tipo,
+                                NomeConcelho = o.Concelho.ToString(),
+                                RegimeTrabalho = o.RegimeTrabalho.ToString(),
+                                TipoContrato = o.TipoContrato.ToString(),
                                 Salario = o.Salario,
-                                Jornada = o.Jornada,
+                                Jornada = o.Jornada.ToString(),
 
                                 NomeEmpresa = e.Nome
                             };

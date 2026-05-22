@@ -1,14 +1,16 @@
 ﻿
+using System.Linq;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace JobPortal_API.Controllers
 {
@@ -34,54 +36,62 @@ namespace JobPortal_API.Controllers
 
         //Buscas todas as ofertas
         [HttpGet("TodasOfertas")]
-        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, string? regimeTrabalho, string? concelho)
+        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego([FromQuery] string? search,
+                                                                   [FromQuery] int? jornada,
+                                                                   [FromQuery] int? concelho,
+                                                                   [FromQuery] int? regimeTrabalho)
         {
-            var oferta = _context.OfertaEmprego
-                         .Include(o => o.Concelho)
-                         .Include(o=> o.TipoContrato)
-                         .Where(o => o.VagaDisponivel == true)
-                         .AsQueryable();
+            var query = _context.OfertaEmprego
+                           .Where(o => o.VagaDisponivel == true)
+                           .AsQueryable();
 
+            // filtro de pesquisa textual/enum
             if (!string.IsNullOrEmpty(search))
             {
-                //oferta = oferta.Where(b =>
-                //    b.Titulo.Contains(search) ||
-                //    b.IsFullTime == true && "Full time".Contains(search) ||
-                //    b.IsFullTime == false && "Part time".Contains(search) ||
-                //    b.IsFullTime == null && "Flexível".Contains(search) ||
-                //    b.Concelho.NomeConcelho.Contains(search) ||
-                //    b.IsPresencial == true && "Presencial".Contains(search) ||
-                //    b.IsPresencial == false && "Remoto".Contains(search) ||
-                //    b.IsPresencial == null && "Hbrido".Contains(search) ||
-                //    b.TipoContrato.Tipo.Contains(search) ||
-                //    b.Requisitos.Contains(search));
+                // Tenta converter o termo de pesquisa para cada um dos enums
+                bool isJornada = Enum.TryParse<JornadaEnum>(search, ignoreCase: true, out var jornadaEnum);
+                bool isRegime = Enum.TryParse<RegimeTrabalhoEnum>(search, ignoreCase: true, out var regimeEnum);
+                bool isContrato = Enum.TryParse<TipoContratoEnum>(search, ignoreCase: true, out var contratoEnum);
+                bool isConcelho = Enum.TryParse<ConcelhoEnum>(search, ignoreCase: true, out var concelhoEnum);
 
-                oferta = oferta.Where(b =>
+                // Para evitar erros de tradução no EF Core: avaliação local das flags (ternários)
+                query = query.Where(b =>
                     b.Titulo.Contains(search) ||
-                    (b.IsFullTime == true && "Full time".Contains(search)) ||
-                    (b.IsFullTime == false && "Part time".Contains(search)) ||
-                    (b.IsFullTime == null && "Flexível".Contains(search)) ||
-                    b.Concelho.NomeConcelho.Contains(search) ||
-                    (b.IsPresencial == true && "Presencial".Contains(search)) ||
-                    (b.IsPresencial == false && "Remoto".Contains(search)) ||
-                    (b.IsPresencial == null && "Hibrido".Contains(search)) || // Dica: considere usar "Híbrido".Contains(search) se usar acento
-                    b.TipoContrato.Tipo.Contains(search) ||
-                    b.Requisitos.Contains(search));
+                    b.Requisitos.Contains(search) ||
+                    (b.Descricao != null && b.Descricao.Contains(search)) ||
+                    (isJornada ? b.Jornada == jornadaEnum : false) ||
+                    (isRegime ? b.RegimeTrabalho == regimeEnum : false) ||
+                    (isContrato ? b.TipoContrato == contratoEnum : false) ||
+                    (isConcelho ? b.Concelho == concelhoEnum : false)
+                );
             }
 
-            if (!string.IsNullOrEmpty(regimeTrabalho))
+            // Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
+            if (regimeTrabalho.HasValue && regimeTrabalho.Value > 0)
             {
-                oferta = oferta.Where(b => b.RegimeTrabalho.Contains(regimeTrabalho));
+                var regimeEnumSelect = (RegimeTrabalhoEnum)regimeTrabalho.Value;
+                query = query.Where(b => b.RegimeTrabalho == regimeEnumSelect);
             }
 
-            if (!string.IsNullOrEmpty(concelho))
+            // Filtro Específico por Concelho (Combobox envia o ID)
+            if (concelho.HasValue && concelho.Value > 0)
             {
-                oferta = oferta.Where(b => b.Concelho.NomeConcelho.Contains(concelho));
+                var concelhoEnumSelect = (ConcelhoEnum)concelho.Value;
+                query = query.Where(b => b.Concelho == concelhoEnumSelect);
             }
 
-            return await oferta
+            // Filtro Específico por Jornada (Combobox envia o ID)
+            if (jornada.HasValue && jornada.Value > 0)
+            {
+                var jornadaEnumSelect = (JornadaEnum)jornada.Value;
+                query = query.Where(b => b.Jornada == jornadaEnumSelect);
+            }
+
+            //  Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)
+            return await query
                 .ProjectTo<OfertaEmpregoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
         }
 
 

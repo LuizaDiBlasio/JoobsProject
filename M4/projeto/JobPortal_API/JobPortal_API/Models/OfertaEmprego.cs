@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using JobPortal_API.Models.Enums;
 
 namespace JobPortal_API.Models
 {
@@ -17,24 +18,14 @@ namespace JobPortal_API.Models
 
         public float? Salario { get; set; }
 
-        //public string? Jornada { get; set; } - Propriedade calculada com booleana IsFullTime
 
-        //public string? Localização { get; set; } - Normalização da Tabela
+        //public string? Localização { get; set; } 
 
-        [ForeignKey("Concelho")]
-        public int? IdConcelho { get; set; }
-
-        public Concelho? Concelho { get; set; }
+        public ConcelhoEnum Concelho { get; set; }
 
 
-        //public string? RegimeTrabalho { get; set; } - Propriedade calculada com boolean IsPresencial
-
-        // public string? TipoContrato { get; set; } - Normalização da tabela
-
-        [ForeignKey("IdTipoContrato")]
-        public int? IdTipoContrato { get; set; }
-
-        public TipoContrato? TipoContrato { get; set; }
+        // public string? TipoContrato { get; set; } 
+        public TipoContratoEnum TipoContrato { get; set; }
 
         public string? Requisitos { get; set; }
         public bool? VagaDisponivel { get; set; }
@@ -44,23 +35,13 @@ namespace JobPortal_API.Models
 
         public int Contagem { get; set; } = 0;
 
-        public bool? IsFullTime { get; set; }
 
-        public string Jornada => IsFullTime switch
-        {
-            true => "Full time",
-            false => "Part time",
-            null => "Flexível"
-        };
+        //public string? Jornada { get; set; } 
+        public JornadaEnum Jornada { get; set; }
 
-        public bool? IsPresencial { get; set; }
 
-        public string RegimeTrabalho => IsPresencial switch
-        {
-            true => "Presencial",
-            false => "Remoto",
-            null => "Híbrido"
-        };
+        //public string? RegimeTrabalho { get; set; } 
+        public RegimeTrabalhoEnum RegimeTrabalho { get; set; }
 
 
 

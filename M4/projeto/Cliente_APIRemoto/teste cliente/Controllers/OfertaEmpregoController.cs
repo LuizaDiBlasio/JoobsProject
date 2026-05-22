@@ -1,75 +1,85 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Common;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text;
+using teste_cliente.Helpers;
 using teste_cliente.Models;
+using teste_cliente.Models.Dto;
+using teste_cliente.Models.Enums;
 
 namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(string? search, string? localidade, string? regimeTrabalho, int page = 1)
+        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regime, string? search, int page = 1)
         {
+            
             int pageSize = 10;
-            List<OfertaEmprego> ofertaList = new List<OfertaEmprego>();
+            List<OfertaEmpregoDTO> ofertaList = new List<OfertaEmpregoDTO>();
+
             //AQUI NÃO É PRECISO O TOKEN
             using (var httpClient = new HttpClient())
             {
-                string apiUrl = "https://localhost:7211/api/oferta/TodasOfertas";
+                var queryParams = new List<string>();
 
-                List<string> queryParams = new List<string>();
-                if (!string.IsNullOrEmpty(search))
-                    queryParams.Add($"search={search}");
-                if (!string.IsNullOrEmpty(localidade))
-                    queryParams.Add($"localidade={localidade}");
-                if (!string.IsNullOrEmpty(regimeTrabalho))
-                    queryParams.Add($"regimeTrabalho={regimeTrabalho}");
+                if (!string.IsNullOrEmpty(search)) queryParams.Add($"search={Uri.EscapeDataString(search)}");
+                if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho}");
+                if (jornada.HasValue) queryParams.Add($"jornada={(int)jornada}");
+                if (regime.HasValue) queryParams.Add($"regimeTrabalho={(int)regime}");
 
-                if (queryParams.Count > 0)
-                    apiUrl += "?" + string.Join("&", queryParams);
+                string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+                string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
 
-                // Buscar a lista de ofertas
-                using (var response = await httpClient.GetAsync(apiUrl))
-                {
-                    string apiResponse = await response.Content.ReadAsStringAsync();
-                    ofertaList = JsonConvert.DeserializeObject<List<OfertaEmprego>>(apiResponse);
-                }
 
-                // Obter IDs únicos de empresas para buscar as reviews
-                var empresaIds = ofertaList.Select(o => o.IdEmpresa).Distinct().ToList();
-                var reviewsByEmpresa = new Dictionary<int, List<Review>>();
-
-                // Buscar as reviews para cada empresa
-                foreach (var idEmpresa in empresaIds)
-                {
-                    using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{idEmpresa}"))
+                    // Buscar a lista de ofertas
+                    using (var response = await httpClient.GetAsync(apiUrl))
                     {
-                        if (reviewResponse.IsSuccessStatusCode)
+                        if (response.IsSuccessStatusCode)
                         {
-                            string reviewApiResponse = await reviewResponse.Content.ReadAsStringAsync();
-                            var reviews = JsonConvert.DeserializeObject<List<Review>>(reviewApiResponse);
-                            reviewsByEmpresa[idEmpresa] = reviews ?? new List<Review>();
-                        }
-                        else
-                        {
-                            reviewsByEmpresa[idEmpresa] = new List<Review>();
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+                            ofertaList = JsonConvert.DeserializeObject<List<OfertaEmpregoDTO>>(apiResponse) ?? new List<OfertaEmpregoDTO>(); 
                         }
                     }
-                }
 
-                // Buscar o logo e associar as reviews a cada oferta
-                foreach (var oferta in ofertaList)
-                {
-                    var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-                    oferta.LogoEmpresaBase64 = logoEmpresaBase64;
+                    // Obter IDs únicos de empresas para buscar as reviews
+                    var empresaIds = ofertaList.Select(o => o.IdEmpresa).Distinct().ToList();
+                    var reviewsByEmpresa = new Dictionary<int, List<Review>>();
 
-                    // Associar as reviews da empresa à oferta via ViewData ou uma propriedade temporária
-                    ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
-                }
+                    // Buscar as reviews para cada empresa
+                    foreach (var idEmpresa in empresaIds)
+                    {
+                        using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{idEmpresa}"))
+                        {
+                            if (reviewResponse.IsSuccessStatusCode)
+                            {
+                                string reviewApiResponse = await reviewResponse.Content.ReadAsStringAsync();
+                                var reviews = JsonConvert.DeserializeObject<List<Review>>(reviewApiResponse);
+                                reviewsByEmpresa[idEmpresa] = reviews ?? new List<Review>();
+                            }
+                            else
+                            {
+                                reviewsByEmpresa[idEmpresa] = new List<Review>();
+                            }
+                        }
+                    }
+
+                    // Buscar o logo e associar as reviews a cada oferta
+                    foreach (var oferta in ofertaList)
+                    {
+                        var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
+                        oferta.LogoEmpresaBase64 = logoEmpresaBase64;
+
+                        // Associar as reviews da empresa à oferta via ViewData ou uma propriedade temporária
+                        ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
+                    }
+                
             }
 
             int totalItems = ofertaList.Count;
@@ -78,12 +88,6 @@ namespace teste_cliente.Controllers
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-
-            foreach (var oferta in ofertaList)
-            {
-                var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-                oferta.LogoEmpresaBase64 = logoEmpresaBase64;
-            }
 
             // 🔽 FAVORITOS via Cookie
             var identity = HttpContext.User.Identity as ClaimsIdentity;
@@ -99,15 +103,37 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            // 🔽 Enviar info para a View
+            //Buscar listas 
+            var listas = LoadLists();
+
+            var model = new IndexOfertaViewModel
+            {
+                OfertaEmpregosList = ofertaList,
+                Concelho = concelho,
+                Jornada = jornada,
+                RegimeTrabalho = regime
+            };
+
+
+            // 🔽 Enviar info para  a View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             ViewBag.Search = search;
-            ViewBag.Localidade = localidade;
-            ViewBag.RegimeTrabalho = regimeTrabalho;
             ViewBag.Favoritos = favoritos;
+            ViewBag.Concelho = concelho;
+            ViewBag.Jornada = jornada;
+            ViewBag.RegimeTrabalho = regime;
 
-            return View(ofertaList);
+            if (listas != null)
+            {
+                ViewBag.ConcelhosList = listas.SelectListConcelhos;
+                ViewBag.JornadasList = listas.SelectListJornada;
+                ViewBag.RegimeTrabalhoList = listas.SelectListRegimeTrabalho;
+            }
+
+            model.OfertaEmpregosList = ofertaList;
+
+            return View(model);
         }
 
 
@@ -208,43 +234,71 @@ namespace teste_cliente.Controllers
             return View(oferta);
         }
 
+        //___________MODIFICAÇÃO DE CODIGO_________(Get com lista de comboboxes)
+        //[HttpGet]
+        //public ActionResult Create()
+        //{
+        //    return View();
+        //}
+
+        // ______________ADIÇÃO DE CÓDIGO____________
         [HttpGet]
-        public ActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var model = new OfertaEmprego();
+
+            var lists = LoadLists();
+
+            model.SelectListConcelhos = lists.SelectListConcelhos;
+            model.SelectListTiposContratos = lists.SelectListContratos;
+            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
+            model.SelectListJornada = lists.SelectListJornada;
+
+            return View(model);
+               
         }
 
 
         [HttpPost]
         public async Task<IActionResult> Create(Models.OfertaEmprego oferta)
         {
-            
-            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
-            if (string.IsNullOrEmpty(token))
-                return RedirectToAction("Login", "Auth");
-            using (var httpClient = new HttpClient())
+            if (ModelState.IsValid)
             {
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
-                    
-                using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
+                var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+                if (string.IsNullOrEmpty(token))
+                    return RedirectToAction("Login", "Auth");
+                using (var httpClient = new HttpClient())
                 {
-                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
+
+                    using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
-                        return Forbid();
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        {
+                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
+                            return Forbid();
+                        }
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            return NotFound();
+                        }
+                        string apiResponse = await response.Content.ReadAsStringAsync();
+                        oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                     }
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        return NotFound();
-                    }
-                    string apiResponse = await response.Content.ReadAsStringAsync();
-                    oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                 }
+
+                return RedirectToAction("Index");
             }
-            
-            return RedirectToAction("Index");
+
+
+            oferta.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+
+            oferta.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
+
+            return View(oferta);
+           
         }
 
         [HttpGet]
@@ -516,6 +570,26 @@ namespace teste_cliente.Controllers
 
             return Json(ofertasFavoritas);
         }
+
+        //ADIÇÃO DE CÓDIGO (métodos auxiliares)
+
+        //____________ADIÇÂO DE CÓDIGO___________(carregamento de listas para index)
+        private ListsDTO LoadLists()
+            {
+                var listsDTO = new ListsDTO();
+
+                //converter para selectlist
+
+                listsDTO.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+
+                listsDTO.SelectListContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
+
+                listsDTO.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
+
+                listsDTO.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>(); 
+ 
+                return listsDTO;   
+            }
 
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
+using JobPortal_API.Models.Enums;
 
 namespace JobPortal_API.Models
 {
@@ -20,10 +21,7 @@ namespace JobPortal_API.Models
 
         //public string? Localidade { get; set; } - normalização da tabela
 
-        [ForeignKey("Concelho")]
-        public int IdConcelho { get; set; } 
-
-        public Concelho Concelho { get; set; }  
+        public ConcelhoEnum Concelho { get; set; }  
 
         public string Email { get; set; }
 
