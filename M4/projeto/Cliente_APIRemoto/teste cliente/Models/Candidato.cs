@@ -13,6 +13,7 @@ namespace teste_cliente.Models
         public string Email { get; set; }
         public int? Telefone { get; set; }
         public string? Morada { get; set; }
+       
         [Column(TypeName = "Date")]
         public DateTime? DataNasc { get; set; }
         public string? LinkedIn { get; set; }

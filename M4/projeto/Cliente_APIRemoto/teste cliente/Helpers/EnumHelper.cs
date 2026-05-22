@@ -21,5 +21,18 @@ namespace teste_cliente.Helpers
                 })
                 .ToList();  
         }
+
+        public static string GetDisplayName(this Enum enumValue)
+        {
+            if (enumValue == null) return string.Empty;
+
+          
+            var membro = enumValue.GetType().GetMember(enumValue.ToString()).FirstOrDefault();
+
+            if (membro == null) return enumValue.ToString();
+
+          
+            return membro.GetCustomAttribute<DisplayAttribute>()?.GetName() ?? enumValue.ToString();
+        }
     }
 }

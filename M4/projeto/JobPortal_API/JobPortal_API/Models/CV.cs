@@ -11,12 +11,9 @@ namespace JobPortal_API.Models
 
         public string Nome { get; set; }
 
-        [ForeignKey("Concelho")]
-        public int IdConcelho { get; set; }   
 
-        public Concelho Concelho { get; set; }
-
-        //public string Localizacao { get; set; } - Normalização da tabela
+        //public string Localizacao { get; set; } - Enum
+        public ConcelhoEnum Concelho { get; set; }
 
         // public string? Educacao { get; set; } - Enum
 

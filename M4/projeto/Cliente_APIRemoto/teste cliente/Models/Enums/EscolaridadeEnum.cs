@@ -4,8 +4,6 @@ namespace teste_cliente.Models.Enums
 {
     public enum EscolaridadeEnum
     {
-        [Display(Name = "Não especificado")]
-        NaoEspecificado = 0,
 
         [Display(Name = "Ensino básico")]
         EnsinoBasico = 1,

@@ -4,8 +4,6 @@ namespace teste_cliente.Models.Enums
 {
     public enum JornadaEnum
     {
-        [Display(Name = "Não especificado")]
-        NaoEspecificado = 0,
 
         [Display(Name = "Full time")]
         FullTime = 1,

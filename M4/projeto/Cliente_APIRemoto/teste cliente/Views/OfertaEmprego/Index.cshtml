@@ -1,4 +1,4 @@
-﻿@model IEnumerable<teste_cliente.Models.OfertaEmprego>
+﻿@model teste_cliente.Models.IndexOfertaViewModel
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -19,10 +19,7 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="fas fa-search"></i>
-                        </span>
+                   <div class="form-check form-check-inline">
                         @* <input type="text" class="form-control" id="concelho" name="concelho" placeholder="Concelho" value="@Context.Request.Query["concelho"]"> *@
                          <label asp-for="IdConcelho" class="form-label">Concelho:</label>
                         <select asp-for="IdConcelho" class="form-select" asp-items="ViewBag.ConcelhosList">
@@ -30,13 +27,21 @@
                         </select>
                         <span asp-validation-for="IdConcelho" class="text-danger"></span>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" class="form-control" id="regimeTrabalho" name="regimeTrabalho" placeholder="Regime Trabalho" value="@Context.Request.Query["regimeTrabalho"]">
+
+                     <div class="form-check form-check-inline">
+                        <label asp-for="Jornada" class="form-label">Jornada:</label>
+                        <select asp-for="Jornada" class="form-select" asp-items="ViewBag.JornadasList">
+                            <option value="">Selecione a jornada de trabalho...</option>
+                        </select>
+                        <span asp-validation-for="Jornada" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check form-check-inline">
+                        <label asp-for="RegimeTrabalho" class="form-label">Regime:</label>
+                        <select asp-for="RegimeTrabalho" class="form-select" asp-items="ViewBag.RegimeTrabalhoList">
+                            <option value="">Selecione regime de trabalho...</option>
+                        </select>
+                        <span asp-validation-for="RegimeTrabalho" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="col-md-1">
@@ -59,7 +64,7 @@
         </div>
     }
 
-    @foreach (var item in Model)
+    @foreach (var item in Model.OfertaEmpregosList)
     {
         <div class="card mb-4 shadow-sm">
             <div class="card-body">
@@ -102,13 +107,13 @@
                         <h4 class="mb-3 job-title">@item.Titulo</h4>
                         <div class="row job-details">
                             <div class="col-6 small">
-                                <p class="mb-1"><i class="far fa-clock me-2"></i> @item.Jornada</p>
-                                <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> @item.Concelho.NomeConcelho</p>
-                                <p class="mb-1"><i class="fas fa-home me-2"></i> @item.RegimeTrabalho</p>
+                                <p class="mb-1"><i class="far fa-clock me-2"></i>@(item.Jornada != null ? ((Enum)item.Jornada).GetDisplayName() : " ")</p>
+                                <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> @(item.Concelho != null ? ((Enum)item.Concelho).GetDisplayName() : " ")</p>
+                                <p class="mb-1"><i class="fas fa-home me-2"></i> @(item.RegimeTrabalho != null ? ((Enum)item.RegimeTrabalho).GetDisplayName() : " ")</p>
                             </div>
                             <div class="col-6 small">
                                 <p class="mb-1"><i class="fas fa-euro-sign me-2"></i> @item.Salario</p>
-                                <p class="mb-1"><i class="fas fa-user-tie me-2"></i> @item.TipoContrato.Tipo</p>
+                                <p class="mb-1"><i class="fas fa-user-tie me-2"></i> @(item.TipoContrato != null ? ((Enum)item.TipoContrato).GetDisplayName() : " ")</p>
                                 <p class="mb-1"><i class="fas fa-briefcase me-2"></i> @item.Requisitos</p>
                             </div>
                         </div>

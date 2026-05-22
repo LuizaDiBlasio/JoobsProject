@@ -39,37 +39,50 @@ namespace JobPortal_API.Controllers
         public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, int? regimeTrabalho, int? concelho)
         {
             var query = _context.OfertaEmprego
-                         .Include(o => o.Concelho)
-                         .Include(o=> o.TipoContrato)
-                         .Where(o => o.VagaDisponivel == true)
-                         .AsQueryable();
+                           .Where(o => o.VagaDisponivel == true)
+                           .AsQueryable();
 
+            // filtro de pesquisa textual/enum
             if (!string.IsNullOrEmpty(search))
             {
+                // Tenta converter o termo de pesquisa para cada um dos enums
+                bool isJornada = Enum.TryParse<JornadaEnum>(search, ignoreCase: true, out var jornadaEnum);
+                bool isRegime = Enum.TryParse<RegimeTrabalhoEnum>(search, ignoreCase: true, out var regimeEnum);
+                bool isContrato = Enum.TryParse<TipoContratoEnum>(search, ignoreCase: true, out var contratoEnum);
+                bool isConcelho = Enum.TryParse<ConcelhoEnum>(search, ignoreCase: true, out var concelhoEnum);
 
+                // Para evitar erros de tradução no EF Core: avaliação local das flags (ternários)
                 query = query.Where(b =>
                     b.Titulo.Contains(search) ||
-                    b.Concelho.NomeConcelho.Contains(search) ||
-                    b.TipoContrato.Tipo.Contains(search) ||
-                    b.Requisitos.Contains(search));
+                    b.Requisitos.Contains(search) ||
+                    (b.Descricao != null && b.Descricao.Contains(search)) ||
+                    (isJornada ? b.Jornada == jornadaEnum : false) ||
+                    (isRegime ? b.RegimeTrabalho == regimeEnum : false) ||
+                    (isContrato ? b.TipoContrato == contratoEnum : false) ||
+                    (isConcelho ? b.Concelho == concelhoEnum : false)
+                );
             }
 
-            // 2. Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
+            // 3. Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
             if (regimeTrabalho.HasValue && regimeTrabalho.Value > 0)
             {
-                var regimeEnum = (RegimeTrabalhoEnum)regimeTrabalho.Value;
-                query = query.Where(b => b.RegimeTrabalho == regimeEnum);
+                var regimeEnumSelect = (RegimeTrabalhoEnum)regimeTrabalho.Value;
+                query = query.Where(b => b.RegimeTrabalho == regimeEnumSelect);
             }
 
-            // 3. Filtro Específico por Concelho (Combobox envia o ID)
+            // 4. Filtro Específico por Concelho (Combobox envia o ID)
             if (concelho.HasValue && concelho.Value > 0)
             {
-                query = query.Where(b => b.IdConcelho == concelho.Value);
+                var concelhoEnumSelect = (ConcelhoEnum)concelho.Value;
+                query = query.Where(b => b.Concelho == concelhoEnumSelect);
             }
 
-            return await query
+            // 5. Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)
+            var list = await query
                 .ProjectTo<OfertaEmpregoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            return list;
         }
 
 
