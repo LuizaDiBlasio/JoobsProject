@@ -11,6 +11,6 @@ namespace teste_cliente.Models
 
         public RegimeTrabalhoEnum? RegimeTrabalho { get; set; }
 
-        public int? IdConcelho {get; set; }
+        public ConcelhoEnum? Concelho {get; set; }
     }
 }

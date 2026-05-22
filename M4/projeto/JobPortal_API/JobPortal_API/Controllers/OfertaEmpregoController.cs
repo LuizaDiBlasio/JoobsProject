@@ -36,7 +36,10 @@ namespace JobPortal_API.Controllers
 
         //Buscas todas as ofertas
         [HttpGet("TodasOfertas")]
-        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, int? regimeTrabalho, int? concelho)
+        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego([FromQuery] string? search,
+                                                                   [FromQuery] int? jornada,
+                                                                   [FromQuery] int? concelho,
+                                                                   [FromQuery] int? regimeTrabalho)
         {
             var query = _context.OfertaEmprego
                            .Where(o => o.VagaDisponivel == true)
@@ -63,26 +66,32 @@ namespace JobPortal_API.Controllers
                 );
             }
 
-            // 3. Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
+            // Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
             if (regimeTrabalho.HasValue && regimeTrabalho.Value > 0)
             {
                 var regimeEnumSelect = (RegimeTrabalhoEnum)regimeTrabalho.Value;
                 query = query.Where(b => b.RegimeTrabalho == regimeEnumSelect);
             }
 
-            // 4. Filtro Específico por Concelho (Combobox envia o ID)
+            // Filtro Específico por Concelho (Combobox envia o ID)
             if (concelho.HasValue && concelho.Value > 0)
             {
                 var concelhoEnumSelect = (ConcelhoEnum)concelho.Value;
                 query = query.Where(b => b.Concelho == concelhoEnumSelect);
             }
 
-            // 5. Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)
-            var list = await query
+            // Filtro Específico por Jornada (Combobox envia o ID)
+            if (jornada.HasValue && jornada.Value > 0)
+            {
+                var jornadaEnumSelect = (JornadaEnum)jornada.Value;
+                query = query.Where(b => b.Jornada == jornadaEnumSelect);
+            }
+
+            //  Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)
+            return await query
                 .ProjectTo<OfertaEmpregoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return list;
         }
 
 

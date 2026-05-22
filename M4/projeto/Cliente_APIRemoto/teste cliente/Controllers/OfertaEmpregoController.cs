@@ -18,25 +18,34 @@ namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(string? search, int page = 1)
+        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regime, string? search, int page = 1)
         {
-            var model = new IndexOfertaViewModel();
-
+            
             int pageSize = 10;
             List<OfertaEmpregoDTO> ofertaList = new List<OfertaEmpregoDTO>();
 
             //AQUI NÃO É PRECISO O TOKEN
             using (var httpClient = new HttpClient())
             {
-                if (!string.IsNullOrEmpty(search))
-                {
-                    string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas?search={search}";
+                var queryParams = new List<string>();
+
+                if (!string.IsNullOrEmpty(search)) queryParams.Add($"search={Uri.EscapeDataString(search)}");
+                if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho}");
+                if (jornada.HasValue) queryParams.Add($"jornada={(int)jornada}");
+                if (regime.HasValue) queryParams.Add($"regimeTrabalho={(int)regime}");
+
+                string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+                string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
+
 
                     // Buscar a lista de ofertas
                     using (var response = await httpClient.GetAsync(apiUrl))
                     {
+                        if (response.IsSuccessStatusCode)
+                        {
                         string apiResponse = await response.Content.ReadAsStringAsync();
-                        ofertaList = JsonConvert.DeserializeObject<List<OfertaEmpregoDTO>>(apiResponse);
+                            ofertaList = JsonConvert.DeserializeObject<List<OfertaEmpregoDTO>>(apiResponse) ?? new List<OfertaEmpregoDTO>(); 
+                        }
                     }
 
                     // Obter IDs únicos de empresas para buscar as reviews
@@ -70,7 +79,7 @@ namespace teste_cliente.Controllers
                         // Associar as reviews da empresa à oferta via ViewData ou uma propriedade temporária
                         ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
                     }
-                } 
+                
             }
 
             int totalItems = ofertaList.Count;
@@ -79,12 +88,6 @@ namespace teste_cliente.Controllers
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-
-            foreach (var oferta in ofertaList)
-            {
-                var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-                oferta.LogoEmpresaBase64 = logoEmpresaBase64;
-            }
 
             // 🔽 FAVORITOS via Cookie
             var identity = HttpContext.User.Identity as ClaimsIdentity;
@@ -102,15 +105,26 @@ namespace teste_cliente.Controllers
 
             //Buscar listas 
             var listas = LoadLists();
-            
 
-            // 🔽 Enviar info para a View
+            var model = new IndexOfertaViewModel
+            {
+                OfertaEmpregosList = ofertaList,
+                Concelho = concelho,
+                Jornada = jornada,
+                RegimeTrabalho = regime
+            };
+
+
+            // 🔽 Enviar info para  a View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             ViewBag.Search = search;
             ViewBag.Favoritos = favoritos;
-            
-            if(listas != null)
+            ViewBag.Concelho = concelho;
+            ViewBag.Jornada = jornada;
+            ViewBag.RegimeTrabalho = regime;
+
+            if (listas != null)
             {
                 ViewBag.ConcelhosList = listas.SelectListConcelhos;
                 ViewBag.JornadasList = listas.SelectListJornada;
