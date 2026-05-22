@@ -90,12 +90,21 @@ namespace JobPortal_API.Controllers
             bool foiViaToken = !string.IsNullOrEmpty(idLogadoClaim);
 
             // Definir qual é o ID do candidato que estamos a tentar processar
-            int idCandidatoAlvo = foiViaToken ? int.Parse(idLogadoClaim) : idCandidatoFile;
+            int idCandidatoAlvo = idCandidatoFile;
+
+            // 🛡️ CORREÇÃO CIRÚRGICA: Se veio do token, isola o primeiro número caso esteja duplicado ("18,18")
+            if (foiViaToken)
+            {
+                var primeiroId = idLogadoClaim.Split(',')[0];
+                if (!int.TryParse(primeiroId, out idCandidatoAlvo))
+                {
+                    return BadRequest();
+                }
+            }
 
             // ---- NOVA VALIDAÇÃO SIMPLES DE DUPLICADO ----
             // Verifica se já existe algum registo para este candidato na tabela
             var jaTemCv = await _context.FileCV.AnyAsync(f => f.IdCandidatoFile == idCandidatoAlvo);
-
             if (jaTemCv)
             {
                 return BadRequest();

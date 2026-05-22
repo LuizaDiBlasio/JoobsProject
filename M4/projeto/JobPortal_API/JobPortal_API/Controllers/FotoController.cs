@@ -81,7 +81,17 @@ namespace JobPortal_API.Controllers
 
             if (roleLogada == "Candidato" && !string.IsNullOrEmpty(idLogadoClaim))
             {
-                fotoDTO.IdCandidatoFoto = int.Parse(idLogadoClaim);
+                // 🛡️ VACINA DO TOKEN DUPLICADO: Isola o "18" antes de converter
+                var primeiroId = idLogadoClaim.Split(',')[0];
+
+                if (int.TryParse(primeiroId, out int idCandidatoLogado))
+                {
+                    fotoDTO.IdCandidatoFoto = idCandidatoLogado;
+                }
+                else
+                {
+                    return BadRequest();
+                }
             }
 
             // VALIDAÇÃO DE DUPLICADO: Evita criar duas fotos para o mesmo candidato

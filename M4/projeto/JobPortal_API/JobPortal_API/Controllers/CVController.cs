@@ -76,7 +76,13 @@ namespace JobPortal_API.Controllers
                 return Unauthorized();
             }
 
-            int idCandidatoLogado = int.Parse(idCandidatoClaim);
+            // 🛡️ CORREÇÃO CIRÚRGICA: Isola o primeiro valor caso o Token venha duplicado ("18,18")
+            var primeiroId = idCandidatoClaim.Split(',')[0];
+
+            if (!int.TryParse(primeiroId, out int idCandidatoLogado))
+            {
+                return BadRequest();
+            }
 
             // Garante que o CV criado pertence ao Candidato Logado
             cvDTO.IdCandidatoCv = idCandidatoLogado;

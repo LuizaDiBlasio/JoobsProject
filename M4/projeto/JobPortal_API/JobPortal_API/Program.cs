@@ -39,27 +39,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuer = false,
         ValidateAudience = false,
         RoleClaimType = ClaimTypes.Role
-    };
-
-    // ALTERAÇÃO: add de msg padrão.
-    // Trata o erro 403 (Forbidden) quando o usuário está autenticado, mas tenta 
-    // acessar um recurso de outra Role (ex: Empresa tentando editar Candidato).
-    // Garante que o Swagger e o Cliente recebam uma mensagem amigável em JSON.
-    options.Events = new JwtBearerEvents
-    {
-        OnForbidden = context =>
-        {
-            context.Response.StatusCode = 403;
-            context.Response.ContentType = "application/json";
-
-            var result = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                mensagem = "403: Acesso negado. Não tem permissão para acessar este recurso."
-            });
-
-            return context.Response.WriteAsync(result);
-        }
-    };
+    };  
 });
 
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
