@@ -18,7 +18,7 @@ namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regime, string? search, int page = 1)
+        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, int page = 1)
         {
             
             int pageSize = 10;
@@ -32,7 +32,7 @@ namespace teste_cliente.Controllers
                 if (!string.IsNullOrEmpty(search)) queryParams.Add($"search={Uri.EscapeDataString(search)}");
                 if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho}");
                 if (jornada.HasValue) queryParams.Add($"jornada={(int)jornada}");
-                if (regime.HasValue) queryParams.Add($"regimeTrabalho={(int)regime}");
+                if (regimeTrabalho.HasValue) queryParams.Add($"regimeTrabalho={(int)regimeTrabalho}");
 
                 string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
                 string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
@@ -111,7 +111,7 @@ namespace teste_cliente.Controllers
                 OfertaEmpregosList = ofertaList,
                 Concelho = concelho,
                 Jornada = jornada,
-                RegimeTrabalho = regime
+                RegimeTrabalho = regimeTrabalho
             };
 
 
@@ -122,7 +122,7 @@ namespace teste_cliente.Controllers
             ViewBag.Favoritos = favoritos;
             ViewBag.Concelho = concelho;
             ViewBag.Jornada = jornada;
-            ViewBag.RegimeTrabalho = regime;
+            ViewBag.RegimeTrabalho = regimeTrabalho;
 
             if (listas != null)
             {
