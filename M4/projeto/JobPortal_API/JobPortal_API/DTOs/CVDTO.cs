@@ -15,7 +15,7 @@ namespace JobPortal_API.DTOs
         /// </summary>
         public int IdCandidatoCv { get; set; }
         public string Nome { get; set; }
-        public string Localizacao { get; set; }
+        public int IdConcelho { get; set; }
         public string? Educacao { get; set; }
         public string? ExpProfissional { get; set; }
         public string? Competencias { get; set; }

@@ -282,11 +282,11 @@ namespace JobPortal_API.Controllers
 
                                 IdOferta = o.IdOferta,
                                 Titulo = o.Titulo,
-                                Localizacao = o.Localização,
-                                RegimeTrabalho = o.RegimeTrabalho,
-                                TipoContrato = o.TipoContrato,
+                                NomeConcelho = o.Concelho.ToString(),
+                                RegimeTrabalho = o.RegimeTrabalho.ToString(),
+                                TipoContrato = o.TipoContrato.ToString(),
                                 Salario = o.Salario,
-                                Jornada = o.Jornada,
+                                Jornada = o.Jornada.ToString(),
 
                                 NomeEmpresa = e.Nome
                             };

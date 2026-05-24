@@ -114,24 +114,6 @@ namespace JobPortal_API.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "10",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "b9994cb8-4040-4f75-ae0e-ce01dbfa94a0",
-                            Email = "admin@admin.com",
-                            EmailConfirmed = true,
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@ADMIN.COM",
-                            NormalizedUserName = "ADMIN@ADMIN.COM",
-                            PasswordHash = "AQAAAAEAACcQAAAAENtOvkuC87kW59nwsKepHuZAL73hZefNc/Mo30GE5OygPIndmYyC145kQUMW5fPHmg==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "b8b5a162-478d-4fab-b5d0-86986056149a",
-                            TwoFactorEnabled = false,
-                            UserName = "admin@admin.com"
-                        });
                 });
 
             modelBuilder.Entity("JobPortal_API.Models.Candidato", b =>
@@ -187,7 +169,12 @@ namespace JobPortal_API.Migrations
                     b.Property<string>("Competencias")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Educacao")
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Escolaridade")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExpProfissional")
@@ -197,10 +184,6 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Interesses")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localizacao")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nome")
@@ -222,6 +205,10 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEmpresa"), 1L, 1);
 
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -230,9 +217,6 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LinkedIn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localidade")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("NoFuncionarios")
@@ -267,6 +251,9 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFile"), 1L, 1);
 
+                    b.Property<int>("CandidatoIdCandidato")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("File")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
@@ -276,7 +263,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("IdFile");
 
-                    b.HasIndex("IdCandidatoFile");
+                    b.HasIndex("CandidatoIdCandidato");
 
                     b.ToTable("FileCV");
                 });
@@ -289,6 +276,9 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("CandidatoIdCandidato")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("FotoPerfil")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
@@ -298,7 +288,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdCandidatoFoto");
+                    b.HasIndex("CandidatoIdCandidato");
 
                     b.ToTable("Foto");
                 });
@@ -318,9 +308,12 @@ namespace JobPortal_API.Migrations
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
 
+                    b.Property<int>("empresaIdEmpresa")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("IdEmpresaFoto");
+                    b.HasIndex("empresaIdEmpresa");
 
                     b.ToTable("LogoEmpresa");
                 });
@@ -333,22 +326,28 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdOferta"), 1L, 1);
 
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Contagem")
                         .HasColumnType("int");
 
                     b.Property<string>("Descricao")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("EmpresaIdEmpresa")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdEmpresa")
                         .HasColumnType("int");
 
                     b.Property<string>("Jornada")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localização")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RegimeTrabalho")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Requisitos")
@@ -358,6 +357,7 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("real");
 
                     b.Property<string>("TipoContrato")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Titulo")
@@ -369,7 +369,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("IdOferta");
 
-                    b.HasIndex("IdEmpresa");
+                    b.HasIndex("EmpresaIdEmpresa");
 
                     b.ToTable("OfertaEmprego");
                 });
@@ -435,29 +435,6 @@ namespace JobPortal_API.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "1",
-                            ConcurrencyStamp = "8fb7ed1d-14f5-44a7-a7bd-d4769a767665",
-                            Name = "Admin",
-                            NormalizedName = "ADMIN"
-                        },
-                        new
-                        {
-                            Id = "2",
-                            ConcurrencyStamp = "467f8f83-430a-466d-a0db-6e4e01ce3500",
-                            Name = "Candidato",
-                            NormalizedName = "CANDIDATO"
-                        },
-                        new
-                        {
-                            Id = "3",
-                            ConcurrencyStamp = "141c1756-17b4-498b-b5d6-063c6d3c8466",
-                            Name = "Empresa",
-                            NormalizedName = "EMPRESA"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -545,13 +522,6 @@ namespace JobPortal_API.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = "10",
-                            RoleId = "1"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -623,7 +593,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Candidato", "Candidato")
                         .WithMany("FileCV")
-                        .HasForeignKey("IdCandidatoFile")
+                        .HasForeignKey("CandidatoIdCandidato")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -634,7 +604,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Candidato", "Candidato")
                         .WithMany("Foto")
-                        .HasForeignKey("IdCandidatoFoto")
+                        .HasForeignKey("CandidatoIdCandidato")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -645,7 +615,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Empresa", "empresa")
                         .WithMany("LogoEmpresa")
-                        .HasForeignKey("IdEmpresaFoto")
+                        .HasForeignKey("empresaIdEmpresa")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -656,7 +626,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Empresa", "Empresa")
                         .WithMany("OfertaEmprego")
-                        .HasForeignKey("IdEmpresa")
+                        .HasForeignKey("EmpresaIdEmpresa")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
