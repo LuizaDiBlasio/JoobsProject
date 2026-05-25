@@ -16,7 +16,7 @@
                 <div class="alert alert-danger">
                     @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
                     {
-                        <p>@error.ErrorMessage</p>
+                        <p class="mb-0">@error.ErrorMessage</p>
                     }
                 </div>
             }
@@ -36,6 +36,12 @@
                         }
                         <h4 class="fw-bold">Reviews para @empresa.Nome</h4>
                         <h5>Média de Rating: @(Model.Any() ? Model.Average(r => r.Rating).ToString("F1") : "N/A")</h5>
+                        @if (User.IsInRole("Candidato"))
+                        {
+                            <button type="button" class="btn custom-review-btn mt-3" data-bs-toggle="modal" data-bs-target="#reviewModal-@empresa.IdEmpresa">
+                                Escrever crítica >
+                            </button>
+                        }
                     </div>
                 </div>
 
@@ -59,11 +65,11 @@
                                             {
                                                 if (i <= review.Rating)
                                                 {
-                                                    <i class="fa fa-star"></i>
+                                                    <i class="fas fa-star"></i>
                                                 }
                                                 else
                                                 {
-                                                    <i class="fa fa-star-o"></i>
+                                                    <i class="far fa-star"></i>
                                                 }
                                             }
                                         </div>
@@ -77,7 +83,7 @@
                                 </div>
                             </div>
                         }
-                    </div>                    
+                    </div>
                 }
                 <!-- Botão Voltar -->
                 <div class="mt-4">
@@ -87,6 +93,148 @@
         </div>
     </div>
 </div>
+
+@if (User.IsInRole("Candidato") && empresa != null)
+{
+    <div class="modal fade" id="reviewModal-@empresa.IdEmpresa" tabindex="-1" aria-labelledby="reviewModalLabel-@empresa.IdEmpresa" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reviewModalLabel-@empresa.IdEmpresa">Adicionar Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form asp-controller="Review" asp-action="Create" method="post">
+                        <input type="hidden" name="IdEmpresa" value="@empresa.IdEmpresa" />
+                        <input type="hidden" name="NomeUsuario" value="@User.Identity.Name" />
+                        <input type="hidden" name="DataCriacao" value="@DateTime.Now.ToString("o")" />
+
+                        <div class="mb-3">
+                            <label for="titulo-@empresa.IdEmpresa" class="form-label">Título</label>
+                            <input type="text" class="form-control" id="titulo-@empresa.IdEmpresa" name="Titulo" required />
+                            <span class="text-danger field-validation-error" data-valmsg-for="Titulo" data-valmsg-replace="true"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <br />
+                            <div class="rating-stars-modal" id="rating-stars-@empresa.IdEmpresa">
+                                <input type="hidden" name="Rating" id="rating-value-@empresa.IdEmpresa" value="0" />
+                                <i class="far fa-star" data-value="1"></i>
+                                <i class="far fa-star" data-value="2"></i>
+                                <i class="far fa-star" data-value="3"></i>
+                                <i class="far fa-star" data-value="4"></i>
+                                <i class="far fa-star" data-value="5"></i>
+                            </div>
+                            <br />
+                            <span class="text-danger" id="rating-error-@empresa.IdEmpresa"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descricao-@empresa.IdEmpresa" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="descricao-@empresa.IdEmpresa" name="Descricao" rows="3" required></textarea>
+                            <span class="text-danger field-validation-error" data-valmsg-for="Descricao" data-valmsg-replace="true"></span>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                            <button type="submit" class="btn btn-primary">Inserir</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Reinicia o estado das estrelas ao abrir o modal
+            $(document).on('show.bs.modal', '.modal', function () {
+                var modalId = $(this).attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var stars = ratingStars.find('.fa-star');
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+
+                stars.removeClass('fas').addClass('far');
+                ratingInput.val(0);
+                $('#rating-error-' + modalId).text('');
+            });
+
+            // Evento de clique para as estrelas
+            $(document).on('click', '.rating-stars-modal .fa-star', function (e) {
+                e.preventDefault();
+                var $star = $(this);
+                var modalId = $star.closest('.modal').attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var value = parseInt($star.data('value'));
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                var stars = ratingStars.find('.fa-star');
+
+                ratingInput.val(value);
+                $('#rating-error-' + modalId).text('');
+
+                stars.each(function () {
+                    var starValue = parseInt($(this).data('value'));
+                    if (starValue <= value) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            });
+
+            // Hover nas estrelas (passar o rato)
+            $(document).on('mouseenter', '.rating-stars-modal .fa-star', function () {
+                var $star = $(this);
+                var hoverValue = parseInt($star.data('value'));
+                var ratingStars = $star.closest('.rating-stars-modal');
+                var stars = ratingStars.find('.fa-star');
+
+                stars.each(function () {
+                    var starValue = parseInt($(this).data('value'));
+                    if (starValue <= hoverValue) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            }).on('mouseleave', '.rating-stars-modal', function () {
+                var ratingStars = $(this);
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                var currentValue = parseInt(ratingInput.val()) || 0;
+                var stars = ratingStars.find('.fa-star');
+
+                stars.each(function () {
+                    var starValue = parseInt($(this).data('value'));
+                    if (starValue <= currentValue) {
+                        $(this).removeClass('far').addClass('fas');
+                    } else {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            });
+
+            // Validação do formulário ao enviar
+            $(document).on('submit', 'form', function (e) {
+                var modal = $(this).closest('.modal');
+                if (modal.length === 0) return;
+
+                var modalId = modal.attr('id').replace('reviewModal-', '');
+                var ratingInput = $(this).find('input[name="Rating"]');
+                var ratingValue = parseInt(ratingInput.val());
+                var ratingError = $('#rating-error-' + modalId);
+
+                if (ratingValue === 0 || isNaN(ratingValue)) {
+                    ratingError.text('Por favor, selecione um rating de 1 a 5.');
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+}
 
 @section Styles {
     <style>
@@ -134,6 +282,22 @@
             font-size: 18px;
         }
 
+        .rating-stars-modal {
+            font-size: 22px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+            .rating-stars-modal i {
+                margin-right: 4px;
+                color: #ccc;
+                transition: color 0.2s ease;
+            }
+
+                .rating-stars-modal i.fas {
+                    color: #f5c518;
+                }
+
         .review-right {
             flex: 1;
             padding-left: 19px;
@@ -164,26 +328,35 @@
             line-height: 1.5;
         }
 
-        .fa-star, .fa-star-o {
-            margin-right: 2px;
-        }
-
         .voltar-btn {
             background-color: #5de4d9;
             color: white;
             border: none;
             border-radius: 20px;
-            padding: 10px 25px;            
+            padding: 10px 25px;
             font-weight: 600;
             transition: all 0.3s ease;
             display: inline-block;
-            margin-left: 20px;
         }
 
             .voltar-btn:hover {
                 background-color: #F2994A;
-                color:white;
+                color: white;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+
+        .custom-review-btn {
+            background-color: #5de4d9 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 20px !important;
+            padding: 8px 20px !important;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+            .custom-review-btn:hover {
+                background-color: #F2994A !important;
             }
     </style>
 }

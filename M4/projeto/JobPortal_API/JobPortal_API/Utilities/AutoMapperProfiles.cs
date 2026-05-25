@@ -35,7 +35,8 @@ namespace JobPortal_API.Utilities
             CreateMap<ReviewDTO, Review>();
             CreateMap<Review, ReviewDTO>();
 
-
+            CreateMap<NotificationsDTO, Notifications>();
+            CreateMap<Notifications, NotificationsDTO>();
         }
     }
 }

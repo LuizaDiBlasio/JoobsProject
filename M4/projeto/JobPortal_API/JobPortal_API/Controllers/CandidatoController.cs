@@ -19,6 +19,7 @@ namespace JobPortal_API.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
+
         public CandidatoController(ApplicationDbContext context, IMapper mapper, UserManager<ApplicationUser> userManager)
         {
             _context = context;
@@ -26,31 +27,41 @@ namespace JobPortal_API.Controllers
             _userManager = userManager;
         }
 
-        //todos os registros
+        //Buscar todos os registros de candidatos
         [Authorize(Roles = "Admin")]
         [HttpGet("BuscarTodos")]
         public async Task<IEnumerable<CandidatoDTO>> GetCandidato()
         {
-            return await _context.Candidato.ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider).ToListAsync();
+            return await _context.Candidato
+                .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
-        //busca por ID
-        [Authorize(Roles = "Admin,Candidato")]
+
+        //Buscar por ID
+        [Authorize(Roles = "Admin, Candidato")]
         [ServiceFilter(typeof(VerificaCandidatoFilter))]
         [HttpGet("BuscarPorId/{id}")]
         public async Task<ActionResult<CandidatoDTO>> GetCandidato(int id)
         {
+            // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.Candidato == null)
             {
                 return NotFound();
             }
-            var candidato = _context.Candidato.ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdCandidato == id);
+
+            var candidato = await _context.Candidato
+                .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(m => m.IdCandidato == id);
+
+            // Verifica se a busca que você fez encontrou algum resultado. 
+            // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
             if (candidato == null)
             {
                 return NotFound();
             }
 
-            return await candidato;
+            return Ok(candidato);
         }
 
 
@@ -61,7 +72,7 @@ namespace JobPortal_API.Controllers
         public async Task<ActionResult<CandidatoDTO>> GetByEmail(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return BadRequest("Email não pode ser vazio.");
+                return BadRequest();
 
             // procura no banco
             var cand = await _context.Candidato
@@ -69,7 +80,7 @@ namespace JobPortal_API.Controllers
                               .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
                               .FirstOrDefaultAsync();
             if (cand == null)
-                return NotFound($"Candidato com email '{email}' não encontrado.");
+                return NotFound();
 
             return Ok(cand);
         }
@@ -81,7 +92,11 @@ namespace JobPortal_API.Controllers
         [HttpPut("EditarCandidato/{id:int}")]
         public async Task<ActionResult> PutCandidato(CandidatoDTO candidatoDTO, int id)
         {
-            // 1) Carrega o candidato EXISTENTE, incluindo o UserId
+            // SEGURANÇA: O ID do DTO deve ser igual ao da URL antes de salvar
+            // Garante que o ID da URL tenha precedência absoluta sobre o objeto
+            candidatoDTO.IdCandidato = id;
+
+           // 1) Carrega o candidato EXISTENTE, incluindo o UserId
             var candidato = await _context.Candidato
                 .FirstOrDefaultAsync(c => c.IdCandidato == id);
 
@@ -89,7 +104,6 @@ namespace JobPortal_API.Controllers
                 return NotFound();
 
             var userId = candidato.UserId;            
-            var emailAntigo = candidato.Email;        
 
             // 2) Atualiza os dados do candidato
             _mapper.Map(candidatoDTO, candidato);
@@ -100,7 +114,6 @@ namespace JobPortal_API.Controllers
             if (user != null)
             {
                 bool changed = false;
-
 
                 // se email mudou
                 if (user.Email != candidato.Email)
@@ -129,8 +142,8 @@ namespace JobPortal_API.Controllers
             return Ok();
         }
 
-        //delete
-        [Authorize(Roles = "Admin,Candidato")]
+        //Deletar candidato
+        [Authorize(Roles = "Admin, Candidato")]
         [ServiceFilter(typeof(VerificaCandidatoFilter))]
         [HttpDelete("DeletarCandidato/{id:int}")]
         public async Task<IActionResult> DeleteCandidato(int id)
@@ -164,7 +177,7 @@ namespace JobPortal_API.Controllers
             return Ok("Candidato e dados associados deletados com sucesso.");
         }
 
-        [Authorize(Roles = "Candidato,Admin")]
+        [Authorize(Roles = "Candidato, Admin")]
         [ServiceFilter(typeof(VerificaCandidatoFilter))]
         [HttpPost("ChangePassword/{id:int}")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDTO dto)
@@ -173,21 +186,19 @@ namespace JobPortal_API.Controllers
                 return Forbid();
 
             // 1) Carrega o candidato para obter o UserId
-            var candidato = await _context.Candidato
-                                  .FirstOrDefaultAsync(c => c.IdCandidato == dto.IdCandidato);
-            if (candidato == null) return NotFound("Candidato não encontrado");
+            var candidato = await _context.Candidato.FirstOrDefaultAsync(c => c.IdCandidato == dto.IdCandidato);
+            if (candidato == null) return NotFound(new {mensagem = "Candidato não encontrado" });
 
             // 2) Carrega o usuário Identity
             var user = await _userManager.FindByIdAsync(candidato.UserId);
-            if (user == null) return NotFound("Usuário Identity não encontrado");
+            if (user == null) return NotFound(new {mensagem = "Usuário Identity não encontrado." });
 
             // 3) Tenta trocar a password
             var result = await _userManager.ChangePasswordAsync(
                              user,
                              dto.CurrentPassword,
                              dto.NewPassword);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok("Password alterada com sucesso");
         }

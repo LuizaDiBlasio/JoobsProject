@@ -159,6 +159,32 @@ namespace teste_cliente.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Empresa empresa)
         {
+            // Verifica se as validações (incluindo a das redes sociais) passaram
+            if (!ModelState.IsValid)
+            {
+                // IMPORTANTE: Como a View Details precisa das Reviews, 
+                // temos que carregá-las de novo antes de retornar a view
+                List<Review> reviews = new List<Review>();
+                using (var httpClient = new HttpClient())
+                {
+                    //var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+                    //httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var respRev = await httpClient.GetAsync($"https://localhost:7211/api/review/empresa/{empresa.IdEmpresa}");
+                    if (respRev.IsSuccessStatusCode)
+                    {
+                        var jsonRev = await respRev.Content.ReadAsStringAsync();
+                        reviews = JsonConvert.DeserializeObject<List<Review>>(jsonRev);
+                    }
+                }
+
+                ViewBag.Reviews = reviews;
+
+                return View("Details", empresa);
+            }
+
+
+            // ---------------------------------------------------------------------------------------------------- //
             Empresa e = new Empresa();
 
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
@@ -199,8 +225,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
