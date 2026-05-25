@@ -169,7 +169,12 @@ namespace JobPortal_API.Migrations
                     b.Property<string>("Competencias")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Educacao")
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Escolaridade")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExpProfissional")
@@ -179,10 +184,6 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Interesses")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localizacao")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nome")
@@ -204,6 +205,10 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdEmpresa"), 1L, 1);
 
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -212,9 +217,6 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LinkedIn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localidade")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("NoFuncionarios")
@@ -249,6 +251,9 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFile"), 1L, 1);
 
+                    b.Property<int>("CandidatoIdCandidato")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("File")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
@@ -258,7 +263,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("IdFile");
 
-                    b.HasIndex("IdCandidatoFile");
+                    b.HasIndex("CandidatoIdCandidato");
 
                     b.ToTable("FileCV");
                 });
@@ -271,6 +276,9 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("CandidatoIdCandidato")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("FotoPerfil")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
@@ -280,7 +288,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdCandidatoFoto");
+                    b.HasIndex("CandidatoIdCandidato");
 
                     b.ToTable("Foto");
                 });
@@ -300,9 +308,12 @@ namespace JobPortal_API.Migrations
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
 
+                    b.Property<int>("empresaIdEmpresa")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("IdEmpresaFoto");
+                    b.HasIndex("empresaIdEmpresa");
 
                     b.ToTable("LogoEmpresa");
                 });
@@ -337,22 +348,28 @@ namespace JobPortal_API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdOferta"), 1L, 1);
 
+                    b.Property<string>("Concelho")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Contagem")
                         .HasColumnType("int");
 
                     b.Property<string>("Descricao")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("EmpresaIdEmpresa")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdEmpresa")
                         .HasColumnType("int");
 
                     b.Property<string>("Jornada")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Localização")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RegimeTrabalho")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Requisitos")
@@ -362,6 +379,7 @@ namespace JobPortal_API.Migrations
                         .HasColumnType("real");
 
                     b.Property<string>("TipoContrato")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Titulo")
@@ -373,7 +391,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("IdOferta");
 
-                    b.HasIndex("IdEmpresa");
+                    b.HasIndex("EmpresaIdEmpresa");
 
                     b.ToTable("OfertaEmprego");
                 });
@@ -597,7 +615,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Candidato", "Candidato")
                         .WithMany("FileCV")
-                        .HasForeignKey("IdCandidatoFile")
+                        .HasForeignKey("CandidatoIdCandidato")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -608,7 +626,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Candidato", "Candidato")
                         .WithMany("Foto")
-                        .HasForeignKey("IdCandidatoFoto")
+                        .HasForeignKey("CandidatoIdCandidato")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -619,7 +637,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Empresa", "empresa")
                         .WithMany("LogoEmpresa")
-                        .HasForeignKey("IdEmpresaFoto")
+                        .HasForeignKey("empresaIdEmpresa")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -630,7 +648,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Empresa", "Empresa")
                         .WithMany("OfertaEmprego")
-                        .HasForeignKey("IdEmpresa")
+                        .HasForeignKey("EmpresaIdEmpresa")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
