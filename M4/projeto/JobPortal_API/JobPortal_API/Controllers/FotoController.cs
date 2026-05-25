@@ -100,7 +100,26 @@ namespace JobPortal_API.Controllers
             {
                 return BadRequest();
             }
+
+            // 1. O Mapper cria o objeto básico
             var foto = _mapper.Map<Foto>(fotoDTO);
+
+            // ============== ALTERAÇÃO 25/05: A SOLUÇÃO MANUAL PARA REPARAR O MERGE:
+            // Buscamos o candidato no banco para dar suporte à Foreign Key do banco da Luiza
+            var candidatoExistente = await _context.Candidato.FindAsync(fotoDTO.IdCandidatoFoto);
+            if (candidatoExistente == null)
+            {
+                return NotFound("Candidato não encontrado.");
+            }
+
+            // Associamos o candidato explicitamente no objeto mapeado
+            foto.Candidato = candidatoExistente;
+
+            // Se o nome da propriedade de bytes no teu DTO for diferente de "FotoPerfil" (ex: se for fotoDTO.Logo), 
+            // garante que os bytes passam explicitamente para a coluna nova aqui:
+            // foto.FotoPerfil = fotoDTO.Logo;
+            // ============== FIM ALTERAÇÃO ============== //
+
             _context.Add(foto);
             await _context.SaveChangesAsync();
             return Ok();

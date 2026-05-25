@@ -148,10 +148,21 @@ namespace JobPortal_API.Controllers
             }
             else
             {
+                // ALTERAÇÃO: 1. Procuramos a empresa ativa na base de dados da API
+                var empresaExistente = await _context.Empresa.FindAsync(IdEmpresaFoto);
+
+                // ALTERAÇÃO: 2. Se por algum motivo a empresa não for encontrada, evitamos o erro do SQL
+                if (empresaExistente == null)
+                {
+                    return NotFound($"A empresa com o ID {IdEmpresaFoto} não foi encontrada no banco.");
+                }
+
+                // 3. Criamos o registo associando o objeto da empresa explicitamente
                 var newLogo = new LogoEmpresa
                 {
                     IdEmpresaFoto = IdEmpresaFoto,
-                    Logo = logoBytes
+                    Logo = logoBytes,
+                    empresa = empresaExistente // <--- ALTERAÇÃO: O teu Model exige isto preenchido para a FK funcionar!
                 };
                 _context.LogoEmpresa.Add(newLogo);
                 await _context.SaveChangesAsync();

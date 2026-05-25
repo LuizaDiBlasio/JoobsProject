@@ -225,8 +225,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
