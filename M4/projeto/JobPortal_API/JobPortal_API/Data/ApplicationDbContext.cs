@@ -121,6 +121,8 @@ namespace JobPortal_API.Data
         public virtual DbSet<OfertaEmprego> OfertaEmprego { get; set; }
         public virtual DbSet<FileCV> FileCV { get; set; }
         public virtual DbSet<Review> Review { get; set; }
+        public virtual DbSet<Notifications> Notifications { get; set; }
+ 
 
     }
 }
