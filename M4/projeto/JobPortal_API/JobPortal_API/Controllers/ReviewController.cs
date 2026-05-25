@@ -5,6 +5,7 @@ using JobPortal_API.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace JobPortal_API.Controllers
@@ -53,23 +54,33 @@ namespace JobPortal_API.Controllers
         {
             if (reviewDto == null)
             {
-                return BadRequest("Dados da review não podem ser nulos.");
+                return BadRequest();
             }
 
             if (reviewDto.Rating < 1 || reviewDto.Rating > 5)
             {
-                return BadRequest("O rating deve ser um valor entre 1 e 5.");
+                return BadRequest();
             }
 
             // Validar se IdEmpresa existe
             var empresaExists = await _repository.EmpresaExistsAsync(reviewDto.IdEmpresa);
             if (!empresaExists)
             {
-                return BadRequest("A empresa especificada não existe.");
+                return BadRequest();
             }
 
             try
             {
+                // 🔐 SEGURANÇA MÍNIMA: Se for Candidato, garante o nome real dele vindo do Token
+                if (User.IsInRole("Candidato"))
+                {
+                    var nomeUsuarioClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+                    if (!string.IsNullOrEmpty(nomeUsuarioClaim))
+                    {
+                        reviewDto.NomeUsuario = nomeUsuarioClaim; // Usa o nome real do token no DTO
+                    }
+                }
+
                 var review = _mapper.Map<Review>(reviewDto);
                 review.DataCriacao = DateTime.Now;
 
@@ -78,11 +89,11 @@ namespace JobPortal_API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest();  //(ex.Message)
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Erro interno ao criar a review: " + ex.Message);
+                return StatusCode(500);
             }
         }
 
@@ -119,17 +130,18 @@ namespace JobPortal_API.Controllers
         //    }
         //}
 
+        [Authorize(Roles = "Admin, Candidato")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateReview(int id, [FromBody] ReviewDTO reviewDto)
         {
             if (reviewDto == null)
             {
-                return BadRequest("Dados da review não podem ser nulos.");
+                return BadRequest();
             }
 
             if (id <= 0)
             {
-                return BadRequest("ID da review inválido.");
+                return BadRequest();
             }
 
             try
@@ -138,7 +150,17 @@ namespace JobPortal_API.Controllers
                 var reviewToUpdate = await _repository.GetAsync(id);
                 if (reviewToUpdate == null)
                 {
-                    return NotFound("Review não encontrada.");
+                    return NotFound();
+                }
+
+                // 🔐 MÍNIMA ALTERAÇÃO: Validar se o Candidato é o dono da review pelo Nome
+                if (User.IsInRole("Candidato"))
+                {
+                    var nomeToken = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                    if (string.IsNullOrEmpty(nomeToken) || reviewToUpdate.NomeUsuario != nomeToken)
+                    {
+                        return Forbid(); // Se o nome não bater, bloqueia o update
+                    }
                 }
 
                 // Mapear os novos dados do DTO para a review existente
@@ -153,18 +175,37 @@ namespace JobPortal_API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest();  // (ex.Message)
             }
             catch (Exception ex)
             {
                 // Logar o erro, se necessário
-                return StatusCode(500, "Erro interno ao atualizar a review.");
+                return StatusCode(500);
             }
         }
 
+        [Authorize(Roles = "Admin, Candidato")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteReview(int id)
         {
+            // ALTERAÇÃO: Buscar a review para validar o dono antes de apagar
+            var reviewToDelete = await _repository.GetAsync(id);
+            if (reviewToDelete == null)
+            {
+                return NotFound();
+            }
+
+            if (User.IsInRole("Candidato"))
+            {
+                var nomeToken = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                if (string.IsNullOrEmpty(nomeToken) || reviewToDelete.NomeUsuario != nomeToken)
+                {
+                    return Forbid(); // Se o nome não for igual, não deixa apagar
+                }
+            }
+            // fim ALTERAÇÃO
+
+            // Se passou na validação ou for Admin, apaga
             var result = await _repository.DeleteAsync(id);
             if (!result)
             {

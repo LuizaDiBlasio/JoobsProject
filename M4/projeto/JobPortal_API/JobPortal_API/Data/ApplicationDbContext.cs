@@ -97,6 +97,19 @@ namespace JobPortal_API.Data
             modelBuilder.Entity<OfertaEmprego>()
                .Property(o => o.Concelho)
                .HasConversion<string>();
+
+            //ALTERAÇÃO ERIKA
+            // Mapeamento explícito da FK do Logo da Empresa
+            modelBuilder.Entity<LogoEmpresa>()
+                .HasOne<Empresa>()  // relação de 1 para muitos**
+                .WithMany()
+                .HasForeignKey(l => l.IdEmpresaFoto); // Garante que o EF usa esta propriedade como a FK real
+
+            // Fazer o mesmo para a Foto do Candidato (ajusta os nomes se na tua classe Candidato for diferente)
+            modelBuilder.Entity<Foto>()
+                .HasOne<Candidato>()
+                .WithMany()
+                .HasForeignKey(f => f.IdCandidatoFoto); // Ou o nome da propriedade ID que usas na classe Foto
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }

@@ -6,10 +6,11 @@ using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
-
+    //[Authorize] // <- Adicionado para proteger os endpoints por padrão
     [ApiController]
     [Route("api/logo")]
     public class LogoController : ControllerBase
@@ -28,6 +29,7 @@ namespace JobPortal_API.Controllers
         {
             return await _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).ToListAsync();
         }
+
         //busca por ID da Empresa
         [AllowAnonymous]
         [HttpGet("{idEmpresa}")]
@@ -37,24 +39,34 @@ namespace JobPortal_API.Controllers
             {
                 return NotFound();
             }
-            var logo = _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresaFoto == idEmpresa);
+            var logo = await _context.LogoEmpresa.ProjectTo<LogoEmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresaFoto == idEmpresa);
             if (logo == null)
             {
                 return NotFound();
             }
 
-            return await logo;
+            return Ok(logo);
         }
-
         
         //Criar logo
         [HttpPost]
         public async Task<ActionResult> PostLogo(LogoEmpresaDTO logoDTO)
         {
+            // ALTERAÇÃO: SEGURANÇA: Injeta o ID da Empresa logada se for o perfil Empresa
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    logoDTO.IdEmpresaFoto = int.Parse(idEmpresaClaim);
+                }
+            }
+
             var logo = _mapper.Map<LogoEmpresa>(logoDTO);
             _context.Add(logo);
             await _context.SaveChangesAsync();
-            return Ok(logo);
+            return Ok();
         }
 
         //Edit/Update pelo id da empresa
@@ -66,11 +78,23 @@ namespace JobPortal_API.Controllers
             {
                 return NotFound();
             }
-            logo = _mapper.Map(logoDTO, logo);
 
+            // ALTERAÇÃO: SEGURANÇA: Impede que uma empresa edite o logo de outra
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim) && int.Parse(idEmpresaClaim) != logo.IdEmpresaFoto)
+                {
+                    return Forbid();
+                }
+            }
+
+            _mapper.Map(logoDTO, logo);
             await _context.SaveChangesAsync();
             return Ok();
         }
+
         //delete
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> DeleteLogo(int id)
@@ -93,7 +117,18 @@ namespace JobPortal_API.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest("Nenhum ficheiro foi enviado.");
+                return BadRequest();
+            }
+
+            // ALTERAÇÃO:SEGURANÇA: Força o ID do token se for perfil Empresa
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null && identity.FindFirst(ClaimTypes.Role)?.Value == "Empresa")
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    IdEmpresaFoto = int.Parse(idEmpresaClaim);
+                }
             }
 
             byte[] logoBytes;
@@ -109,18 +144,29 @@ namespace JobPortal_API.Controllers
             {
                 existingLogo.Logo = logoBytes;
                 await _context.SaveChangesAsync();
-                return Ok(existingLogo);
+                return Ok();
             }
             else
             {
+                // ALTERAÇÃO: 1. Procuramos a empresa ativa na base de dados da API
+                var empresaExistente = await _context.Empresa.FindAsync(IdEmpresaFoto);
+
+                // ALTERAÇÃO: 2. Se por algum motivo a empresa não for encontrada, evitamos o erro do SQL
+                if (empresaExistente == null)
+                {
+                    return NotFound($"A empresa com o ID {IdEmpresaFoto} não foi encontrada no banco.");
+                }
+
+                // 3. Criamos o registo associando o objeto da empresa explicitamente
                 var newLogo = new LogoEmpresa
                 {
                     IdEmpresaFoto = IdEmpresaFoto,
-                    Logo = logoBytes
+                    Logo = logoBytes,
+                    empresa = empresaExistente // <--- ALTERAÇÃO: O teu Model exige isto preenchido para a FK funcionar!
                 };
                 _context.LogoEmpresa.Add(newLogo);
                 await _context.SaveChangesAsync();
-                return Ok(newLogo);
+                return Ok();
             }
         }
 
@@ -137,8 +183,5 @@ namespace JobPortal_API.Controllers
             // Se for outro formato, ajusta o content-type conforme necessário.
             return File(logo.Logo, "image/jpeg");
         }
-
-
     }
-
 }

@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.Linq;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
@@ -155,7 +157,22 @@ namespace JobPortal_API.Controllers
         [HttpPost("CriarOferta")]
         public async Task<ActionResult> PostOfertaEmprego(OfertaEmpregoDTO ofertaDTO)
         {
+            // Pega o ID da empresa direto do Token de quem está logado.
+            // ALTERAÇÃO: Captura o ID da empresa logada diretamente das Claims do Token JWT.
+            // Isso evita erros de Foreign Key (FK) caso o ID venha zerado ou incorreto do Swagger/Client,
+            // garantindo que a oferta seja sempre vinculada à empresa autenticada.
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    ofertaDTO.IdEmpresa = int.Parse(idEmpresaClaim);
+                }
+            }
+
             var oferta = _mapper.Map<OfertaEmprego>(ofertaDTO);
+
             _context.Add(oferta);
             await _context.SaveChangesAsync();
             return Ok();
@@ -167,15 +184,32 @@ namespace JobPortal_API.Controllers
         [HttpPut("EditarOferta/{id:int}")]
         public async Task<ActionResult> PutOfertaEmprego(OfertaEmpregoDTO ofertaDTO, int id)
         {
-            var oferta = await _context.OfertaEmprego.FirstOrDefaultAsync(c => c.IdOferta == id);
-            if (oferta == null)
+            // ALTERAÇÃO: Força o ID do objeto a ser o mesmo da URL (ignora o que veio no JSON)
+            ofertaDTO.IdOferta = id;
+
+            // ALTERAÇÃO: Garante que a vaga continua vinculada à empresa dona que está logada
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    ofertaDTO.IdEmpresa = int.Parse(idEmpresaClaim);
+                }
+            }
+
+            // 1) Carrega a oferta existente para rastreamento (tracking) do EF
+            var ofertaNoBanco = await _context.OfertaEmprego.FirstOrDefaultAsync(c => c.IdOferta == id);
+            if (ofertaNoBanco == null)
             {
                 return NotFound();
             }
-            oferta = _mapper.Map(ofertaDTO, oferta);
 
+            // 2) Mapeia as alterações do DTO por cima do objeto rastreado
+            _mapper.Map(ofertaDTO, ofertaNoBanco);
             await _context.SaveChangesAsync();
-            return Ok();
+
+            return Ok(); // Retorno limpo padrão da main
         }
 
         [Authorize(Roles = "Admin,Empresa")]

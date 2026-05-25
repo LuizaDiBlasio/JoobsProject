@@ -92,16 +92,12 @@
                             <partial name="_RatingDisplay" model="reviews" />
 
                             <a asp-controller="Review" asp-action="Index" asp-route-empresaId="@item.IdEmpresa" class="text-muted small">Ver críticas ></a>
-                            @if (User.IsInRole("Candidato"))
-                            {
-                                <a href="#" class="text-muted small mt-1" data-bs-toggle="modal" data-bs-target="#reviewModal-@item.IdEmpresa">Escrever crítica ></a>
-                            }
                         </div>
                     </div>
 
-                    <div class="col-md-3 d-flex flex-column align-items-left justify-content-center">
+                    <div class="col-md-3 d-flex flex-column align-items-start justify-content-center">
                         <h4 class="mb-3 job-title">@item.Titulo</h4>
-                        <div class="row job-details">
+                        <div class="row job-details w-100">
                             <div class="col-6 small">
                                 <p class="mb-1"><i class="far fa-clock me-2"></i>@(item.Jornada != null ? ((Enum)item.Jornada).GetDisplayName() : " ")</p>
                                 <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> @(item.Concelho != null ? ((Enum)item.Concelho).GetDisplayName() : " ")</p>
@@ -119,82 +115,30 @@
                         <p class="card-text job-description">
                             @(item.Descricao.Length > 250 ? item.Descricao.Substring(0, 200) + "..." : item.Descricao)
                         </p>
-                        <a asp-action="Details" asp-route-id="@item.IdOferta" class="btn btn me-2 text-white custom-link-button">Ver mais</a>                        
+                        <a asp-action="Details" asp-route-id="@item.IdOferta" class="btn text-white custom-link-button">Ver mais</a>
                     </div>
-                    @if (User.IsInRole("Candidato")){
-                    <div class="col-md-1 d-flex flex-column justify-content-center align-items-end">
-                        @{
-                            var favoritos = ViewBag.Favoritos as List<int> ?? new List<int>();
-                            bool isFavorito = favoritos.Contains(item.IdOferta);
-                        }
-                        @Html.AntiForgeryToken()
-                        <div class="favorite mb-3">
+
+                    @if (User.IsInRole("Candidato"))
+                    {
+                        <div class="col-md-1 d-flex flex-column justify-content-center align-items-end">
                             @{
+                                var favoritos = ViewBag.Favoritos as List<int> ?? new List<int>();
+                                bool isFavorito = favoritos.Contains(item.IdOferta);
                                 var corFavorito = isFavorito ? "#FFD700" : "#ccc";
                             }
-
-                            <i class="@(isFavorito ? "fas" : "far") fa-star fs-4 toggle-favorito"
-                               data-id="@item.IdOferta"
-                               style="cursor:pointer; color: @corFavorito;"></i>
+                            @Html.AntiForgeryToken()
+                            <div class="favorite mb-3">
+                                <i class="@(isFavorito ? "fas" : "far") fa-star fs-4 toggle-favorito"
+                                   data-id="@item.IdOferta"
+                                   style="cursor:pointer; color: @corFavorito;"></i>
+                            </div>
                         </div>
-                    </div>
                     }
                 </div>
             </div>
         </div>
-
-        @if (User.IsInRole("Candidato"))
-        {
-            <div class="modal fade" id="reviewModal-@item.IdEmpresa" tabindex="-1" aria-labelledby="reviewModalLabel-@item.IdEmpresa" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="reviewModalLabel-@item.IdEmpresa">Adicionar Review</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form asp-controller="Review" asp-action="Create" method="post">
-                                <input type="hidden" name="IdEmpresa" value="@item.IdEmpresa" />
-                                <input type="hidden" name="NomeUsuario" value="@User.Identity.Name" />
-                                <input type="hidden" name="DataCriacao" value="@DateTime.Now.ToString("o")" />
-
-                                <div class="mb-3">
-                                    <label for="titulo-@item.IdEmpresa" class="form-label">Título</label>
-                                    <input type="text" class="form-control" id="titulo-@item.IdEmpresa" name="Titulo" required />
-                                    <span class="text-danger field-validation-error" data-valmsg-for="Titulo" data-valmsg-replace="true"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Rating</label>
-                                    <br />
-                                    <div class="rating-stars" id="rating-stars-@item.IdEmpresa">
-                                        <input type="hidden" name="Rating" id="rating-value-@item.IdEmpresa" value="0" />
-                                        <i class="far fa-star" data-value="1"></i>
-                                        <i class="far fa-star" data-value="2"></i>
-                                        <i class="far fa-star" data-value="3"></i>
-                                        <i class="far fa-star" data-value="4"></i>
-                                        <i class="far fa-star" data-value="5"></i>
-                                    </div>
-                                    <span class="text-danger" id="rating-error-@item.IdEmpresa"></span>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="descricao-@item.IdEmpresa" class="form-label">Descrição</label>
-                                    <textarea class="form-control" id="descricao-@item.IdEmpresa" name="Descricao" rows="3" required></textarea>
-                                    <span class="text-danger field-validation-error" data-valmsg-for="Descricao" data-valmsg-replace="true"></span>
-                                </div>
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
-                                    <button type="submit" class="btn btn-primary">Inserir</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
     }
+
     <div class="d-flex justify-content-center mt-4">
         <nav>
             <ul class="pagination">
@@ -213,21 +157,30 @@
         </nav>
     </div>
 </div>
+    @section Styles {
+        <style>
+            .search-barra {
+                background-color: #f0f0f0;
+            /* background-color: #f8f9fa; MAIN */
+                padding-top: 20px;
+            /* padding-top: 25px; MAIN */
+                padding-bottom: 60px;
+            /* padding-bottom: 25px; MAIN */
+                width: 100%;
+               /* margin-left: 0; */
+               /* margin-right: 0; */
+                border-bottom: 1px solid #e9ecef;  /* MAIN */
+            }
 
-@section Styles {
-    <style>
-        .search-barra {
-            background-color: #f8f9fa;
-            padding-top: 25px;
-            padding-bottom: 25px;
-            width: 100%;
-            border-bottom: 1px solid #e9ecef;
-        }
+            .search-container .input-group {
+                border-radius: 25px;
+            }
 
         /* Padronização visual dos inputs e select nativos */
         .search-container .form-control,
         .search-container .form-select,
         .search-container .input-group-text {
+          /* border-radius: 25px;  ERIKA */
             border-radius: 8px !important;
             height: 45px;
             border: 1px solid #ced4da;
@@ -242,6 +195,21 @@
         .search-container .input-group .form-control {
             border-left: none;
         }
+
+        /* Versao Erika */
+        .search-container .btn {
+            border-radius: 20px;
+            padding: 0.5rem 2rem;
+        }
+       
+
+        /* --- VERSÃO ERIKA (Laranja) --- 
+        .form-control:focus {
+            border-color: #F2994A;
+            box-shadow: 0 0 0 0.1rem rgba(242, 153, 74, 0.35);
+            outline: 0;
+        }
+        */
 
         .form-control:focus, .form-select:focus {
             border-color: #5de4d9;
@@ -309,6 +277,22 @@
         .job-details p {
             color: #6c757d;
         }
+
+        .custom-link-button {
+            background-color: #5de4d9;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        }
+
+            .custom-link-button:hover {
+                background-color: #F2994A;
+            }
 
         .company-logo {
             max-height: 60px;
@@ -378,7 +362,11 @@
     
     <script>
         $(document).ready(function () {
-            console.log('jQuery carregado e pronto!');
+            // Botão dos favoritos via Fetch API
+            $('.toggle-favorito').on('click', function () {
+                const $el = $(this);
+                const id = parseInt($el.data('id'));
+                if (id <= 0) return;
 
             // Ativa a pesquisa inteligente no campo Concelho
             $('.select2-searchable').select2({
@@ -412,6 +400,24 @@
                 ratingInput.val(value);
                 ratingStars.siblings('#rating-error-' + modalId).text('');
 
+                var token = $('input[name="__RequestVerificationToken"]').val();
+
+
+                fetch('/OfertaEmprego/ToggleFavorito', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `idOferta=${encodeURIComponent(id)}`
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        $el.toggleClass('fas far');
+                        $el.css('color', data.isFavorito ? "#FFD700" : "#ccc");
+                        if (typeof atualizarBadgeFavoritos === "function") {
+                            atualizarBadgeFavoritos();
                 stars.each(function () {
                     var starValue = parseInt($(this).data('value'));
                     if (starValue <= value) {
@@ -486,9 +492,10 @@
                             this.style.color = data.isFavorito ? "#FFD700" : "#ccc";
                             if(typeof atualizarBadgeFavoritos === "function") atualizarBadgeFavoritos();
                         }
-                    });
-                });
+                    }
+                })
+                .catch(err => console.error("Erro ao processar favorito:", err));
             });
         });
-    </script>     
+    </script>
 }
