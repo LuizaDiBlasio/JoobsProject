@@ -3,11 +3,13 @@ using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
+using JobPortal_API.Migrations;
 using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
@@ -35,24 +37,65 @@ namespace JobPortal_API.Controllers
         }
 
         //busca por ID
-        [Authorize(Roles = "Admin,Candidato")]
-        [ServiceFilter(typeof(VerificaCandidatoFilter))]
+        [Authorize(Roles = "Admin,Candidato,Empresa")] // <-- Adicionada a permissão para Empresa
+                                                       // [ServiceFilter(typeof(VerificaCandidatoFilter))] <-- Removido no GET para permitir que Empresas vejam o perfil
         [HttpGet("BuscarPorId/{id}")]
         public async Task<ActionResult<CandidatoDTO>> GetCandidato(int id)
         {
-            if ( _context.Candidato == null)
-            {
-                return NotFound();
-            }
-            var candidato = _context.Candidato.ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdCandidato == id);
-            if (candidato == null)
+            if (_context.Candidato == null)
             {
                 return NotFound();
             }
 
-            return await candidato;
+            var candidatoDTO = await _context.Candidato
+                .ProjectTo<CandidatoDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(m => m.IdCandidato == id);
+
+            if (candidatoDTO == null)
+            {
+                return NotFound();
+            }
+
+            // ==========================================
+            // SISTEMA DE NOTIFICAÇÕES (NOVO)
+            // ==========================================
+            try
+            {
+                var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+                // Só gera notificação se quem estiver a ver for uma Empresa
+                if (userRole == "Empresa")
+                {
+                    var idEmpresaClaim = User.FindFirst("IdEmpresa")?.Value;
+
+                    if (!string.IsNullOrEmpty(idEmpresaClaim) && int.TryParse(idEmpresaClaim, out int idEmpresa))
+                    {
+                        var empresa = await _context.Empresa.FindAsync(idEmpresa);
+                        var candidato = await _context.Candidato.FindAsync(id);
+
+                        if (empresa != null && candidato != null)
+                        {
+                            var notificacao = new Models.Notifications
+                            {
+                                UserId = candidato.UserId, // ID do utilizador (Identity) dono do Candidato
+                                Notification = $"A empresa {empresa.Nome} visualizou o seu perfil.",
+                                CreatedAt = DateTime.UtcNow,
+                                IsRead = false
+                            };
+
+                            _context.Notifications.Add(notificacao);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao gerar notificação de visualização: {ex.Message}");
+            }
+
+            return Ok(candidatoDTO);
         }
-
 
         /// Retorna os dados de um Candidato pelo email.
         /// Usado pelo MVC para preencher o Nome ao criar reviews.

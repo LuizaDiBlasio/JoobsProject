@@ -1,12 +1,14 @@
-﻿using System.Security.Claims;
-using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
+using JobPortal_API.Migrations;
 using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Notifications = JobPortal_API.Models.Notifications;
 
 namespace JobPortal_API.Controllers
 {
@@ -125,9 +127,47 @@ namespace JobPortal_API.Controllers
         [HttpPost("CriarAplicacao")]
         public async Task<ActionResult> PostAplicacaoTrabalho(AplicacaoTrabalhoDTO aplicacaoDTO)
         {
+            // 1. Guardar a aplicação na base de dados (o teu código original)
             var aplicacao = _mapper.Map<AplicacaoTrabalho>(aplicacaoDTO);
+
+
+            if (aplicacao.DataAplicacao == default)
+            {
+                aplicacao.DataAplicacao = DateTime.UtcNow;
+            }
+
             _context.Add(aplicacao);
             await _context.SaveChangesAsync();
+
+            // SISTEMA DE NOTIFICAÇÕES
+            try
+            {
+                var oferta = await _context.OfertaEmprego
+                    .Include(o => o.Empresa)
+                    .FirstOrDefaultAsync(o => o.IdOferta == aplicacaoDTO.IdOferta);
+
+                var candidato = await _context.Candidato
+                    .FirstOrDefaultAsync(c => c.IdCandidato == aplicacaoDTO.IdCandidato);
+
+                if (oferta != null && oferta.Empresa != null && candidato != null)
+                {
+                    var notificacao = new Notifications
+                    {
+                        UserId = oferta.Empresa.UserId,
+                        Notification = $"O candidato {candidato.Nome} submeteu uma candidatura à sua oferta: {oferta.Titulo}.",
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    };
+
+                    _context.Notifications.Add(notificacao);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            { 
+                Console.WriteLine($"Erro ao gerar notificação: {ex.Message}");
+            }
+
             return Ok();
         }
 
