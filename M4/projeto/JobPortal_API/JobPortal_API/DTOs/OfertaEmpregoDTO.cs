@@ -20,7 +20,7 @@ namespace JobPortal_API.DTOs
         /// </summary>
         public int IdEmpresa { get; set; }
 
-        public Empresa Empresa { get; set; }
+        public Empresa? Empresa { get; set; }
 
         public string Titulo { get; set; }
 
@@ -38,7 +38,7 @@ namespace JobPortal_API.DTOs
 
         public JornadaEnum Jornada { get; set; }
 
-        public string LogoEmpresaBase64 { get; set; }
+        public string? LogoEmpresaBase64 { get; set; }
 
         public RegimeTrabalhoEnum RegimeTrabalho { get; set; }
 

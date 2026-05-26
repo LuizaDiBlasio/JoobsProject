@@ -103,13 +103,15 @@ namespace JobPortal_API.Data
             modelBuilder.Entity<LogoEmpresa>()
                 .HasOne<Empresa>()  // relação de 1 para muitos**
                 .WithMany()
-                .HasForeignKey(l => l.IdEmpresaFoto); // Garante que o EF usa esta propriedade como a FK real
+                .HasForeignKey(l => l.IdEmpresaFoto) // Garante que o EF usa esta propriedade como a FK real
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Fazer o mesmo para a Foto do Candidato (ajusta os nomes se na tua classe Candidato for diferente)
             modelBuilder.Entity<Foto>()
                 .HasOne<Candidato>()
                 .WithMany()
-                .HasForeignKey(f => f.IdCandidatoFoto); // Ou o nome da propriedade ID que usas na classe Foto
+                .HasForeignKey(f => f.IdCandidatoFoto) // Ou o nome da propriedade ID que usas na classe Foto
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }

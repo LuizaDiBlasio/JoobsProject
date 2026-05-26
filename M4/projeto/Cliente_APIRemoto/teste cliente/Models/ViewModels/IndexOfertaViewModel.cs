@@ -1,7 +1,7 @@
 ﻿using teste_cliente.Models.Dto;
 using teste_cliente.Models.Enums;
 
-namespace teste_cliente.Models
+namespace teste_cliente.Models.ViewModels
 {
     public class IndexOfertaViewModel
     {

@@ -9,9 +9,9 @@ namespace JobPortal_API.Models
         [Key]
         public int IdOferta { get; set; }
 
-        [ForeignKey("IdEmpresa")]
         public int IdEmpresa { get; set; }
-      
+
+        [ForeignKey("IdEmpresa")]
         public Empresa Empresa { get; set; }
 
         public string Titulo { get; set; }
