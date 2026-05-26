@@ -32,26 +32,36 @@ namespace JobPortal_API.Controllers
         [HttpGet("BuscarTodas")]
         public async Task<IEnumerable<EmpresaDTO>> GetEmpresa()
         {
-            return await _context.Empresa.ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider).ToListAsync();
+            return await _context.Empresa
+                .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
+
 
         //Buscar empresa por ID
         [Authorize(Roles = "Admin, Empresa")]
-        [ServiceFilter(typeof(VerificaEmpresaFilter))]
+        [ServiceFilter(typeof(VerificaEmpresaFilter))]  // garante que se o ID não for o da empresa logada não será possível acessar os dados.
         [HttpGet("BuscarPorId/{id}")]
         public async Task<ActionResult<EmpresaDTO>> GetEmpresa(int id)
         {
+            // Verifica se a "tabela" (o DbSet) no banco de dados está acessível.
             if ( _context.Empresa == null)
             {
-                return NotFound();
-            }
-            var empresa = _context.Empresa.ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync(m => m.IdEmpresa == id);
-            if (empresa == null)
-            {
-                return NotFound();
+                return NotFound(new {mensagem = $"ID: {id}. Sem conexão com banco de dados."});
             }
 
-            return await empresa;
+            var empresa = await _context.Empresa
+                .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(m => m.IdEmpresa == id);
+
+            // Verifica se a busca que você fez encontrou algum resultado. 
+            // garante que a aplicação não trave se o banco sumir ou se o ID não existir.
+            if (empresa == null)
+            {
+                return NotFound(new {mensagem = $"(ID: {id}). Empresa não foi encontrada no sistema."});
+            }
+
+            return Ok(empresa);
         }
 
 
@@ -62,7 +72,9 @@ namespace JobPortal_API.Controllers
             var empresa = await _context.Empresa
                               .ProjectTo<EmpresaDTO>(_mapper.ConfigurationProvider)
                               .FirstOrDefaultAsync(e => e.IdEmpresa == id);
-            if (empresa == null) return NotFound();
+
+            if (empresa == null) return NotFound(new {mensagem = $"(ID: {id}). Empresa não foi encontrada no sistema." });
+
             return Ok(empresa);
         }
 
@@ -83,12 +95,24 @@ namespace JobPortal_API.Controllers
         [HttpPut("EditarEmpresa/{id:int}")]
         public async Task<ActionResult> PutEmpresa(EmpresaDTO empresaDTO, int id)
         {
+            // Se quiser apenas validar o DTO:
+            if (empresaDTO.IdEmpresa != 0 && id != empresaDTO.IdEmpresa)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    mensagem = "Acesso negado."
+                });
+            }
+
+            // Garante que o ID da URL seja usado no objeto no retorno
+            empresaDTO.IdEmpresa = id;
+
             // 1) Busca a empresa no banco
             var empresa = await _context.Empresa
                 .FirstOrDefaultAsync(e => e.IdEmpresa == id);
 
             if (empresa == null)
-                return NotFound();
+                return NotFound(new {mensagem = "Acesso negado."});
 
             // 2) Guarda o UserId para carregar o ApplicationUser
             var userId = empresa.UserId;
@@ -139,7 +163,7 @@ namespace JobPortal_API.Controllers
             // 1) Carrega a empresa
             var empresa = await _context.Empresa.FindAsync(id);
             if (empresa == null)
-                return NotFound();
+                return NotFound(new {mensagem = "Acesso negado."});
 
             // 2) Deleta tudo que depende da empresa, na ordem:
             //    a) aplicações de ofertas dessa empresa

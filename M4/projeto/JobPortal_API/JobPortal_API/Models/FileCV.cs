@@ -8,8 +8,10 @@ namespace JobPortal_API.Models
         [Key]
         public int  IdFile { get; set; }
         public byte[] File { get; set; }
-        public int IdCandidatoFile { get; set; }
+
         [ForeignKey("IdCandidatoFile")]
+        public int IdCandidatoFile { get; set; }
+        
         public virtual Candidato Candidato { get; set; }
     }
 }

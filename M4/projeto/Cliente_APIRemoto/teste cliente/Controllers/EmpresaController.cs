@@ -159,16 +159,6 @@ namespace teste_cliente.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Empresa empresa)
         {
-            // VALIDAÇÕES
-
-            // Validação manual das Redes Sociais no Servidor: Se ambos estiverem vazios
-            if (string.IsNullOrWhiteSpace(empresa.LinkedIn) && string.IsNullOrWhiteSpace(empresa.Facebook))
-            {
-                ModelState.AddModelError("LinkedIn", "Preencher pelo menos o LinkedIn ou o Facebook.");
-                ModelState.AddModelError("Facebook", "Preencher pelo menos o LinkedIn ou o Facebook.");
-            }
-
-
             // Verifica se as validações (incluindo a das redes sociais) passaram
             if (!ModelState.IsValid)
             {
@@ -189,7 +179,7 @@ namespace teste_cliente.Controllers
                 }
 
                 ViewBag.Reviews = reviews;
-                // Retorna explicitamente a View "Details" passando o modelo atual com erros
+
                 return View("Details", empresa);
             }
 
@@ -235,8 +225,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");

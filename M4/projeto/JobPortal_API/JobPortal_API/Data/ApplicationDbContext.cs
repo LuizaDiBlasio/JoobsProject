@@ -65,11 +65,51 @@ namespace JobPortal_API.Data
             //    UserId = "10" // o id do user admin
             //});
 
-
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Empresa) // Uma Review pertence a uma Empresa
                 .WithMany() // Uma Empresa pode ter muitas Reviews
                 .HasForeignKey(r => r.IdEmpresa); // Chave estrangeira
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.TipoContrato)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<CV>()
+                .Property(cv => cv.Concelho)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<CV>()
+                .Property(cv => cv.Escolaridade)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Empresa>()
+                .Property(e => e.Concelho)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.RegimeTrabalho)
+                .HasConversion<string>(); // O EF converte o enum para string ao salvar
+
+            modelBuilder.Entity<OfertaEmprego>()
+                .Property(o => o.Jornada)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<OfertaEmprego>()
+               .Property(o => o.Concelho)
+               .HasConversion<string>();
+
+            //ALTERAÇÃO ERIKA
+            // Mapeamento explícito da FK do Logo da Empresa
+            modelBuilder.Entity<LogoEmpresa>()
+                .HasOne<Empresa>()  // relação de 1 para muitos**
+                .WithMany()
+                .HasForeignKey(l => l.IdEmpresaFoto); // Garante que o EF usa esta propriedade como a FK real
+
+            // Fazer o mesmo para a Foto do Candidato (ajusta os nomes se na tua classe Candidato for diferente)
+            modelBuilder.Entity<Foto>()
+                .HasOne<Candidato>()
+                .WithMany()
+                .HasForeignKey(f => f.IdCandidatoFoto); // Ou o nome da propriedade ID que usas na classe Foto
         }
 
         public virtual DbSet<AplicacaoTrabalho> AplicacaoTrabalho { get; set; }

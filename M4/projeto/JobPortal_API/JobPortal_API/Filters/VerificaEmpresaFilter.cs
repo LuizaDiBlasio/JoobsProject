@@ -25,7 +25,10 @@ namespace JobPortal_API.Filters
 
             if (idDoToken == null || idDaUrl == null || idDoToken != idDaUrl)
             {
-                context.Result = new ForbidResult();
+                context.Result = new ObjectResult(new { mensagem = "Acesso negado." })
+                {
+                    StatusCode = 403
+                };
                 return;
             }
         }

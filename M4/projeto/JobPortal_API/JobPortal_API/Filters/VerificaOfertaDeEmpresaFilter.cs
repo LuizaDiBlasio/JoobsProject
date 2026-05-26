@@ -48,7 +48,10 @@ namespace JobPortal_API.Filters
                                        .FindAsync(idOferta);
             if (oferta == null || oferta.IdEmpresa.ToString() != idEmpresaDoToken)
             {
-                context.Result = new ForbidResult();
+                context.Result = new ObjectResult(new { mensagem = "Acesso negado." })
+                {
+                    StatusCode = 403
+                };
                 return;
             }
             // passa pelo filtro
