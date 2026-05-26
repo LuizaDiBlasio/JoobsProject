@@ -18,8 +18,10 @@
                         <th scope="col">Localização</th>
                         <th scope="col">Regime Trabalho</th>
                         <th scope="col">Requisitos</th>
-                        <th scope="col">Vaga</th>
+                        <th scope="col">Carga horária</th>
+                        <th scope="col">Tipo de contrato</th>
                         <th scope="col">Visualizações</th>
+                        <th scope="col">Vaga</th>
                         <th scope="col">Editar</th>
                     </tr>
                 </thead>
@@ -33,9 +35,12 @@
                                 </a>
                             </td>
                             <td>@oferta.Titulo</td>
-                            <td>@oferta.Concelho</td>
-                            <td>@oferta.RegimeTrabalho</td>
+                            <td>@oferta.Concelho.GetDisplayName()</td>
+                            <td>@oferta.RegimeTrabalho.GetDisplayName()</td>
                             <td>@oferta.Requisitos</td>
+                            <td>@oferta.Jornada.GetDisplayName()</td>
+                            <td>@oferta.TipoContrato.GetDisplayName()</td>
+                            <td>@oferta.Contagem</td>
                             <td>
                                 @if (oferta.VagaDisponivel == true)
                                 {
@@ -46,7 +51,7 @@
                                     <span class="text-danger">🔴 Fechada</span>
                                 }
                             </td>
-                            <td>@oferta.Contagem</td>
+                            
                             <td>
                                 <a class="btn btn-warning btn-sm text-white" style="border-radius: 30px;" href="@Url.Action("Edit", "OfertaEmprego", new { id = oferta.IdOferta })">Editar</a>
                             </td>

@@ -104,9 +104,6 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            //Buscar listas 
-            var listas = LoadLists();
-
             var model = new IndexOfertaViewModel
             {
                 OfertaEmpregosList = ofertaList,
@@ -124,13 +121,11 @@ namespace teste_cliente.Controllers
             ViewBag.Concelho = concelho;
             ViewBag.Jornada = jornada;
             ViewBag.RegimeTrabalho = regimeTrabalho;
+            ViewBag.ConcelhosList = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.JornadasList = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
+            ViewBag.RegimeTrabalhoList = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
+            
 
-            if (listas != null)
-            {
-                ViewBag.ConcelhosList = listas.SelectListConcelhos;
-                ViewBag.JornadasList = listas.SelectListJornada;
-                ViewBag.RegimeTrabalhoList = listas.SelectListRegimeTrabalho;
-            }
 
             model.OfertaEmpregosList = ofertaList;
 
@@ -248,12 +243,7 @@ namespace teste_cliente.Controllers
         {
             var model = new OfertaEmpregoViewModel();
 
-            var lists = LoadLists();
-
-            model.SelectListConcelhos = lists.SelectListConcelhos;
-            model.SelectListTiposContratos = lists.SelectListContratos;
-            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
-            model.SelectListJornada = lists.SelectListJornada;
+            LoadLists(model);
 
             return View(model);
                
@@ -310,12 +300,7 @@ namespace teste_cliente.Controllers
             }
 
 
-            var lists = LoadLists();
-
-            model.SelectListConcelhos = lists.SelectListConcelhos;
-            model.SelectListTiposContratos = lists.SelectListContratos;
-            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
-            model.SelectListJornada = lists.SelectListJornada;
+            LoadLists(model);
 
             return View(model);
            
@@ -324,11 +309,12 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            OfertaEmprego oferta = new OfertaEmprego();
-
+           
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
+            var model = new OfertaEmpregoViewModel();
 
             using (var httpClient = new HttpClient())
             {
@@ -347,15 +333,30 @@ namespace teste_cliente.Controllers
                     }
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
+                    var ofertaDTO = JsonConvert.DeserializeObject<OfertaEmpregoDTO>(apiResponse);
 
+                    //Preencher model 
+
+                    model.Salario = ofertaDTO.Salario;
+                    model.Titulo = ofertaDTO.Titulo;
+                    model.TipoContrato = ofertaDTO.TipoContrato;
+                    model.Concelho = ofertaDTO.Concelho;
+                    model.Descricao = ofertaDTO.Descricao;
+                    model.Jornada = ofertaDTO.Jornada;
+                    model.Requisitos = ofertaDTO.Requisitos;
+                    model.RegimeTrabalho = ofertaDTO.RegimeTrabalho;
+                    model.IdOferta = id;
+                    model.VagaDisponivel = ofertaDTO.VagaDisponivel;
+                    model.Contagem = ofertaDTO.Contagem;
+
+                    LoadLists(model);
                 }
-                return View(oferta);
+                return View(model);
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(Models.OfertaEmprego oferta)
+        public async Task<IActionResult> Edit(OfertaEmpregoViewModel model)
         {
             Candidato e = new Candidato();
 
@@ -367,9 +368,9 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
+                StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/Oferta/EditarOferta/" + oferta.IdOferta, content))
+                using (var response = await httpClient.PutAsync("https://localhost:7211/api/Oferta/EditarOferta/" + model.IdOferta, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -380,13 +381,10 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     ViewBag.Result = "Success";
-                    e = JsonConvert.DeserializeObject<Candidato>(apiResponse);
                 }
                 return RedirectToAction("Historico");
 
             }
-
-            return View(e);
         }
 
         [HttpGet]
@@ -594,21 +592,15 @@ namespace teste_cliente.Controllers
         //ADIÇÃO DE CÓDIGO (métodos auxiliares)
 
         //____________ADIÇÂO DE CÓDIGO___________(carregamento de listas para index)
-        private ListsDTO LoadLists()
+        private void LoadLists( OfertaEmpregoViewModel model)
             {
-                var listsDTO = new ListsDTO();
+                model.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
 
-                //converter para selectlist
+                model.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
 
-                listsDTO.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+                model.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
 
-                listsDTO.SelectListContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
-
-                listsDTO.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
-
-                listsDTO.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>(); 
- 
-                return listsDTO;   
+                model.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
             }
 
     }
