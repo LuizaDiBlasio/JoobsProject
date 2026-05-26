@@ -303,7 +303,7 @@
 
                 list.innerHTML = '';
 
-                if (!notifications || notifications.length === 0) {
+               if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
                     list.innerHTML = `
                         <div class="text-center p-5 text-muted">
                             <i class="far fa-bell-slash mb-3" style="font-size: 3rem; color: #dee2e6;"></i>

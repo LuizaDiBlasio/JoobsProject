@@ -134,6 +134,7 @@ else
     Console.WriteLine("Swagger is not configured in production.");
 }
 
+app.UseExceptionHandler("/error");
 app.UseStaticFiles();
 app.UseRouting();
 // Habilitar Seed 
