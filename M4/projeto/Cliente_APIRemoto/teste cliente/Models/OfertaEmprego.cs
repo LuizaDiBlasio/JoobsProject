@@ -43,13 +43,6 @@ namespace teste_cliente.Models
 
         public virtual ICollection<AplicacaoTrabalho>? AplicacaoTrabalho { get; set; }
 
-        public  List<SelectListItem> SelectListConcelhos { get; set; } = new List<SelectListItem>();
-
-        public List<SelectListItem> SelectListTiposContratos { get; set; } = new List<SelectListItem>();
-
-        public List<SelectListItem> SelectListJornada { get; set; } = new List<SelectListItem>();
-
-        public List<SelectListItem> SelectListRegimeTrabalho { get; set; } = new List<SelectListItem>();
 
     }
 }

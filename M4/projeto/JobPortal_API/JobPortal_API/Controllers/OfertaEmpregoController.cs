@@ -154,8 +154,8 @@ namespace JobPortal_API.Controllers
         
         //Criar oferta
         [Authorize(Roles = "Admin,Empresa")]
-        [HttpPost("CriarOferta")]
-        public async Task<ActionResult> PostOfertaEmprego(OfertaEmpregoDTO ofertaDTO)
+        [HttpPost("CriarOferta/")]
+        public async Task<ActionResult> PostOfertaEmprego([FromBody] OfertaEmpregoDTO ofertaDTO)
         {
             // Pega o ID da empresa direto do Token de quem está logado.
             // ALTERAÇÃO: Captura o ID da empresa logada diretamente das Claims do Token JWT.

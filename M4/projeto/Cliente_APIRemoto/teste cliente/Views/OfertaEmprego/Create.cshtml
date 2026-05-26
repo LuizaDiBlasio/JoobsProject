@@ -1,12 +1,14 @@
-﻿@model teste_cliente.Models.OfertaEmprego
+﻿@model teste_cliente.Models.ViewModels.OfertaEmpregoViewModel
 
 @{
     ViewData["Title"] = "Create";
 }
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <div class="container" style="padding-top:30px; padding-bottom:40px">
-    <h3 class="my-4 oferta_header">Oferta de Emprego:</h3>
+    <h3 class="my-4 oferta_header">Criar oferta de emprego</h3>
     <form asp-action="Create" method="post">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -34,7 +36,7 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label asp-for="Concelho" class="form-label">Concelho:</label>
-                        <select asp-for="Concelho" class="form-select" asp-items="Model.SelectListConcelhos">
+                        <select asp-for="Concelho" class="form-select select2-searchable" asp-items="Model.SelectListConcelhos">
                             <option value="">Selecione um concelho...</option>
                         </select>
                         <span asp-validation-for="Concelho" class="text-danger"></span>
@@ -86,6 +88,25 @@
     </form>
 </div>
 
+
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('.select2-searchable').select2({
+                placeholder: "Selecione um concelho...",
+                allowClear: true,
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
+            });
+        });
+    </script>
 }

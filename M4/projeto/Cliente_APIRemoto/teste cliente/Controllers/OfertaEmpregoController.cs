@@ -13,6 +13,7 @@ using teste_cliente.Helpers;
 using teste_cliente.Models;
 using teste_cliente.Models.Dto;
 using teste_cliente.Models.Enums;
+using teste_cliente.Models.ViewModels;
 
 namespace teste_cliente.Controllers
 {
@@ -245,7 +246,7 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var model = new OfertaEmprego();
+            var model = new OfertaEmpregoViewModel();
 
             var lists = LoadLists();
 
@@ -260,7 +261,7 @@ namespace teste_cliente.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> Create(Models.OfertaEmprego oferta)
+        public async Task<IActionResult> Create(OfertaEmpregoViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -271,7 +272,22 @@ namespace teste_cliente.Controllers
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                    StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
+                    //converter de model para DTO
+                    var ofertaDTO = new OfertaEmpregoDTO
+                    {
+                        Concelho = model.Concelho,
+                        TipoContrato = model.TipoContrato,
+                        RegimeTrabalho = model.RegimeTrabalho,
+                        Jornada = model.Jornada,    
+                        Titulo = model.Titulo,
+                        Requisitos = model.Requisitos,
+                        VagaDisponivel = true,
+                        Descricao = model.Descricao,
+                        Salario = model.Salario
+
+                    };
+
+                    StringContent content = new StringContent(JsonConvert.SerializeObject(ofertaDTO), Encoding.UTF8, "application/json");
 
                     using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
                     {
@@ -282,10 +298,11 @@ namespace teste_cliente.Controllers
                         }
                         if (!response.IsSuccessStatusCode)
                         {
+                            string erroDetalhado = await response.Content.ReadAsStringAsync();
                             return NotFound();
                         }
-                        string apiResponse = await response.Content.ReadAsStringAsync();
-                        oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
+                        //string apiResponse = await response.Content.ReadAsStringAsync();
+                        //model = JsonConvert.DeserializeObject<OfertaEmpregoDTO>(apiResponse);
                     }
                 }
 
@@ -293,11 +310,14 @@ namespace teste_cliente.Controllers
             }
 
 
-            oferta.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            var lists = LoadLists();
 
-            oferta.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
+            model.SelectListConcelhos = lists.SelectListConcelhos;
+            model.SelectListTiposContratos = lists.SelectListContratos;
+            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
+            model.SelectListJornada = lists.SelectListJornada;
 
-            return View(oferta);
+            return View(model);
            
         }
 
