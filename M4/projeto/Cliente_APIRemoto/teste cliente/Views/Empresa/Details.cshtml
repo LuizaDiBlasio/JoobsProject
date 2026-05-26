@@ -301,19 +301,7 @@
                     if(facebookError) facebookError.textContent = '';
                     if(emailError) emailError.textContent = '';            
                     
-                   var hasError = false;
-
-                    // Validação de Redes Sociais        
-                    if (linkedIn === '' && facebook === '') {
-                        event.preventDefault(); // impede que a página mude ou faça refresh
-
-                        var msg = 'Deve preencher pelo menos o LinkedIn ou o Facebook.';
-                        
-                        if(linkedinError) linkedinError.textContent = msg;
-                        if(facebookError) facebookError.textContent = msg;
-
-                        hasError = true;
-                    }                  
+                   var hasError = false;               
 
 
                     // Validações se o email tem "@@" e "."

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using AutoMapper;
 using JobPortal_API.DTOs;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using JobPortal_API.Utilities.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,8 +59,8 @@ namespace JobPortal_API.Data
 
         private async Task SeedDevDataAsync()
         {
-            await CreateEmpresaSeedAsync("empresa1@empresa1.com", "Esquadrias ltda", "Azeitão", "Esquadrias", 222222222);
-            await CreateEmpresaSeedAsync("empresa2@empresa2.com", "Papel ltda", "Barreiro", "Papel", 222222222);
+            await CreateEmpresaSeedAsync("empresa1@empresa1.com", "Esquadrias ltda", ConcelhoEnum.Abrantes, "Esquadrias", 222222222);
+            await CreateEmpresaSeedAsync("empresa2@empresa2.com", "Papel ltda", ConcelhoEnum.Agueda, "Papel", 222222222);
             await CreateCandidatoSeedAsync("candidato1@candidato1.com", "Julia Matias", "Barreiro", new DateTime(1995, 05, 25), 222222222);
             await CreateCandidatoSeedAsync("candidato2@candidato2.com", "Julia Bandeira", "Barreiro", new DateTime(1995, 04, 25), 222222222);
             await CreateSeedAdminAsync("Admin@Admin.com", "Admin");
@@ -103,7 +104,7 @@ namespace JobPortal_API.Data
             }
         }
 
-        private async Task CreateEmpresaSeedAsync(string email, string nome, string localidade, string zonaAtuacao, int telefone)
+        private async Task CreateEmpresaSeedAsync(string email, string nome, ConcelhoEnum concelho, string zonaAtuacao, int telefone)
         {
             var empresaUser = await _userHelper.GetUserByEmailAsync(email);
             if (empresaUser == null)
@@ -129,7 +130,7 @@ namespace JobPortal_API.Data
                         UserId = empresaUser.Id,
                         Nome = nome,
                         User = empresaUser,
-                        Localidade = localidade,
+                        Concelho = concelho, 
                         Email = email,
                         Telefone = 222222222,
                         NoFuncionarios = 50,
@@ -179,6 +180,8 @@ namespace JobPortal_API.Data
                 }
             }
         }
+
+
 
     }
 }

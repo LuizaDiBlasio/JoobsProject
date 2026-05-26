@@ -51,8 +51,8 @@ namespace JobPortal_API.Controllers
             {
                 await _userManager.AddToRoleAsync(user, model.Role); // "Admin", "Candidato", "Empresa"
 
-
-                if (model.Role == "Candidato")
+                // ALTERAÇÃO: Validação para Candidato (ignora maiúsculas/minúsculas)
+                if (model.Role != null && model.Role.Equals("Candidato", StringComparison.OrdinalIgnoreCase))
                 {
                     var candidato = new Candidato
                     {
@@ -62,7 +62,8 @@ namespace JobPortal_API.Controllers
                     };
                     _context.Candidato.Add(candidato);
                 }
-                else if (model.Role == "Empresa")
+                // ALTERAÇÃO: Validação para Empresa (ignora maiúsculas/minúsculas tbm)
+                else if (model.Role != null && model.Role.Equals("Empresa", StringComparison.OrdinalIgnoreCase))
                 {
                     var empresa = new Empresa
                     {
@@ -75,10 +76,8 @@ namespace JobPortal_API.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok("User created successfully");
+                return Ok(new { mensagem = "User created successfully"});
             }
-
-
             return BadRequest(result.Errors);
         }
 
@@ -86,10 +85,10 @@ namespace JobPortal_API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO model)
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
-            if (user == null) return Unauthorized("Invalid credentials");
+            if (user == null) return Unauthorized(new { mensagem = "Invalid credentials" });
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-            if (!result.Succeeded) return Unauthorized("Invalid credentials");
+            if (!result.Succeeded) return Unauthorized(new { mensagem = "Invalid credentials"});
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -148,6 +147,10 @@ namespace JobPortal_API.Controllers
             {
                 claims.Add(new Claim("IdEmpresa", idEmpresa));
             }
+
+            // Adiciona os IDs de negócio aos Claims para que os filtros (ex: VerificaCandidatoFilter) de autorização consigam validar o proprietário dos dados.
+            if (!string.IsNullOrEmpty(idCandidato)) claims.Add(new Claim("IdCandidato", idCandidato));
+            if (!string.IsNullOrEmpty(idEmpresa)) claims.Add(new Claim("IdEmpresa", idEmpresa));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("minha-chave-jwt-supersecreta-32bytes!"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

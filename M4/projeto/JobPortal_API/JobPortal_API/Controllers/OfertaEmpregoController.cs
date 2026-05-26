@@ -1,14 +1,18 @@
 ﻿
+using System.Linq;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using System.Linq;
+using System.Security.Claims;
 
 namespace JobPortal_API.Controllers
 {
@@ -34,36 +38,62 @@ namespace JobPortal_API.Controllers
 
         //Buscas todas as ofertas
         [HttpGet("TodasOfertas")]
-        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego(string? search, string? regimeTrabalho, string? localidade)
+        public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego([FromQuery] string? search,
+                                                                   [FromQuery] int? jornada,
+                                                                   [FromQuery] int? concelho,
+                                                                   [FromQuery] int? regimeTrabalho)
         {
-            var oferta = _context.OfertaEmprego
-                         .Where(o => o.VagaDisponivel == true)
-                         .AsQueryable();
+            var query = _context.OfertaEmprego
+                           .Where(o => o.VagaDisponivel == true)
+                           .AsQueryable();
 
+            // filtro de pesquisa textual/enum
             if (!string.IsNullOrEmpty(search))
             {
-                oferta = oferta.Where(b =>
+                // Tenta converter o termo de pesquisa para cada um dos enums
+                bool isJornada = Enum.TryParse<JornadaEnum>(search, ignoreCase: true, out var jornadaEnum);
+                bool isRegime = Enum.TryParse<RegimeTrabalhoEnum>(search, ignoreCase: true, out var regimeEnum);
+                bool isContrato = Enum.TryParse<TipoContratoEnum>(search, ignoreCase: true, out var contratoEnum);
+                bool isConcelho = Enum.TryParse<ConcelhoEnum>(search, ignoreCase: true, out var concelhoEnum);
+
+                // Para evitar erros de tradução no EF Core: avaliação local das flags (ternários)
+                query = query.Where(b =>
                     b.Titulo.Contains(search) ||
-                    b.Jornada.Contains(search) ||
-                    b.Localização.Contains(search) ||
-                    b.RegimeTrabalho.Contains(search) ||
-                    b.TipoContrato.Contains(search) ||
-                    b.Requisitos.Contains(search));
+                    b.Requisitos.Contains(search) ||
+                    (b.Descricao != null && b.Descricao.Contains(search)) ||
+                    (isJornada ? b.Jornada == jornadaEnum : false) ||
+                    (isRegime ? b.RegimeTrabalho == regimeEnum : false) ||
+                    (isContrato ? b.TipoContrato == contratoEnum : false) ||
+                    (isConcelho ? b.Concelho == concelhoEnum : false)
+                );
             }
 
-            if (!string.IsNullOrEmpty(regimeTrabalho))
+            // Filtro Específico por Regime de Trabalho (Combobox envia o ID do Enum)
+            if (regimeTrabalho.HasValue && regimeTrabalho.Value > 0)
             {
-                oferta = oferta.Where(b => b.RegimeTrabalho.Contains(regimeTrabalho));
+                var regimeEnumSelect = (RegimeTrabalhoEnum)regimeTrabalho.Value;
+                query = query.Where(b => b.RegimeTrabalho == regimeEnumSelect);
             }
 
-            if (!string.IsNullOrEmpty(localidade))
+            // Filtro Específico por Concelho (Combobox envia o ID)
+            if (concelho.HasValue && concelho.Value > 0)
             {
-                oferta = oferta.Where(b => b.Localização.Contains(localidade));
+                var concelhoEnumSelect = (ConcelhoEnum)concelho.Value;
+                query = query.Where(b => b.Concelho == concelhoEnumSelect);
             }
 
-            return await oferta
+            // Filtro Específico por Jornada (Combobox envia o ID)
+            if (jornada.HasValue && jornada.Value > 0)
+            {
+                var jornadaEnumSelect = (JornadaEnum)jornada.Value;
+                query = query.Where(b => b.Jornada == jornadaEnumSelect);
+            }
+
+            //  Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)
+            return await query
                 .ProjectTo<OfertaEmpregoDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
         }
 
 
@@ -127,7 +157,22 @@ namespace JobPortal_API.Controllers
         [HttpPost("CriarOferta")]
         public async Task<ActionResult> PostOfertaEmprego(OfertaEmpregoDTO ofertaDTO)
         {
+            // Pega o ID da empresa direto do Token de quem está logado.
+            // ALTERAÇÃO: Captura o ID da empresa logada diretamente das Claims do Token JWT.
+            // Isso evita erros de Foreign Key (FK) caso o ID venha zerado ou incorreto do Swagger/Client,
+            // garantindo que a oferta seja sempre vinculada à empresa autenticada.
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    ofertaDTO.IdEmpresa = int.Parse(idEmpresaClaim);
+                }
+            }
+
             var oferta = _mapper.Map<OfertaEmprego>(ofertaDTO);
+
             _context.Add(oferta);
             await _context.SaveChangesAsync();
             return Ok();
@@ -139,15 +184,32 @@ namespace JobPortal_API.Controllers
         [HttpPut("EditarOferta/{id:int}")]
         public async Task<ActionResult> PutOfertaEmprego(OfertaEmpregoDTO ofertaDTO, int id)
         {
-            var oferta = await _context.OfertaEmprego.FirstOrDefaultAsync(c => c.IdOferta == id);
-            if (oferta == null)
+            // ALTERAÇÃO: Força o ID do objeto a ser o mesmo da URL (ignora o que veio no JSON)
+            ofertaDTO.IdOferta = id;
+
+            // ALTERAÇÃO: Garante que a vaga continua vinculada à empresa dona que está logada
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                var idEmpresaClaim = identity.FindFirst("IdEmpresa")?.Value;
+                if (!string.IsNullOrEmpty(idEmpresaClaim))
+                {
+                    ofertaDTO.IdEmpresa = int.Parse(idEmpresaClaim);
+                }
+            }
+
+            // 1) Carrega a oferta existente para rastreamento (tracking) do EF
+            var ofertaNoBanco = await _context.OfertaEmprego.FirstOrDefaultAsync(c => c.IdOferta == id);
+            if (ofertaNoBanco == null)
             {
                 return NotFound();
             }
-            oferta = _mapper.Map(ofertaDTO, oferta);
 
+            // 2) Mapeia as alterações do DTO por cima do objeto rastreado
+            _mapper.Map(ofertaDTO, ofertaNoBanco);
             await _context.SaveChangesAsync();
-            return Ok();
+
+            return Ok(); // Retorno limpo padrão da main
         }
 
         [Authorize(Roles = "Admin,Empresa")]

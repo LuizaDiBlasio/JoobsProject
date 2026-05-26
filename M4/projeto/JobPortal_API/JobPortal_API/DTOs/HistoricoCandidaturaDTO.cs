@@ -8,7 +8,7 @@
 
         public int IdOferta { get; set; }
         public string Titulo { get; set; }
-        public string? Localizacao { get; set; }
+        public string NomeConcelho { get; set; }
         public string? RegimeTrabalho { get; set; }
         public string? TipoContrato { get; set; }
         public float? Salario { get; set; }
