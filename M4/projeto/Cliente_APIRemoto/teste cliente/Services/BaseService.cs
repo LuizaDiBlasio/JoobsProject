@@ -23,81 +23,62 @@ namespace teste_cliente.Services
                 HttpRequestMessage message = new HttpRequestMessage();
                 message.Headers.Add("Accept", "application/json");
                 message.RequestUri = new Uri(apiRequest.Url);
+
                 if (apiRequest.Data != null)
                 {
                     message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
                         Encoding.UTF8, "application/json");
                 }
+
                 switch (apiRequest.ApiType)
                 {
-                    case SD.ApiType.POST:
-                        message.Method = HttpMethod.Post;
-                        break;
-                    case SD.ApiType.PUT:
-                        message.Method = HttpMethod.Put;
-                        break;
-                    case SD.ApiType.DELETE:
-                        message.Method = HttpMethod.Delete;
-                        break;
-                    default:
-                        message.Method = HttpMethod.Get;
-                        break;
-
+                    case SD.ApiType.POST: message.Method = HttpMethod.Post; break;
+                    case SD.ApiType.PUT: message.Method = HttpMethod.Put; break;
+                    case SD.ApiType.DELETE: message.Method = HttpMethod.Delete; break;
+                    default: message.Method = HttpMethod.Get; break;
                 }
-
-                HttpResponseMessage apiResponse = null;
 
                 if (!string.IsNullOrEmpty(apiRequest.Token))
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiRequest.Token);
                 }
 
-                apiResponse = await client.SendAsync(message);
+                HttpResponseMessage apiResponse = await client.SendAsync(message);
 
-                var apiContent = await apiResponse.Content.ReadAsStringAsync();
+                // --- LÓGICA DE TRATAMENTO DE ERRO ROBUSTA ---
 
-                // ─── 1) TRATE 401 UNAUTHORIZED ───────────────────────────────────────────
-                if (apiResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                // 1) Se for sucesso (2xx), prosseguimos normalmente
+                if (apiResponse.IsSuccessStatusCode)
                 {
-                    // monta um APIResponse com a mensagem de credenciais inválidas
-                    var error = new APIResponse
-                    {
-                        StatusCode = System.Net.HttpStatusCode.Unauthorized,
-                        IsSuccess = false,
-                        ErrorMessages = new List<string> { apiContent }
-                    };
-                    // serializa e desserializa para T (neste caso T = APIResponse)
-                    var fakeJson = JsonConvert.SerializeObject(error);
-                    return JsonConvert.DeserializeObject<T>(fakeJson);
+                    var apiContent = await apiResponse.Content.ReadAsStringAsync();
+                    return JsonConvert.DeserializeObject<T>(apiContent);
                 }
 
-                // ─── 2) TRATE BADREQUEST e NOTFOUND como antes ───────────────────────────
-                if (apiResponse.StatusCode == System.Net.HttpStatusCode.BadRequest ||
-                    apiResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+                // 2) Se não for sucesso (500, 403, etc.), capturamos o erro de forma genérica
+                var errorContent = await apiResponse.Content.ReadAsStringAsync();
+                var errorDto = new APIResponse
                 {
-                    // tenta desserializar um APIResponse vindo da API
-                    var bad = JsonConvert.DeserializeObject<APIResponse>(apiContent);
-                    bad.StatusCode = System.Net.HttpStatusCode.BadRequest;
-                    bad.IsSuccess = false;
-                    var fakeJson = JsonConvert.SerializeObject(bad);
-                    return JsonConvert.DeserializeObject<T>(fakeJson);
-                }
+                    StatusCode = apiResponse.StatusCode,
+                    IsSuccess = false,
+                    ErrorMessages = new List<string> { $"Erro na API ({apiResponse.StatusCode}): {errorContent}" }
+                };
 
-                // ─── 3) CASO NORMAL: desserialize diretamente em T ────────────────────────
-                return JsonConvert.DeserializeObject<T>(apiContent);
-
+                // Retornamos um APIResponse com erro serializado para não quebrar o fluxo
+                var res = JsonConvert.SerializeObject(errorDto);
+                return JsonConvert.DeserializeObject<T>(res);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
+                // Erro de rede (API em baixo, timeout, etc.)
                 var dto = new APIResponse
                 {
-                    ErrorMessages = new List<string> { Convert.ToString(e.Message) },
+                    ErrorMessages = new List<string> { $"Erro de rede ou servidor inacessível: {e.Message}" },
                     IsSuccess = false
                 };
                 var res = JsonConvert.SerializeObject(dto);
-                var APIResponse = JsonConvert.DeserializeObject<T>(res);
-                return APIResponse;
+                return JsonConvert.DeserializeObject<T>(res);
             }
         }
     }
 }
+        

@@ -20,14 +20,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
-    <!-- Estilos para as Notificações -->
+
     <style>
-        .notification-item { padding: 10px 15px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; }
-        .notification-item:hover { background-color: #f8f9fa; }
-        .notification-item.unread { background-color: #e9ecef; border-left: 4px solid #5de4d9; }
-        .notification-actions { opacity: 0; transition: opacity 0.2s; }
-        .notification-item:hover .notification-actions { opacity: 1; }
+            .notification-item {
+                padding: 10px 15px;
+                border-bottom: 1px solid #f0f0f0;
+                transition: background-color 0.2s;
+            }
+
+                .notification-item:hover {
+                    background-color: #f8f9fa;
+                }
+
+                .notification-item.unread {
+                    background-color: #e9ecef;
+                    border-left: 4px solid #5de4d9;
+                }
+
+            .notification-actions {
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+
+            .notification-item:hover .notification-actions {
+                opacity: 1;
+            }
     </style>
 
     @await RenderSectionAsync("Styles", required: false)
@@ -41,7 +58,7 @@
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                aria-expanded="false" aria-label="Toggle navigation">
+                        aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -56,10 +73,9 @@
 
                     </ul>
                     <ul class="navbar-nav ms-auto">
-                        
+
                         @if (User.Identity.IsAuthenticated)
                         {
-                            <!-- SINO DE NOTIFICAÇÕES -->
                             <li class="nav-item dropdown d-flex align-items-center position-relative me-3">
                                 <a class="nav-link d-flex align-items-center position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-bell fs-5"></i>
@@ -102,15 +118,15 @@
                                         <a class="dropdown-item" asp-controller="OfertaEmprego" asp-action="Historico">Gerir ofertas</a>
                                     </li>                                   
                                     <li>
-                                         <a class="dropdown-item" asp-controller="Auth" asp-action="Logout">Logout</a>
+                                        <a class="dropdown-item" asp-controller="Auth" asp-action="Logout">Logout</a>
                                     </li>
                                 </ul>
                             </li>
                             <a asp-controller="Empresa" asp-action="Details" asp-route-id="@idempresa">
-                            <img src="@Url.Action("GetLogoImage", "Logo", new { id = idempresa })"
-                                 alt="Foto de Perfil"
+                                <img src="@Url.Action("GetLogoImage", "Logo", new { id = idempresa })"
+                                     alt="Foto de Perfil"
                                      style="width: 50px; height: 50px; border-radius: 50%; object-fit: contain;" />
-                            </a>   
+                            </a>
                         }
 
                         @if (User.IsInRole(SD.Role_Candidato))
@@ -121,8 +137,8 @@
                                    onclick="abrirFavoritos()"
                                    data-bs-toggle="modal"
                                    data-bs-target="#favoritosModal">
-   
-                                    <i class="bi bi-heart-fill fs-5"></i> 
+
+                                    <i class="bi bi-heart-fill fs-5"></i>
                                     <span id="favoritosBadge"
                                           class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
                                           style="background-color: #F2994A;">
@@ -131,7 +147,7 @@
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                            
+
                                 <a class="nav-link dropdown-toggle" href="#" id="menuCandidato" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Candidato
                                 </a>
@@ -147,28 +163,28 @@
                                     </li>
                                     <li>
                                         <a class="dropdown-item" asp-controller="CV" asp-action="Create">CV</a>
-                                    </li>                                   
+                                    </li>
                                     <li>
                                         <a class="dropdown-item" asp-controller="Auth" asp-action="Logout">Logout</a>
                                     </li>
-                                    
+
                                 </ul>
                             </li>
 
                             var candidatoId = User.FindFirst("IdCandidato")?.Value; // ID do candidato
-                            
-                                <li class="nav-item">
-                                    @{
-                                        var defaultImage = "/img/icone_perfil.png"; 
-                                    
-                                    }
+
+                            <li class="nav-item">
+                                @{
+                                    var defaultImage = "/img/icone_perfil.png";
+
+                                }
                                 <a asp-controller="Candidato" asp-action="Details" asp-route-id="@candidatoId">
                                     <img src="@Url.Action("GetImage", "Foto", new { id = candidatoId })"
                                          onerror="this.onerror=null;this.src='@defaultImage'"
                                          alt="Foto de Perfil"
                                          style="width: 50px; height: 50px; border-radius: 50%;" />
                                 </a>
-                                </li>
+                            </li>
                         }
 
                         @if (User.IsInRole(SD.Role_Admin))
@@ -205,7 +221,7 @@
                         <table>
                             <tr>
                                 <td>
-                                    <a type="button"  class="botao-login" asp-controller="Auth" asp-action="Login">Login</a>
+                                    <a type="button" class="botao-login" asp-controller="Auth" asp-action="Login">Login</a>
                                 </td>
                                 <td>
                                     <a type="button" class="botao-registo" asp-controller="Auth" asp-action="Register">Registo</a>
@@ -227,16 +243,15 @@
                 </div>
                 <div class="modal-body">
                     <div id="favoritosContainer" class="row g-3">
-                        <!-- Cards aqui -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+
+    <main role="main" class="pb-3">
+        @RenderBody()
+    </main>
 
     <footer class="footer_wrapper">
         <div class="footer">
@@ -247,204 +262,214 @@
     @Html.AntiForgeryToken()
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            atualizarBadgeFavoritos();
-            
-            // Verifica se o elemento do sino existe (usuário autenticado) antes de buscar notificações
-            if (document.getElementById('notificationBadge')) {
-                fetchNotifications();
-            }
-        });
+            // Injetar o token JWT dos Claims do utilizador MVC para o JavaScript
+            const jwt = '@(User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value ?? "")';
+            const API_URL = 'https://localhost:7211/api/notifications';
 
-        // ================= NOTIFICAÇÕES =================
-        const API_URL = 'https://localhost:7211//api/notifications'; // Mude para URL completa (ex: https://localhost:7001/api/notifications) se a API estiver em outro projeto.
+            const authHeaders = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jwt}`
+            };
 
-        // Se usar JWT, adicione-o aqui. Se a API e o MVC estiverem no mesmo projeto e usarem cookies, não precisa do header de Authorization.
-        const authHeaders = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-            // 'Authorization': `Bearer ${localStorage.getItem('jwt')}` // Descomente se usar JWT
-        };
+            document.addEventListener("DOMContentLoaded", () => {
+                atualizarBadgeFavoritos();
 
-        async function fetchNotifications() {
-            try {
-                const response = await fetch(API_URL, { headers: authHeaders });
-                if (response.ok) {
-                    const notifications = await response.json();
-                    renderNotifications(notifications);
+                // Verifica se o elemento do sino existe e se há token antes de procurar notificações
+                if (document.getElementById('notificationBadge') && jwt !== "") {
+                    fetchNotifications();
                 }
-            } catch (error) {
-                console.error("Falha ao carregar notificações", error);
-            }
-        }
-
-        function renderNotifications(notifications) {
-            const list = document.getElementById('notificationList');
-            const badge = document.getElementById('notificationBadge');
-            
-            list.innerHTML = ''; 
-            
-            if (!notifications || notifications.length === 0) {
-                list.innerHTML = '<div class="text-center p-3 text-muted">Sem notificações</div>';
-                badge.style.display = 'none';
-                return;
-            }
-
-            let unreadCount = 0;
-
-            notifications.forEach(n => {
-                if (!n.isRead) unreadCount++;
-
-                const item = document.createElement('div');
-                item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
-                item.innerHTML = `
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
-                            <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
-                        </div>
-                        <div class="notification-actions d-flex flex-column align-items-end">
-                            ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
-                            <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-                list.appendChild(item);
             });
 
-            if (unreadCount > 0) {
-                badge.innerText = unreadCount;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
+            // ================= NOTIFICAÇÕES =================
+                 async function fetchNotifications() {
+                try {
+                    const response = await fetch(API_URL, { headers: authHeaders });
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        const notifications = data.$values !== undefined ? data.$values : data;
+
+                        renderNotifications(notifications);
+                    }
+                } catch (error) {
+                    console.error("Falha ao carregar notificações", error);
+                }
             }
-        }
 
-        async function markAsRead(id) {
-            await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
-            fetchNotifications(); 
-        }
+            function renderNotifications(notifications) {
+                const list = document.getElementById('notificationList');
+                const badge = document.getElementById('notificationBadge');
 
-        async function markAllNotificationsRead() {
-            await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
-            fetchNotifications();
-        }
+                list.innerHTML = '';
 
-        async function deleteNotification(id) {
-            await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
-            fetchNotifications();
-        }
-
-        async function clearAllNotifications() {
-            if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
-                await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
-                fetchNotifications();
-            }
-        }
-
-
-        // ================= FAVORITOS (Seu código original) =================
-        async function atualizarBadgeFavoritos() {
-            try {
-                const res = await fetch('/OfertaEmprego/GetFavoritosIds');
-                if (!res.ok) {
-                    console.error('Erro ao buscar favoritos:', res.status);
+               if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
+                    list.innerHTML = `
+                        <div class="text-center p-5 text-muted">
+                            <i class="far fa-bell-slash mb-3" style="font-size: 3rem; color: #dee2e6;"></i>
+                            <h6 class="text-secondary fw-normal mb-1">Caixa Limpa</h6>
+                            <p class="mb-0" style="font-size: 0.85rem;">Não tens novas notificações de momento.</p>
+                        </div>
+                    `;
+                    badge.style.display = 'none';
                     return;
                 }
 
-                const ids = await res.json();
-                const badge = document.getElementById('favoritosBadge');
+                let unreadCount = 0;
 
-                if (badge) {
-                    badge.textContent = ids.length || '0';
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar badge de favoritos:', error);
-            }
-        }
+                notifications.forEach(n => {
+                    if (!n.isRead) unreadCount++;
 
-        async function abrirFavoritos() {
-            try {
-                const container = document.getElementById('favoritosContainer');
-                container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
-
-                const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
-                if (!res.ok) {
-                    throw new Error(`Erro ao carregar favoritos: ${res.status}`);
-                }
-
-                const ofertas = await res.json();
-                container.innerHTML = '';
-
-                if (!ofertas || ofertas.length === 0) {
-                    container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                    return;
-                }
-
-                ofertas.forEach(oferta => {
-
-                const idOferta = oferta.idOferta || oferta.IdOferta; 
-                const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
-
-                    const card = `
-                        <div class="col-md-6">
-                            <div class="card shadow-sm rounded-3 mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
-                                    <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
-                                    <div class="d-flex justify-content-between align-items-center mt-2">
-                                        <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
-                                        <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
-                                            <i class="fas fa-star"></i> Remover
-                                        </button>
-                                    </div>
-                                </div>
+                    const item = document.createElement('div');
+                    item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
+                    item.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
+                                <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
+                            </div>
+                            <div class="notification-actions d-flex flex-column align-items-end">
+                                ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
+                                <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     `;
-                    container.insertAdjacentHTML('beforeend', card);
+                    list.appendChild(item);
                 });
 
-                document.querySelectorAll('.remove-favorito').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.getAttribute('data-id');
-                        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                        const res = await fetch('/OfertaEmprego/ToggleFavorito', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'RequestVerificationToken': token
-                            },
-                            body: `idOferta=${id}`
-                        });
-
-                        const result = await res.json();
-
-                        if (result.success) {
-                            this.closest('.col-md-6').remove();
-
-                            const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
-                            if (starIcon) {
-                                starIcon.classList.remove('fas');
-                                starIcon.classList.add('far');
-                                starIcon.style.color = "#ccc";
-                            }
-
-                            atualizarBadgeFavoritos();
-
-                            if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
-                                document.getElementById('favoritosContainer').innerHTML =
-                                    '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                            }
-                        }
-                    });
-                });
-            } catch (error) {
-                console.error('Erro ao carregar favoritos:', error);
-                document.getElementById('favoritosContainer').innerHTML =
-                    '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
+                if (unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
-        }
+
+            async function markAsRead(id) {
+                await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
+                fetchNotifications();
+            }
+
+            async function markAllNotificationsRead() {
+                await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
+                fetchNotifications();
+            }
+
+            async function deleteNotification(id) {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
+                fetchNotifications();
+            }
+
+            async function clearAllNotifications() {
+                if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
+                    await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
+                    fetchNotifications();
+                }
+            }
+
+
+            // ================= FAVORITOS =================
+            async function atualizarBadgeFavoritos() {
+                try {
+                    const res = await fetch('/OfertaEmprego/GetFavoritosIds');
+                    if (!res.ok) {
+                        console.error('Erro ao buscar favoritos:', res.status);
+                        return;
+                    }
+
+                    const ids = await res.json();
+                    const badge = document.getElementById('favoritosBadge');
+
+                    if (badge) {
+                        badge.textContent = ids.length || '0';
+                    }
+                } catch (error) {
+                    console.error('Erro ao atualizar badge de favoritos:', error);
+                }
+            }
+
+            async function abrirFavoritos() {
+                try {
+                    const container = document.getElementById('favoritosContainer');
+                    container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
+
+                    const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
+                    if (!res.ok) {
+                        throw new Error(`Erro ao carregar favoritos: ${res.status}`);
+                    }
+
+                    const ofertas = await res.json();
+                    container.innerHTML = '';
+
+                    if (!ofertas || ofertas.length === 0) {
+                        container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                        return;
+                    }
+
+                    ofertas.forEach(oferta => {
+
+                    const idOferta = oferta.idOferta || oferta.IdOferta;
+                    const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
+
+                        const card = `
+                            <div class="col-md-6">
+                                <div class="card shadow-sm rounded-3 mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
+                                        <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
+                                            <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
+                                                <i class="fas fa-star"></i> Remover
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', card);
+                    });
+
+                    document.querySelectorAll('.remove-favorito').forEach(btn => {
+                        btn.addEventListener('click', async function() {
+                            const id = this.getAttribute('data-id');
+                            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                            const res = await fetch('/OfertaEmprego/ToggleFavorito', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'RequestVerificationToken': token
+                                },
+                                body: `idOferta=${id}`
+                            });
+
+                            const result = await res.json();
+
+                            if (result.success) {
+                                this.closest('.col-md-6').remove();
+
+                                const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
+                                if (starIcon) {
+                                    starIcon.classList.remove('fas');
+                                    starIcon.classList.add('far');
+                                    starIcon.style.color = "#ccc";
+                                }
+
+                                atualizarBadgeFavoritos();
+
+                                if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
+                                    document.getElementById('favoritosContainer').innerHTML =
+                                        '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                                }
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('Erro ao carregar favoritos:', error);
+                    document.getElementById('favoritosContainer').innerHTML =
+                        '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
+                }
+            }
     </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -453,6 +478,6 @@
     <script src="//cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
-    
+
 </body>
 </html>
