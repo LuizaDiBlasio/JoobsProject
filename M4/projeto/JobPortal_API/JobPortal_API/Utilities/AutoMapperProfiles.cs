@@ -11,9 +11,6 @@ namespace JobPortal_API.Utilities
             CreateMap<Candidato, CandidatoDTO>();
             CreateMap<CandidatoDTO, Candidato>();
 
-            CreateMap<CV, CVDTO>();
-            CreateMap<CVDTO, CV>();
-
             CreateMap<AplicacaoTrabalho, AplicacaoTrabalhoDTO>();
             CreateMap<AplicacaoTrabalhoDTO, AplicacaoTrabalho>();
 
@@ -37,6 +34,8 @@ namespace JobPortal_API.Utilities
 
             CreateMap<NotificationsDTO, Notifications>();
             CreateMap<Notifications, NotificationsDTO>();
+
+            CreateMap<CV, CVDTO>().ReverseMap(); // ALTERAÇÃO 26/05
         }
     }
 }
