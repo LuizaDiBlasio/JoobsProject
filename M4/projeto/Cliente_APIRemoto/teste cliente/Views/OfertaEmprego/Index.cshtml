@@ -11,10 +11,8 @@
 <div class="search-barra">
     <div class="container search-container pt-4">
         <form asp-controller="OfertaEmprego" asp-action="Index" method="get">
-            <!-- Mudamos para uma row com alinhamento vertical centralizado e espaçamento controlado -->
             <div class="row g-2 align-items-end">
                 
-                <!-- Campo de Busca por Texto -->
                 <div class="col-xl-3 col-lg-3 col-md-6">
                     <label for="search" class="form-label fw-bold text-muted small">Palavra-chave</label>
                     <div class="input-group">
@@ -25,7 +23,6 @@
                     </div>
                 </div>
 
-                <!-- Campo de Concelho (Com pesquisa inteligente) -->
                 <div class="col-xl-3 col-lg-3 col-md-6">
                     <label asp-for="Concelho" class="form-label fw-bold text-muted small">Concelho</label>
                     <select asp-for="Concelho" class="form-select select2-searchable" asp-items="ViewBag.ConcelhosList">
@@ -33,7 +30,6 @@
                     </select>
                 </div>
 
-                <!-- Campo de Jornada -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
                     <label asp-for="Jornada" class="form-label fw-bold text-muted small">Jornada de trabalho</label>
                     <select asp-for="Jornada" class="form-select custom-select-filter" asp-items="ViewBag.JornadasList">
@@ -41,7 +37,6 @@
                     </select>
                 </div>
 
-                <!-- Campo de Regime de Trabalho -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
                     <label asp-for="RegimeTrabalho" class="form-label fw-bold text-muted small">Regime de trabalho</label>
                     <select asp-for="RegimeTrabalho" class="form-select custom-select-filter" asp-items="ViewBag.RegimeTrabalhoList">
@@ -49,13 +44,25 @@
                     </select>
                 </div>
 
-                <!-- Botão de Submit -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
+                    <label for="FaixaSalarial" class="form-label fw-bold text-muted small">Faixa Salarial</label>
+                    <select asp-for="FaixaSalarial" class="form-select custom-select-filter">
+                        <option value="">Todas as ofertas</option>
+                        <option value="0-1000">Até 1000 €</option>
+                        <option value="1000-1500">De 1000 € a 1500 €</option>
+                        <option value="1500-2000">De 1500 € a 2000 €</option>
+                        <option value="2000-3000">De 2000 € a 3000 €</option>
+                        <option value="3000-999999">Mais de 3000 €</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mt-3 justify-content-end">
+                <div class="col-xl-2 col-lg-3 col-md-4">
                     <button type="submit" class="btn text-white custom-link-button w-100">
                         <i class="fas fa-filter me-2"></i>Filtrar
                     </button>
                 </div>
-
             </div>
         </form>
     </div>

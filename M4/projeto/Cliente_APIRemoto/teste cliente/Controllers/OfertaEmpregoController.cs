@@ -14,12 +14,13 @@ using teste_cliente.Models;
 using teste_cliente.Models.Dto;
 using teste_cliente.Models.Enums;
 using teste_cliente.Models.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, int page = 1)
+        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, string? faixaSalarial, int page = 1)
         {
             
             int pageSize = 10;
@@ -34,6 +35,7 @@ namespace teste_cliente.Controllers
                 if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho}");
                 if (jornada.HasValue) queryParams.Add($"jornada={(int)jornada}");
                 if (regimeTrabalho.HasValue) queryParams.Add($"regimeTrabalho={(int)regimeTrabalho}");
+                if (!string.IsNullOrEmpty(faixaSalarial)) queryParams.Add($"faixaSalarial={Uri.EscapeDataString(faixaSalarial)}");
 
                 string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
                 string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
@@ -436,25 +438,6 @@ namespace teste_cliente.Controllers
             }
         }
 
-        //[HttpGet]
-        //public async Task<IActionResult> Details(int id)
-        //{
-        //    OfertaEmprego oferta = new OfertaEmprego();
-        //    using (var httpClient = new HttpClient())
-        //    {
-        //        using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/" + id))
-        //        {
-        //            string apiResponse = await response.Content.ReadAsStringAsync();
-        //            oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
-
-        //        }
-
-        //        var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-        //        oferta.LogoEmpresaBase64 = logoEmpresaBase64;
-
-        //        return View(oferta);
-        //    }
-        //}
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -602,6 +585,5 @@ namespace teste_cliente.Controllers
 
                 model.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
             }
-
     }
 }
