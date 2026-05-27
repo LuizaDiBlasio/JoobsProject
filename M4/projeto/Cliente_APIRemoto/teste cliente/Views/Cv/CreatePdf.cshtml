@@ -12,8 +12,7 @@
     else
     {
         imgSrc = Url.Content("~/img/icone_perfil.png");
-    }
-    
+    }    
 }
 
 <div class="container mt-4" style="font-family: Arial, sans-serif; color: #333;">
@@ -23,14 +22,19 @@
              style="width:120px; height:120px; object-fit:cover; border-radius:50%;" />
 
         <h1 style="margin-top: 10px; font-size: 24px;">@Model.Nome</h1>
-        <p style="font-size: 14px; color: #666;">@Model.Localizacao</p>
+
     </div>
 
     <hr style="border: none; height: 1px; background-color: #ccc;" />
 
     <section style="margin-bottom: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 8px;">Concelho</h2>
+        <p style="font-size: 14px; color: #666;">@Model.Concelho.GetDisplayName()</p>
+    </section>
+
+    <section style="margin-bottom: 20px;">
         <h2 style="font-size: 18px; margin-bottom: 8px;">Educação</h2>
-        <p style="font-size: 14px; white-space: pre-wrap;">@Model.Educacao</p>
+        <p style="font-size: 14px; white-space: pre-wrap;">@Model.Escolaridade.GetDisplayName()</p>
     </section>
 
     <section style="margin-bottom: 20px;">

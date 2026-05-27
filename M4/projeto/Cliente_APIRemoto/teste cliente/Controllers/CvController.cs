@@ -1,16 +1,18 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Common;
+using Rotativa.AspNetCore;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Headers;
 using System.Text;
-using Rotativa.AspNetCore;
+using System.Text;
+using teste_cliente.Helpers;
 using teste_cliente.Models;
-using System.Net.Http;
+using teste_cliente.Models.Enums;
 
 namespace teste_cliente.Controllers
 {
@@ -28,6 +30,11 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
+            // ALTERAÇÃO 26/05: Carrega as listas dos Enums para enviar para a View colocar nas Comboboxes
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
+
 
             // Carregar o CV
             CV model = null;

@@ -1,4 +1,5 @@
-﻿@model teste_cliente.Models.CV
+﻿@using teste_cliente.Helpers
+@model teste_cliente.Models.CV
 
 @{
     ViewData["Title"] = "Details";
@@ -23,16 +24,16 @@
             @Html.DisplayFor(model => model.Nome)
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Localizacao)
+            @Html.DisplayNameFor(model => model.Concelho)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Localizacao)
+            @(Model.Concelho.GetDisplayName())
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Educacao)
+            @Html.DisplayNameFor(model => model.Escolaridade)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Educacao)
+            @(Model.Escolaridade.GetDisplayName())
         </dd>
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.ExpProfissional)

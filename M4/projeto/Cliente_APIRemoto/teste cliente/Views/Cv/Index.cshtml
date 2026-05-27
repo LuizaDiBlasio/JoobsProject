@@ -1,4 +1,5 @@
-﻿@model IEnumerable<teste_cliente.Models.CV>
+﻿@using teste_cliente.Helpers
+@model IEnumerable<teste_cliente.Models.CV>
 
 @{
     ViewData["Title"] = "Index";
@@ -19,10 +20,10 @@
                 @Html.DisplayNameFor(model => model.Nome)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Localizacao)
+                @Html.DisplayNameFor(model => model.Concelho)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Educacao)
+                @Html.DisplayNameFor(model => model.Escolaridade)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.ExpProfissional)
@@ -52,10 +53,10 @@
                         @Html.DisplayFor(modelItem => item.Nome)
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Localizacao)
+                        @(item.Concelho.GetDisplayName())
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Educacao)
+                        @(item.Escolaridade.GetDisplayName())
                     </td>
                     <td>
                         @Html.DisplayFor(modelItem => item.ExpProfissional)
