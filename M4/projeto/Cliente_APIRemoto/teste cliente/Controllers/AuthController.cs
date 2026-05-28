@@ -24,6 +24,7 @@ namespace teste_cliente.Controllers
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IFlashMessage _flashMessage;
+        private readonly string _baseUrl;
 
         public AuthController(IAuthService authService, HttpClient httpClient, IConfiguration configuration, IFlashMessage flashMessage)
         {
@@ -31,6 +32,7 @@ namespace teste_cliente.Controllers
             _httpClient = httpClient;
             _configuration = configuration;
             _flashMessage = flashMessage;
+            _baseUrl = _configuration["ApiSettings:BaseUrl"];
 
         }
         [HttpGet]
@@ -136,7 +138,7 @@ namespace teste_cliente.Controllers
                 );
 
                 // Chamada para o endpoint centralizado da API
-                using (var response = await httpClient.PostAsync("https://localhost:7211/api/Auth/register", content))
+                using (var response = await httpClient.PostAsync(_baseUrl + "Auth/register", content))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Resposta da API: {apiResponse}"); // Log para depuração
@@ -234,7 +236,7 @@ namespace teste_cliente.Controllers
 
             try
             {
-                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
+                var apiCall = await _httpClient.PostAsync(_baseUrl + "Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
 
                 if (apiCall.IsSuccessStatusCode)
                 {
@@ -317,7 +319,7 @@ namespace teste_cliente.Controllers
 
             try
             {
-                var apiCall = await _httpClient.PostAsync("https://localhost:7211/api/Auth/ResetPassword", jsonContent);
+                var apiCall = await _httpClient.PostAsync(_baseUrl + "Auth/ResetPassword", jsonContent);
 
 
                 var response = await apiCall.Content.ReadFromJsonAsync<APIResponse>(options);
@@ -385,23 +387,5 @@ namespace teste_cliente.Controllers
 
             return Json(new { isSuccess = false, message = "Falha ao autenticar com o Google." });
         }
-        private string TraduzirErroIdentity(string code, string fallbackDescription)
-        {
-            return code switch
-            {
-                "DuplicateUserName" => "Este nome de utilizador já se encontra em uso. Por favor, escolha outro.",
-                "DuplicateEmail" => "Este endereço de email já está registado na nossa plataforma.",
-                "InvalidUserName" => "O nome de utilizador é inválido (só pode conter letras ou números).",
-                "InvalidEmail" => "O email introduzido não é válido.",
-                "PasswordTooShort" => "A palavra-passe é demasiado curta.",
-                "PasswordRequiresNonAlphanumeric" => "A palavra-passe tem de conter pelo menos um caractere especial.",
-                "PasswordRequiresDigit" => "A palavra-passe tem de conter pelo menos um número.",
-                "PasswordRequiresUpper" => "A palavra-passe tem de conter pelo menos uma letra maiúscula.",
-                "PasswordRequiresLower" => "A palavra-passe tem de conter pelo menos uma letra minúscula.",
-                // Adiciona mais casos aqui, se necessário
-                _ => fallbackDescription // Retorna a mensagem original se não houver tradução
-            };
-        }
-
     }
 }

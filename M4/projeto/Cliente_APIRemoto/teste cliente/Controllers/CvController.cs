@@ -19,8 +19,14 @@ namespace teste_cliente.Controllers
     [Authorize(Roles = "Candidato")]
     public class CvController : Controller
     {
-        private readonly string apiBaseUrl = "https://localhost:7211/api/cv";
-        private readonly string candidatoBaseUrl = "https://localhost:7211/api/candidato";
+        private readonly string _baseUrl;
+        private readonly IConfiguration _config;
+
+        public CvController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+        }
 
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -42,7 +48,7 @@ namespace teste_cliente.Controllers
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var respCv = await client.GetAsync($"{apiBaseUrl}/idCandidato?idCandidato={idCandidato}");
+                var respCv = await client.GetAsync(_baseUrl + $"cv/idCandidato?idCandidato={idCandidato}");
                 if (respCv.IsSuccessStatusCode)
                 {
                     model = JsonConvert.DeserializeObject<CV>(await respCv.Content.ReadAsStringAsync());
@@ -85,7 +91,7 @@ namespace teste_cliente.Controllers
             HttpResponseMessage resp;
             if (cv.IdCV > 0)
             {
-                resp = await client.PutAsync($"{apiBaseUrl}/{cv.IdCV}", content);
+                resp = await client.PutAsync(_baseUrl + $"cv/{cv.IdCV}", content);
                 if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                 
@@ -94,7 +100,7 @@ namespace teste_cliente.Controllers
             }
             else
             {
-                resp = await client.PostAsync(apiBaseUrl, content);
+                resp = await client.PostAsync(_baseUrl + "cv", content);
                 if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     return Forbid();
@@ -134,7 +140,7 @@ namespace teste_cliente.Controllers
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var resp = await client.GetAsync($"{apiBaseUrl}/idCandidato?idCandidato={idCandidato}");
+                var resp = await client.GetAsync(_baseUrl + $"cv/idCandidato?idCandidato={idCandidato}");
                 if (!resp.IsSuccessStatusCode)
                 {
                     if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -157,7 +163,7 @@ namespace teste_cliente.Controllers
                     new AuthenticationHeaderValue("Bearer", token);
 
                 var respFoto = await httpFoto.GetAsync(
-                    $"https://localhost:7211/api/foto/BuscarFotoPorIdCandidato/{idCandidato}");
+                    _baseUrl + $"foto/BuscarFotoPorIdCandidato/{idCandidato}");
 
                 if (respFoto.IsSuccessStatusCode)
                 {
@@ -189,10 +195,10 @@ namespace teste_cliente.Controllers
 
 
             // 1) PUT para atualizar
-            var putResponse = await upload.PutAsync($"https://localhost:7211/api/filecv/{idCandidato}", form);
+            var putResponse = await upload.PutAsync(_baseUrl + $"filecv/{idCandidato}", form);
             // 2) se não existir, cria
             if (putResponse.StatusCode == HttpStatusCode.NotFound)
-                await upload.PostAsync("https://localhost:7211/api/filecv", form);
+                await upload.PostAsync(_baseUrl + "filecv", form);
 
             // devolver PDF ao browser
             return File(pdfBytes, "application/pdf", $"CV_{cv.Nome}.pdf");

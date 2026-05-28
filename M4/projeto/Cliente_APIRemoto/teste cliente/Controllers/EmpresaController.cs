@@ -9,6 +9,15 @@ namespace teste_cliente.Controllers
 {
     public class EmpresaController : Controller
     {
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public EmpresaController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+        }
+
         [Authorize(Roles = "Admin, Empresa")]
         public async Task<IActionResult> Index()
         {
@@ -22,7 +31,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/empresa/BuscarTodas"))
+                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/BuscarTodas"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -62,7 +71,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/empresa/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -102,7 +111,7 @@ namespace teste_cliente.Controllers
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                     StringContent content = new StringContent(JsonConvert.SerializeObject(empresa), Encoding.UTF8, "application/json");
-                    using (var response = await httpClient.PostAsync("https://localhost:7211/api/empresa/", content))
+                    using (var response = await httpClient.PostAsync(_baseUrl + "empresa/", content))
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
@@ -136,7 +145,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/empresa/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -170,7 +179,7 @@ namespace teste_cliente.Controllers
                     //var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
                     //httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                    var respRev = await httpClient.GetAsync($"https://localhost:7211/api/review/empresa/{empresa.IdEmpresa}");
+                    var respRev = await httpClient.GetAsync(_baseUrl + $"review/empresa/{empresa.IdEmpresa}");
                     if (respRev.IsSuccessStatusCode)
                     {
                         var jsonRev = await respRev.Content.ReadAsStringAsync();
@@ -197,7 +206,7 @@ namespace teste_cliente.Controllers
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/empresa/EditarEmpresa/" + empresa.IdEmpresa, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "empresa/EditarEmpresa/" + empresa.IdEmpresa, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -237,7 +246,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var respEmp = await httpClient.GetAsync($"https://localhost:7211/api/empresa/BuscarPorId/{id}");
+                var respEmp = await httpClient.GetAsync(_baseUrl + $"empresa/BuscarPorId/{id}");
                 if (respEmp.IsSuccessStatusCode)
                 {
                     var jsonEmp = await respEmp.Content.ReadAsStringAsync();
@@ -260,7 +269,7 @@ namespace teste_cliente.Controllers
                     return RedirectToAction("Index", "Home");
 
                 // 2. Carregar as reviews da API
-                var respRev = await httpClient.GetAsync($"https://localhost:7211/api/review/empresa/{id}");
+                var respRev = await httpClient.GetAsync(_baseUrl + $"review/empresa/{id}");
                 if (respRev.IsSuccessStatusCode)
                 {
                     var jsonRev = await respRev.Content.ReadAsStringAsync();
@@ -285,7 +294,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.DeleteAsync("https://localhost:7211/api/empresa/DeletarEmpresa/" + id))
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "empresa/DeletarEmpresa/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -338,7 +347,7 @@ namespace teste_cliente.Controllers
                 "application/json");
 
             var response = await httpClient.PostAsync(
-                "https://localhost:7211/api/empresa/ChangePassword/" + id, content);
+                _baseUrl + "empresa/ChangePassword/" + id, content);
 
             if (response.IsSuccessStatusCode)
             {

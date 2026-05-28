@@ -10,11 +10,14 @@ namespace teste_cliente.Controllers
 {
     public class FileCVController : Controller
     {
+        private readonly IConfiguration _config;
         private readonly HttpClient _httpClient;
-
-        public FileCVController(IHttpClientFactory httpClientFactory)
+        private readonly string _baseUrl;
+        public FileCVController(IHttpClientFactory httpClientFactory, IConfiguration config)
         {
             _httpClient = httpClientFactory.CreateClient();
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
         }
 
         [HttpGet]
@@ -30,7 +33,7 @@ namespace teste_cliente.Controllers
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var response = await _httpClient.GetAsync($"https://localhost:7211/api/filecv/por-candidato/{idCandidato}");
+                var response = await _httpClient.GetAsync(_baseUrl + $"filecv/por-candidato/{idCandidato}");
 
                 Console.WriteLine($"Resposta da API: Status {response.StatusCode}");
 

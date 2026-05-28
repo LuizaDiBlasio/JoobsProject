@@ -1,5 +1,7 @@
 ﻿@using System.Security.Claims
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor httpAcc
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 
 <!DOCTYPE html>
 <html lang="en">
@@ -262,214 +264,208 @@
     @Html.AntiForgeryToken()
 
     <script>
-            // Injetar o token JWT dos Claims do utilizador MVC para o JavaScript
-            const jwt = '@(User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value ?? "")';
-            const API_URL = 'https://localhost:7211/api/notifications';
+        document.addEventListener("DOMContentLoaded", () => {
+            atualizarBadgeFavoritos();
+            
+            // Verifica se o elemento do sino existe (usuário autenticado) antes de buscar notificações
+            if (document.getElementById('notificationBadge')) {
+                fetchNotifications();
+            }
+        });
 
-            const authHeaders = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt}`
-            };
+        // ================= NOTIFICAÇÕES =================
 
-            document.addEventListener("DOMContentLoaded", () => {
-                atualizarBadgeFavoritos();
+        const API_BASE_URL = '@Configuration["ApiSettings:BaseUrl"]';
 
-                // Verifica se o elemento do sino existe e se há token antes de procurar notificações
-                if (document.getElementById('notificationBadge') && jwt !== "") {
-                    fetchNotifications();
+        // Note o ajuste para concatenar a base com o endpoint de notificações
+        const API_URL = `${API_BASE_URL}notifications`;
+
+        // Se usar JWT, adicione-o aqui. Se a API e o MVC estiverem no mesmo projeto e usarem cookies, não precisa do header de Authorization.
+        const authHeaders = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+            // 'Authorization': `Bearer ${localStorage.getItem('jwt')}` // Descomente se usar JWT
+        };
+
+        async function fetchNotifications() {
+            try {
+                const response = await fetch(API_URL, { headers: authHeaders });
+                if (response.ok) {
+                    const notifications = await response.json();
+                    renderNotifications(notifications);
                 }
-            });
+            } catch (error) {
+                console.error("Falha ao carregar notificações", error);
+            }
+        }
 
-            // ================= NOTIFICAÇÕES =================
-                 async function fetchNotifications() {
-                try {
-                    const response = await fetch(API_URL, { headers: authHeaders });
-                    if (response.ok) {
-                        const data = await response.json();
-
-                        const notifications = data.$values !== undefined ? data.$values : data;
-
-                        renderNotifications(notifications);
-                    }
-                } catch (error) {
-                    console.error("Falha ao carregar notificações", error);
-                }
+        function renderNotifications(notifications) {
+            const list = document.getElementById('notificationList');
+            const badge = document.getElementById('notificationBadge');
+            
+            list.innerHTML = ''; 
+            
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = '<div class="text-center p-3 text-muted">Sem notificações</div>';
+                badge.style.display = 'none';
+                return;
             }
 
-            function renderNotifications(notifications) {
-                const list = document.getElementById('notificationList');
-                const badge = document.getElementById('notificationBadge');
+            let unreadCount = 0;
 
-                list.innerHTML = '';
+            notifications.forEach(n => {
+                if (!n.isRead) unreadCount++;
 
-               if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
-                    list.innerHTML = `
-                        <div class="text-center p-5 text-muted">
-                            <i class="far fa-bell-slash mb-3" style="font-size: 3rem; color: #dee2e6;"></i>
-                            <h6 class="text-secondary fw-normal mb-1">Caixa Limpa</h6>
-                            <p class="mb-0" style="font-size: 0.85rem;">Não tens novas notificações de momento.</p>
+                const item = document.createElement('div');
+                item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
+                            <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
                         </div>
-                    `;
-                    badge.style.display = 'none';
+                        <div class="notification-actions d-flex flex-column align-items-end">
+                            ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
+                            <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            if (unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        async function markAsRead(id) {
+            await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
+            fetchNotifications(); 
+        }
+
+        async function markAllNotificationsRead() {
+            await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
+            fetchNotifications();
+        }
+
+        async function deleteNotification(id) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
+            fetchNotifications();
+        }
+
+        async function clearAllNotifications() {
+            if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
+                await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
+                fetchNotifications();
+            }
+        }
+
+
+        // ================= FAVORITOS (Seu código original) =================
+        async function atualizarBadgeFavoritos() {
+            try {
+                const res = await fetch('/OfertaEmprego/GetFavoritosIds');
+                if (!res.ok) {
+                    console.error('Erro ao buscar favoritos:', res.status);
                     return;
                 }
 
-                let unreadCount = 0;
+                const ids = await res.json();
+                const badge = document.getElementById('favoritosBadge');
 
-                notifications.forEach(n => {
-                    if (!n.isRead) unreadCount++;
-
-                    const item = document.createElement('div');
-                    item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
-                    item.innerHTML = `
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
-                                <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
-                            </div>
-                            <div class="notification-actions d-flex flex-column align-items-end">
-                                ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
-                                <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
-
-                if (unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
+                if (badge) {
+                    badge.textContent = ids.length || '0';
                 }
+            } catch (error) {
+                console.error('Erro ao atualizar badge de favoritos:', error);
             }
+        }
 
-            async function markAsRead(id) {
-                await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
-                fetchNotifications();
-            }
+        async function abrirFavoritos() {
+            try {
+                const container = document.getElementById('favoritosContainer');
+                container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
 
-            async function markAllNotificationsRead() {
-                await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
-                fetchNotifications();
-            }
-
-            async function deleteNotification(id) {
-                await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
-                fetchNotifications();
-            }
-
-            async function clearAllNotifications() {
-                if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
-                    await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
-                    fetchNotifications();
+                const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
+                if (!res.ok) {
+                    throw new Error(`Erro ao carregar favoritos: ${res.status}`);
                 }
-            }
 
+                const ofertas = await res.json();
+                container.innerHTML = '';
 
-            // ================= FAVORITOS =================
-            async function atualizarBadgeFavoritos() {
-                try {
-                    const res = await fetch('/OfertaEmprego/GetFavoritosIds');
-                    if (!res.ok) {
-                        console.error('Erro ao buscar favoritos:', res.status);
-                        return;
-                    }
-
-                    const ids = await res.json();
-                    const badge = document.getElementById('favoritosBadge');
-
-                    if (badge) {
-                        badge.textContent = ids.length || '0';
-                    }
-                } catch (error) {
-                    console.error('Erro ao atualizar badge de favoritos:', error);
+                if (!ofertas || ofertas.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                    return;
                 }
-            }
 
-            async function abrirFavoritos() {
-                try {
-                    const container = document.getElementById('favoritosContainer');
-                    container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
+                ofertas.forEach(oferta => {
 
-                    const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
-                    if (!res.ok) {
-                        throw new Error(`Erro ao carregar favoritos: ${res.status}`);
-                    }
+                const idOferta = oferta.idOferta || oferta.IdOferta; 
+                const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
 
-                    const ofertas = await res.json();
-                    container.innerHTML = '';
-
-                    if (!ofertas || ofertas.length === 0) {
-                        container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                        return;
-                    }
-
-                    ofertas.forEach(oferta => {
-
-                    const idOferta = oferta.idOferta || oferta.IdOferta;
-                    const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
-
-                        const card = `
-                            <div class="col-md-6">
-                                <div class="card shadow-sm rounded-3 mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
-                                        <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
-                                            <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
-                                                <i class="fas fa-star"></i> Remover
-                                            </button>
-                                        </div>
+                    const card = `
+                        <div class="col-md-6">
+                            <div class="card shadow-sm rounded-3 mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
+                                    <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
+                                        <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
+                                            <i class="fas fa-star"></i> Remover
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', card);
-                    });
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', card);
+                });
 
-                    document.querySelectorAll('.remove-favorito').forEach(btn => {
-                        btn.addEventListener('click', async function() {
-                            const id = this.getAttribute('data-id');
-                            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                            const res = await fetch('/OfertaEmprego/ToggleFavorito', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                    'RequestVerificationToken': token
-                                },
-                                body: `idOferta=${id}`
-                            });
-
-                            const result = await res.json();
-
-                            if (result.success) {
-                                this.closest('.col-md-6').remove();
-
-                                const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
-                                if (starIcon) {
-                                    starIcon.classList.remove('fas');
-                                    starIcon.classList.add('far');
-                                    starIcon.style.color = "#ccc";
-                                }
-
-                                atualizarBadgeFavoritos();
-
-                                if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
-                                    document.getElementById('favoritosContainer').innerHTML =
-                                        '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                                }
-                            }
+                document.querySelectorAll('.remove-favorito').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        const res = await fetch('/OfertaEmprego/ToggleFavorito', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token
+                            },
+                            body: `idOferta=${id}`
                         });
+
+                        const result = await res.json();
+
+                        if (result.success) {
+                            this.closest('.col-md-6').remove();
+
+                            const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
+                            if (starIcon) {
+                                starIcon.classList.remove('fas');
+                                starIcon.classList.add('far');
+                                starIcon.style.color = "#ccc";
+                            }
+
+                            atualizarBadgeFavoritos();
+
+                            if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
+                                document.getElementById('favoritosContainer').innerHTML =
+                                    '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                            }
+                        }
                     });
-                } catch (error) {
-                    console.error('Erro ao carregar favoritos:', error);
-                    document.getElementById('favoritosContainer').innerHTML =
-                        '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
-                }
+                });
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+                document.getElementById('favoritosContainer').innerHTML =
+                    '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
             }
+        }
     </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -478,6 +474,6 @@
     <script src="//cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
-
+    
 </body>
 </html>

@@ -15,7 +15,7 @@ namespace teste_cliente.Services
             _clientFactory = clientFactory;
 
             // CORRECTED: Looks for a key in appsettings.json, falls back to the hardcoded URL if not found.
-            villaUrl = configuration.GetValue<string>("ApiSettings:BaseUrl") ?? "https://localhost:7211/";
+            villaUrl = configuration.GetValue<string>("ApiSettings:BaseUrl");
         }
 
         public Task<T> LoginAsync<T>(LoginRequestDTO obj)
@@ -26,7 +26,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = obj,
-                Url = villaUrl + "api/Auth/login", // Restored to use your variable
+                Url = villaUrl + "Auth/login", // Restored to use your variable
             });
         }
 
@@ -36,7 +36,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = obj,
-                Url = villaUrl + "api/Auth/register", // Restored to use your variable
+                Url = villaUrl + "Auth/register", // Restored to use your variable
             });
         }
 
@@ -46,7 +46,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = dto,
-                Url = villaUrl + "api/Auth/google-login", // Restored to use your variable
+                Url = villaUrl + "Auth/google-login", // Restored to use your variable
             });
         }
     }

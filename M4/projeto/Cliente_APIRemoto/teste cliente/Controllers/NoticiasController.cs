@@ -14,7 +14,7 @@ namespace teste_cliente.Controllers
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
 
-        public NoticiasController()
+        public NoticiasController(IConfiguration config)
         {
             _httpClient = new HttpClient();
             _apiKey = "15e3d873f4664f4aa3516d0fc170797d"; // Sua API Key
