@@ -20,6 +20,14 @@ namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public OfertaEmpregoController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"]; 
+        }
         public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, string? faixaSalarial, int page = 1)
         {
             
@@ -38,7 +46,7 @@ namespace teste_cliente.Controllers
                 if (!string.IsNullOrEmpty(faixaSalarial)) queryParams.Add($"faixaSalarial={Uri.EscapeDataString(faixaSalarial)}");
 
                 string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
-                string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
+                string apiUrl = _baseUrl + $"oferta/TodasOfertas{queryString}";
 
 
                     // Buscar a lista de ofertas
@@ -58,7 +66,7 @@ namespace teste_cliente.Controllers
                     // Buscar as reviews para cada empresa
                     foreach (var idEmpresa in empresaIds)
                     {
-                        using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{idEmpresa}"))
+                        using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{idEmpresa}"))
                         {
                             if (reviewResponse.IsSuccessStatusCode)
                             {
@@ -144,7 +152,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync($"https://localhost:7211/api/Logo/{idEmpresa}"))
+                using (var response = await httpClient.GetAsync(_baseUrl + $"Logo/{idEmpresa}"))
                 {   
 
                     if (response.IsSuccessStatusCode)
@@ -185,7 +193,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                string apiUrl = $"https://localhost:7211/api/Oferta/historicoEmpresa?idEmpresa={idEmpresa}";
+                string apiUrl = _baseUrl + $"Oferta/historicoEmpresa?idEmpresa={idEmpresa}";
 
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
@@ -223,7 +231,7 @@ namespace teste_cliente.Controllers
             //AQUI NÃO PRECISA DO TOKEN
             using (var httpClient = new HttpClient())
             {
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/oferta/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "oferta/BuscarPorId/" + id))
                 {   
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
@@ -281,7 +289,7 @@ namespace teste_cliente.Controllers
 
                     StringContent content = new StringContent(JsonConvert.SerializeObject(ofertaDTO), Encoding.UTF8, "application/json");
 
-                    using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
+                    using (var response = await httpClient.PostAsync(_baseUrl + "Oferta/CriarOferta/", content))
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
@@ -322,7 +330,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/EditarOferta/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/EditarOferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -372,7 +380,7 @@ namespace teste_cliente.Controllers
                 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/Oferta/EditarOferta/" + model.IdOferta, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "Oferta/EditarOferta/" + model.IdOferta, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -399,7 +407,7 @@ namespace teste_cliente.Controllers
                 // Incrementar a contagem apenas se o usuário for um Candidato
                 if (User.IsInRole("Candidato"))
                 {
-                    using (var response = await httpClient.PatchAsync($"https://localhost:7211/api/oferta/{id}/incrementarContagem", null))
+                    using (var response = await httpClient.PatchAsync(_baseUrl + $"oferta/{id}/incrementarContagem", null))
                     {
                         if (!response.IsSuccessStatusCode)
                         {
@@ -410,7 +418,7 @@ namespace teste_cliente.Controllers
                 }
 
                 // Buscar os detalhes da oferta
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/BuscarPorId/" + id))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
@@ -422,7 +430,7 @@ namespace teste_cliente.Controllers
 
                 // Buscar as reviews da empresa associada à oferta
                 List<Review> reviews = new List<Review>();
-                using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{oferta.IdEmpresa}"))
+                using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{oferta.IdEmpresa}"))
                 {
                     if (reviewResponse.IsSuccessStatusCode)
                     {
@@ -450,7 +458,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.DeleteAsync("https://localhost:7211/api/Oferta/" + id))
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "Oferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -555,7 +563,7 @@ namespace teste_cliente.Controllers
             List<OfertaEmprego> todasOfertas = new List<OfertaEmprego>();
             using (var httpClient = new HttpClient())
             {
-                string apiUrl = "https://localhost:7211/api/Oferta/TodasOfertas";
+                string apiUrl = _baseUrl + "Oferta/TodasOfertas";
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
                     if (response.IsSuccessStatusCode)

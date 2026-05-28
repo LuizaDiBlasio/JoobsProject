@@ -1,5 +1,7 @@
 ﻿@using System.Security.Claims
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor httpAcc
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 
 <!DOCTYPE html>
 <html lang="en">
@@ -257,7 +259,11 @@
         });
 
         // ================= NOTIFICAÇÕES =================
-        const API_URL = 'https://localhost:7211//api/notifications'; // Mude para URL completa (ex: https://localhost:7001/api/notifications) se a API estiver em outro projeto.
+
+        const API_BASE_URL = '@Configuration["ApiSettings:BaseUrl"]';
+
+        // Note o ajuste para concatenar a base com o endpoint de notificações
+        const API_URL = `${API_BASE_URL}notifications`;
 
         // Se usar JWT, adicione-o aqui. Se a API e o MVC estiverem no mesmo projeto e usarem cookies, não precisa do header de Authorization.
         const authHeaders = {

@@ -12,7 +12,15 @@ namespace teste_cliente.Controllers
 {
     public class ReviewController : Controller
     {
-        private readonly string apiBaseUrl = "https://localhost:7211/api/";
+        private readonly string apiBaseUrl;
+        private readonly IConfiguration _config;
+
+        public ReviewController(IConfiguration config)
+        {
+            _config = config;
+            apiBaseUrl = _config["ApiSettings:BaseUrl"];
+
+        }
 
         public async Task<IActionResult> Index(int? empresaId)
         {

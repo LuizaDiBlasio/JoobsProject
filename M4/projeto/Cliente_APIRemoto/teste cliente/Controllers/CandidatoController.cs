@@ -10,13 +10,24 @@ using System.Net.Http.Headers;
 using System.Text;
 using teste_cliente.Models;
 using teste_cliente.Models.Dto;
+using Vereyon.Web;
 
 namespace teste_cliente.Controllers
 {
     public class CandidatoController : Controller
     {
-        [Authorize(Roles = "Admin, Candidato")]
+        private readonly string _baseUrl;
+        private readonly IConfiguration _config;
+        private readonly IFlashMessage _flashMessage;
 
+        public CandidatoController(IConfiguration config, IFlashMessage flashMessage) 
+        { 
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+            _flashMessage = flashMessage;
+        }
+        
+        [Authorize(Roles = "Admin, Candidato")]
         public async Task<IActionResult> Index()
         {
             List<Candidato> candidatoList = new List<Candidato>();
@@ -29,7 +40,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/candidato/BuscarTodos"))
+                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarTodos"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -69,7 +80,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/candidato/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -107,7 +118,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/candidato/EditarCandidato/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/EditarCandidato/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -140,7 +151,7 @@ namespace teste_cliente.Controllers
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/candidato/EditarCandidato/" + candidato.IdCandidato, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "candidato/EditarCandidato/" + candidato.IdCandidato, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -174,7 +185,7 @@ namespace teste_cliente.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 // Tenta buscar o candidato pela API
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/candidato/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -200,7 +211,7 @@ namespace teste_cliente.Controllers
                 }
 
                 // Verifica se a foto existe para este candidato
-                using (var fotoResponse = await httpClient.GetAsync($"https://localhost:7211/api/foto/BuscarFotoPorIdCandidato/{id}"))
+                using (var fotoResponse = await httpClient.GetAsync(_baseUrl + $"foto/BuscarFotoPorIdCandidato/{id}"))
                 {
                     if (fotoResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -236,7 +247,7 @@ namespace teste_cliente.Controllers
                     httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
                 }
 
-                var response = await httpClient.DeleteAsync("https://localhost:7211/api/candidato/DeletarCandidato/" + id);
+                var response = await httpClient.DeleteAsync(_baseUrl + "candidato/DeletarCandidato/" + id);
                 string apiResponse = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
@@ -292,7 +303,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync($"https://localhost:7211/api/aplicacao/historico-candidato?idCandidato={idCandidato}"))
+                using (var response = await httpClient.GetAsync(_baseUrl + $"aplicacao/historico-candidato?idCandidato={idCandidato}"))
                 {   
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -334,16 +345,16 @@ namespace teste_cliente.Controllers
                 "application/json");
 
             var response = await httpClient.PostAsync(
-                "https://localhost:7211/api/candidato/ChangePassword/" + id, content);
+                _baseUrl + "candidato/ChangePassword/" + id, content);
 
             if (response.IsSuccessStatusCode)
             {
-                TempData["SuccessMessage"] = "Password alterada com sucesso.";
+                _flashMessage.Confirmation("Password alterada com sucesso.");
             }
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                TempData["ErrorMessage"] = "Erro: " + error;
+                _flashMessage.Confirmation("Erro: " + error) ;
             }
 
             return RedirectToAction("Details", new { id });
