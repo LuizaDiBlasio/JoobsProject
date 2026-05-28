@@ -6,6 +6,7 @@ using System.Text;
 using teste_cliente.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using teste_cliente.Models.Enums;
+using teste_cliente.Helpers;
 
 namespace teste_cliente.Controllers
 {
@@ -88,13 +89,7 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public ActionResult Create()
         {
-            ViewBag.Concelhos = Enum.GetValues(typeof(ConcelhoEnum))
-                            .Cast<ConcelhoEnum>()
-                            .Select(c => new SelectListItem
-                            {
-                                Value = ((int)c).ToString(),
-                                Text = c.ToString()
-                            }).ToList();
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
 
             return View();
         }
@@ -165,14 +160,7 @@ namespace teste_cliente.Controllers
                     empresa = JsonConvert.DeserializeObject<Empresa>(apiResponse);
                 }
 
-                ViewBag.Concelhos = Enum.GetValues(typeof(ConcelhoEnum))
-                            .Cast<ConcelhoEnum>()
-                            .Select(c => new SelectListItem
-                            {
-                                Value = ((int)c).ToString(),
-                                Text = c.ToString(),
-                                Selected = (empresa != null && (int)c == (int)empresa.Concelho)
-                            }).ToList();
+                ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
 
                 return View(empresa);
             }
