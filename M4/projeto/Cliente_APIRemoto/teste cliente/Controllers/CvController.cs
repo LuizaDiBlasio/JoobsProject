@@ -87,8 +87,7 @@ namespace teste_cliente.Controllers
             {
                 resp = await client.PutAsync($"{apiBaseUrl}/{cv.IdCV}", content);
                 if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                {
-                
+                {                
                     return Forbid();
                 }
             }

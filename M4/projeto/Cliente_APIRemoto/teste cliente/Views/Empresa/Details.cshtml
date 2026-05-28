@@ -81,7 +81,7 @@
                 <p><strong>Nome:</strong>&nbsp;&nbsp;@Model.Nome</p>
                 <p><strong>Email:</strong>&nbsp;&nbsp;@Model.Email</p>
                 <p><strong>Telefone:</strong>&nbsp;&nbsp;@Model.Telefone</p>
-                <p><strong>Localidade:</strong>&nbsp;&nbsp;@Model.Localidade</p>
+                <p><strong>Concelho:</strong>&nbsp;&nbsp;@Model.Concelho</p>
                 <p><strong>Nº de Funcionários:</strong>&nbsp;&nbsp;@Model.NoFuncionarios</p>
                 <p><strong>Zona de Atuação:</strong>&nbsp;&nbsp;@Model.ZonaAtuacao</p>
                 <p><strong>LinkedIn:</strong>&nbsp;&nbsp;@Model.LinkedIn</p>
@@ -129,9 +129,11 @@
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
                     <div class="form-group col-md-6">
-                        <label asp-for="Localidade">Localidade</label>
-                        <input asp-for="Localidade" class="form-control" />
-                        <span asp-validation-for="Localidade" class="text-danger"></span>
+                        <label asp-for="Concelho">Concelho</label>
+                        <select asp-for="Concelho" class="form-control" asp-items="ViewBag.Concelhos">
+                            <option value="">Selecione um Concelho</option>
+                        </select>
+                        <span asp-validation-for="Concelho" class="text-danger"></span>
                     </div>
                 </div>
                 <br />

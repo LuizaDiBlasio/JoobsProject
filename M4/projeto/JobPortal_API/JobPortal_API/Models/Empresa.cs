@@ -18,9 +18,6 @@ namespace JobPortal_API.Models
 
         public string Nome { get; set; }
 
-
-        //public string? Localidade { get; set; } - normalização da tabela
-
         public ConcelhoEnum Concelho { get; set; }  
 
         public string Email { get; set; }
