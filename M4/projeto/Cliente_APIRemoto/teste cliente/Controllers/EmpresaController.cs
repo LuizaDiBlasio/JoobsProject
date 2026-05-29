@@ -286,14 +286,7 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            ViewBag.Concelhos = Enum.GetValues(typeof(ConcelhoEnum))
-                            .Cast<ConcelhoEnum>()
-                            .Select(c => new SelectListItem
-                            {
-                                Value = ((int)c).ToString(),
-                                Text = c.ToString(),
-                                Selected = (empresa != null && (int)c == (int)empresa.Concelho)
-                            }).ToList();
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
 
             // 3. Passar para a View
             ViewBag.Reviews = reviews;
