@@ -35,7 +35,10 @@ namespace JobPortal_API.Utilities
             CreateMap<NotificationsDTO, Notifications>();
             CreateMap<Notifications, NotificationsDTO>();
 
-            CreateMap<CV, CVDTO>().ReverseMap(); // ALTERAÇÃO 26/05
+            CreateMap<CV, CVDTO>().ReverseMap();
         }
     }
 }
+
+// Para que a API conseguisse transformar o Objeto de Transferência de Dados (DTO)
+// que vem da web na Entidade real que vai para o banco de dados.

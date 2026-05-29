@@ -16,8 +16,8 @@ namespace JobPortal_API.DTOs
         /// </summary>
         public int IdCandidatoCv { get; set; }
         public string Nome { get; set; }
-        public ConcelhoEnum Concelho { get; set; } // ALTERAÇÃO 26/05
-        public EscolaridadeEnum Escolaridade { get; set; }  // ALTERAÇÃO 26/05
+        public ConcelhoEnum Concelho { get; set; } 
+        public EscolaridadeEnum Escolaridade { get; set; }  
         public string? ExpProfissional { get; set; }
         public string? Competencias { get; set; }
         public string? Interesses { get; set; }

@@ -4,6 +4,9 @@ using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
 using teste_cliente.Models;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using teste_cliente.Models.Enums;
+using teste_cliente.Helpers;
 
 namespace teste_cliente.Controllers
 {
@@ -89,10 +92,14 @@ namespace teste_cliente.Controllers
             }
             return View(empresa);
         }
+
+
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult Create()
         {
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+
             return View();
         }
 
@@ -132,6 +139,7 @@ namespace teste_cliente.Controllers
             return RedirectToAction("Index");
         }
 
+
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -159,11 +167,14 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     empresa = JsonConvert.DeserializeObject<Empresa>(apiResponse);
-
                 }
+
+                ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+
                 return View(empresa);
             }
         }
+
 
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Empresa empresa)
@@ -223,8 +234,6 @@ namespace teste_cliente.Controllers
                     e = JsonConvert.DeserializeObject<Empresa>(apiResponse);
                 }
                 return RedirectToAction("Details", new { id = empresa.IdEmpresa });
-
-
             }
 
             return View(e);
@@ -277,11 +286,19 @@ namespace teste_cliente.Controllers
                 }
             }
 
+            ViewBag.Concelhos = Enum.GetValues(typeof(ConcelhoEnum))
+                            .Cast<ConcelhoEnum>()
+                            .Select(c => new SelectListItem
+                            {
+                                Value = ((int)c).ToString(),
+                                Text = c.ToString(),
+                                Selected = (empresa != null && (int)c == (int)empresa.Concelho)
+                            }).ToList();
+
             // 3. Passar para a View
             ViewBag.Reviews = reviews;
             return View(empresa);
         }
-
 
 
         [HttpGet]
