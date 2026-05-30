@@ -366,52 +366,36 @@
 }
 
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" /> 
-    <!-- Script do Select2 adicionado aqui -->
+    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <script>
         $(document).ready(function () {
-            // Botão dos favoritos via Fetch API
-            $('.toggle-favorito').on('click', function () {
-                const $el = $(this);
-                const id = parseInt($el.data('id'));
-                if (id <= 0) return;
-
-            // Ativa a pesquisa inteligente no campo Concelho
+            
+            // 1. ATIVAR O SELECT2 NOS CAMPOS DE CONCELHO
             $('.select2-searchable').select2({
                 placeholder: "Selecione ou digite um concelho...",
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
             });
 
-            // Código dos modais e reset de estrelas original mantido intacto...
-            $(document).on('show.bs.modal', '.modal', function () {
-                var modalId = $(this).attr('id').replace('reviewModal-', '');
-                var ratingStars = $('#rating-stars-' + modalId);
-                var stars = ratingStars.find('.fa-star');
+            // 2. LÓGICA DO BOTÃO DE FAVORITOS (VIA FETCH API)
+            $('.toggle-favorito').on('click', function () {
+                const $el = $(this);
+                const id = parseInt($el.data('id'));
+                
+                if (!id || id <= 0) return;
 
-                if (stars.length === 0) return;
-
-                var ratingInput = ratingStars.find('input[name="Rating"]');
-                stars.removeClass('fas').addClass('far');
-                ratingInput.val(0);
-            });
-
-            $(document).on('click', '.rating-stars .fa-star', function (e) {
-                e.preventDefault();
-                var $star = $(this);
-                var modalId = $star.closest('.modal').attr('id').replace('reviewModal-', '');
-                var ratingStars = $('#rating-stars-' + modalId);
-                var value = parseInt($star.data('value'));
-                var ratingInput = ratingStars.find('input[name="Rating"]');
-                var stars = ratingStars.find('.fa-star');
-
-                ratingInput.val(value);
-                ratingStars.siblings('#rating-error-' + modalId).text('');
-
-                var token = $('input[name="__RequestVerificationToken"]').val();
-
+                // Captura o AntiForgeryToken gerado pelo @Html.AntiForgeryToken() na página
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenInput ? tokenInput.value : '';
 
                 fetch('/OfertaEmprego/ToggleFavorito', {
                     method: 'POST',
@@ -421,13 +405,57 @@
                     },
                     body: `idOferta=${encodeURIComponent(id)}`
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error("Erro na requisição HTTP");
+                    return res.json();
+                })
                 .then(data => {
                     if (data.success) {
+                        // Alterna entre a estrela cheia (fas) e vazia (far)
                         $el.toggleClass('fas far');
+                        // Altera a cor dinamicamente com base no retorno do Controller
                         $el.css('color', data.isFavorito ? "#FFD700" : "#ccc");
+                        
+                        // Atualiza o Badge se a função global existir
                         if (typeof atualizarBadgeFavoritos === "function") {
                             atualizarBadgeFavoritos();
+                        }
+                    } else {
+                        alert(data.message || "Erro ao favoritar.");
+                    }
+                })
+                .catch(err => console.error("Erro ao processar favorito:", err));
+            });
+
+            // 3. EVENTOS DOS MODAIS DE CRÍTICAS / REVIEWS (Ajuste de reset de estrelas)
+            $(document).on('show.bs.modal', '.modal', function () {
+                var modalId = $(this).attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var stars = ratingStars.find('.fa-star');
+
+                if (stars.length === 0) return;
+
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                stars.removeClass('fas').addClass('far');
+                if(ratingInput.length > 0) ratingInput.val(0);
+            });
+
+            // 4. INTERAÇÃO DE CLIQUE NAS ESTRELAS DE AVALIAÇÃO
+            $(document).on('click', '.rating-stars .fa-star', function (e) {
+                e.preventDefault();
+                var $star = $(this);
+                var $modal = $star.closest('.modal');
+                if($modal.length === 0) return;
+
+                var modalId = $modal.attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var value = parseInt($star.data('value'));
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                var stars = ratingStars.find('.fa-star');
+
+                ratingInput.val(value);
+                $('#rating-error-' + modalId).text('');
+
                 stars.each(function () {
                     var starValue = parseInt($(this).data('value'));
                     if (starValue <= value) {
@@ -438,6 +466,7 @@
                 });
             });
 
+            // 5. EFEITO HOVER NAS ESTRELAS DE AVALIAÇÃO
             $(document).on('mouseenter', '.rating-stars .fa-star', function () {
                 var $star = $(this);
                 var hoverValue = parseInt($star.data('value'));
@@ -468,63 +497,23 @@
                 });
             });
 
+            // 6. VALIDAÇÃO DO FORMULÁRIO DE ENVIO DE RATING
             $(document).on('submit', 'form', function (e) {
                 var ratingInput = $(this).find('input[name="Rating"]');
-                if(ratingInput.length === 0) return; // Ignora se for o form de pesquisa principal
+                if (ratingInput.length === 0) return; // Ignora se for o formulário de filtros principal
                 
                 var ratingValue = parseInt(ratingInput.val());
-                var ratingError = $(this).find('#rating-error-' + ratingInput.attr('id').split('-')[2]);
+                var formId = $(this).closest('.modal').attr('id');
+                if(!formId) return;
+                
+                var modalId = formId.replace('reviewModal-', '');
+                var ratingError = $('#rating-error-' + modalId);
 
                 if (ratingValue === 0 || isNaN(ratingValue)) {
                     ratingError.text('Por favor, selecione um rating de 1 a 5.');
                     e.preventDefault();
                 }
             });
-
-            // Botão dos favoritos
-            document.querySelectorAll('.toggle-favorito').forEach(el => {
-                el.addEventListener('click', function () {
-                    const id = parseInt(this.dataset.id);
-                    if (id <= 0) return;
-                    fetch('/OfertaEmprego/ToggleFavorito', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                        },
-                        body: `idOferta=${encodeURIComponent(id)}`
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.classList.toggle('fas');
-                            this.classList.toggle('far');
-                            this.style.color = data.isFavorito ? "#FFD700" : "#ccc";
-                            if(typeof atualizarBadgeFavoritos === "function") atualizarBadgeFavoritos();
-                        }
-                    }
-                })
-                .catch(err => console.error("Erro ao processar favorito:", err));
-            });
-        });
-
-
-    </script>
-
-     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            $('.select2-searchable').select2({
-                placeholder: "Selecione um concelho...",
-                allowClear: true,
-                language: {
-                    noResults: function() {
-                        return "Nenhum concelho encontrado";
-                    }
-                }
-            });
         });
     </script>
-
 }
