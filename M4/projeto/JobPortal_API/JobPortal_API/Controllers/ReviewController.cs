@@ -184,7 +184,7 @@ namespace JobPortal_API.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin, Candidato")]
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteReview(int id)
         {
@@ -195,17 +195,17 @@ namespace JobPortal_API.Controllers
                 return NotFound();
             }
 
-            if (User.IsInRole("Candidato"))
-            {
-                var nomeToken = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-                if (string.IsNullOrEmpty(nomeToken) || reviewToDelete.NomeUsuario != nomeToken)
-                {
-                    return Forbid(); // Se o nome não for igual, não deixa apagar
-                }
-            }
+            // ______ALTERAÇÃO DE CODIGO______(somente o admin poderá deletar reviews)
+            //if (User.IsInRole("Candidato"))
+            //{
+            //    var nomeToken = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            //    if (string.IsNullOrEmpty(nomeToken) || reviewToDelete.NomeUsuario != nomeToken)
+            //    {
+            //        return Forbid(); // Se o nome não for igual, não deixa apagar
+            //    }
+            //}
             // fim ALTERAÇÃO
 
-            // Se passou na validação ou for Admin, apaga
             var result = await _repository.DeleteAsync(id);
             if (!result)
             {

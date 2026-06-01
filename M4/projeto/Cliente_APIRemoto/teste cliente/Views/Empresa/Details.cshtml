@@ -228,6 +228,13 @@
                             <th>Nome do utilizador</th>
                             <th>Rating</th>
                             <th>Descrição</th>
+                            @if (User.IsInRole(SD.Role_Admin))
+                            {
+                                <th>
+                                    Ação <i class="fa fa-sort"></i>
+                                </th>
+                            }
+                            
                         </tr>
                     </thead>
                     <tbody>
@@ -242,6 +249,13 @@
                                         <td class="username">@r.NomeUsuario</td>
                                         <td>@r.Rating.ToString("0.0")</td>
                                         <td>@r.Descricao</td>
+                                        <td>
+                                            @if (User.IsInRole(SD.Role_Admin))
+                                            {
+                                                <a href="@Url.Action("Delete", "Review", new { idReview = r.IdReview, idEmpresa = r.IdEmpresa})" class="btn btn-warning" style="border-radius: 30px;">Deletar</a>
+                                            }
+                                           
+                                        </td>
                                     </tr>
                                 }
                             }
@@ -258,6 +272,8 @@
                 </table>
             </div>
         </div>
+        <br />
+        <flash dismissable="true" />
     </div>
 
     @section Scripts {
