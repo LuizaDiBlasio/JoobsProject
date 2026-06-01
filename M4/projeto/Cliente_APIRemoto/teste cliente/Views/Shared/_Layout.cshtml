@@ -2,6 +2,9 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor httpAcc
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
+@using teste_cliente.Helpers
+@using teste_cliente.Models.Enums
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -140,7 +143,7 @@
                                    data-bs-toggle="modal"
                                    data-bs-target="#favoritosModal">
 
-                                    <i class="bi bi-heart-fill fs-5"></i>
+                                    <i class="fas fa-star fs-5"></i>
                                     <span id="favoritosBadge"
                                           class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
                                           style="background-color: #F2994A;">
@@ -290,6 +293,8 @@
     @Html.AntiForgeryToken()
 
     <script>
+
+        const mapaConcelhos = @Html.Raw(Json.Serialize(EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>().ToDictionary(x => x.Value, x => x.Text)));
         document.addEventListener("DOMContentLoaded", () => {
             atualizarBadgeFavoritos();
             
@@ -438,7 +443,7 @@
                             <div class="card shadow-sm rounded-3 mb-3">
                                 <div class="card-body">
                                     <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
-                                    <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
+                                    <p class="card-text mb-1 text-muted">${mapaConcelhos[oferta.concelho] || 'Localização não especificada'}</p>
                                     <div class="d-flex justify-content-between align-items-center mt-2">
                                         <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
                                         <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
