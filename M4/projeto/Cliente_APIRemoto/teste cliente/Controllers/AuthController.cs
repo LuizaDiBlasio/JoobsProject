@@ -48,10 +48,6 @@ namespace teste_cliente.Controllers
         {
             APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
 
-            Console.WriteLine("=========== DEBUG APIResponse ===========");
-            Console.WriteLine($"response: {JsonConvert.SerializeObject(response)}");
-            Console.WriteLine($"response.Result: {response?.Result}");
-            Console.WriteLine("=========================================");
 
             if (response != null && response.IsSuccess)
             {
