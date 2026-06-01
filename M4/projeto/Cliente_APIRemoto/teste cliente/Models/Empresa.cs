@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using teste_cliente.Models.Enums;
 
 namespace teste_cliente.Models
 {
@@ -13,8 +14,9 @@ namespace teste_cliente.Models
         [Required]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "A localidade é obrigatória.")]
-        public string? Localidade { get; set; }
+        [Required(ErrorMessage = "\"A seleção do concelho é obrigatória.")]
+        [Display(Name = "Concelho")]
+        public ConcelhoEnum Concelho { get; set; }
 
         [Required(ErrorMessage = "O telefone é obrigatório.")]
         [RegularExpression(@"^[0-9]{9}$", ErrorMessage = "O telefone deve conter 9 números.")]
@@ -26,10 +28,8 @@ namespace teste_cliente.Models
 
         [Required(ErrorMessage = "A zona de atuação é obrigatória.")]
         public string? ZonaAtuacao { get; set; }
-
         public string? LinkedIn { get; set; }
         public string? Facebook { get; set; }
-
         public virtual ICollection<LogoEmpresa>? LogoEmpresa { get; set; }
         public virtual ICollection<OfertaEmprego>? OfertaEmprego { get; set; }
     }

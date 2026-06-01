@@ -93,6 +93,8 @@
 
         <!-- Lado Direito: Formulário de edição -->
         <div class="col-md-8">
+            <flash dismissable="true" />
+            <br />
             <h5 class="mb-3 fw-bold">Editar detalhes:</h5>
 
             <form asp-action="Edit" method="post" id="editForm">
@@ -188,6 +190,7 @@
                 </div>
                 <br />
                 <button type="submit" class="btn btn-warning text-white px-4" style="border-radius: 30px;">Salvar alterações</button>
+
             </form>
 
 

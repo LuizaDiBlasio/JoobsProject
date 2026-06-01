@@ -28,6 +28,7 @@ namespace JobPortal_API.Models
         public TipoContratoEnum TipoContrato { get; set; }
 
         public string? Requisitos { get; set; }
+
         public bool? VagaDisponivel { get; set; }
 
         [Column(TypeName = "nvarchar(max)")]

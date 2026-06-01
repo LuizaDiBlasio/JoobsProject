@@ -4,6 +4,9 @@
     ViewData["Title"] = "Edit";
 }
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 <div class="container" style="padding-top:30px; padding-bottom:40px">
     <h3 class="my-4 oferta_header">Editar Oferta de Emprego</h3>
     <form asp-action="Edit" method="post">
@@ -33,7 +36,7 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label asp-for="Concelho" class="form-label">Concelho:</label>
-                        <select asp-for="Concelho" class="form-select" asp-items="Model.SelectListConcelhos">
+                        <select asp-for="Concelho" class="form-select select2-searchable" asp-items="Model.SelectListConcelhos">
                             <option value="">Selecione um concelho...</option>
                         </select>
                         <span asp-validation-for="Concelho" class="text-danger"></span>
@@ -61,6 +64,25 @@
                         <label asp-for="Requisitos" class="form-label">Requisitos:</label>
                         <input asp-for="Requisitos" class="form-control" rows="10" placeholder="Requisitos..." />
                         <span asp-validation-for="Requisitos" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex flex-column justify-content-center">
+                        <label asp-for="VagaDisponivel" class="form-label fw-bold text-muted small">Status da Vaga:</label>
+
+                        <div class="form-check form-switch fs-5 pt-1">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   role="switch"
+                                   id="switchVaga"
+                                   name="VagaDisponivel"
+                                   value="true"
+                                   @(Model.VagaDisponivel == true ? "checked" : "") />
+
+                            <label class="form-check-label fs-6" for="switchVaga" id="labelVaga">
+                                @(Model.VagaDisponivel == true ? "Vaga Disponível" : "Vaga Indisponível")
+                            </label>
+                        </div>
+
+                        <span asp-validation-for="VagaDisponivel" class="text-danger"></span>
                     </div>
                
                 <div class="row">
@@ -91,6 +113,49 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('.select2-searchable').select2({
+                placeholder: "Selecione um concelho...",
+                allowClear: true,
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            function atualizarEstiloSwitch() {
+                var checkbox = $('#switchVaga');
+                var label = $('#labelVaga');
+
+                // Verifica explicitamente a propriedade booleana do elemento
+                if (checkbox.prop('checked')) {
+                    label.text('Vaga Disponível');
+                    label.removeClass('text-muted text-secondary fw-normal').addClass('text-dark fw-bold');
+                } else {
+                    label.text('Vaga Indisponível');
+                    label.removeClass('text-dark fw-bold').addClass('text-muted fw-normal');
+                }
+            }
+
+            // Executa na abertura da tela
+            atualizarEstiloSwitch();
+
+            // Executa a cada clique do utilizador
+            $('#switchVaga').on('change', function () {
+                atualizarEstiloSwitch();
+            });
+        });
+    </script>
 }
 
 

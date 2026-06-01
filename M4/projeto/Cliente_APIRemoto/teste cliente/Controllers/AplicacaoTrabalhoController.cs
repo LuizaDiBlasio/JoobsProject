@@ -11,6 +11,15 @@ namespace teste_cliente.Controllers
 {
     public class AplicacaoTrabalhoController : Controller
     {
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public AplicacaoTrabalhoController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+
+        }
         public async Task<IActionResult> Index()
         {
             List<AplicacaoTrabalho> aplicacaoList = new List<AplicacaoTrabalho>();
@@ -22,7 +31,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/aplicacao/BuscarTodas"))
+                using (var response = await httpClient.GetAsync( _baseUrl + "aplicacao/BuscarTodas"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -59,7 +68,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/aplicacao/BuscarPorID/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/BuscarPorID/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -98,7 +107,7 @@ namespace teste_cliente.Controllers
                     
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                     
-                using (var response = await httpClient.PostAsync("https://localhost:7211/api/aplicacao/CriarAplicacao/", content))
+                using (var response = await httpClient.PostAsync(_baseUrl + "aplicacao/CriarAplicacao/", content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -130,7 +139,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/aplicacao/EditarAplicacao/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/EditarAplicacao/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -164,7 +173,7 @@ namespace teste_cliente.Controllers
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/aplicacao/EditarAplicacao/" + aplicacao.IdAplicacao, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "aplicacao/EditarAplicacao/" + aplicacao.IdAplicacao, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -199,7 +208,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/aplicacao/BuscarPorID/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/BuscarPorID/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -230,7 +239,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.DeleteAsync("https://localhost:7211/api/aplicacao/DeletarAplicacao/" + id))
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "aplicacao/DeletarAplicacao/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -265,9 +274,9 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                httpClient.BaseAddress = new Uri("https://localhost:7211/");
+                httpClient.BaseAddress = new Uri(_baseUrl);
                 
-                var response = await httpClient.GetAsync($"api/aplicacao/verificar?idOferta={id}&idCandidato={idCandidato}");
+                var response = await httpClient.GetAsync($"aplicacao/verificar?idOferta={id}&idCandidato={idCandidato}");
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
@@ -299,7 +308,7 @@ namespace teste_cliente.Controllers
                 var json = JsonConvert.SerializeObject(novaAplicacao);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var postResponse = await httpClient.PostAsync("api/aplicacao/CriarAplicacao", content);
+                var postResponse = await httpClient.PostAsync("aplicacao/CriarAplicacao", content);
                 if (!postResponse.IsSuccessStatusCode)
                 {
                     TempData["Mensagem"] = "Ocorreu um erro ao candidatar-te.";
@@ -324,7 +333,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                string apiUrl = $"https://localhost:7211/api/aplicacao/idOferta?idOferta={idOferta}";
+                string apiUrl = _baseUrl + $"aplicacao/idOferta?idOferta={idOferta}";
 
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {

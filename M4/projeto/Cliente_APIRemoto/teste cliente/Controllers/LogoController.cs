@@ -12,6 +12,14 @@ namespace teste_cliente.Controllers
 {
     public class LogoController : Controller
     {
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public LogoController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+        }
         public async Task<IActionResult> Index()
         {
             List<LogoEmpresa> logoList = new List<LogoEmpresa>();
@@ -24,7 +32,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/Logo"))
+                using (var response = await httpClient.GetAsync(_baseUrl + "Logo"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -74,7 +82,7 @@ namespace teste_cliente.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(logo), Encoding.UTF8, "application/json");
-                using (var response = await httpClient.PostAsync("https://localhost:7211/api/Logo/", content))
+                using (var response = await httpClient.PostAsync(_baseUrl + "Logo/", content))
                 {   
 
                     if (response.IsSuccessStatusCode)
@@ -143,7 +151,7 @@ namespace teste_cliente.Controllers
                     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
                     formContent.Add(fileContent, "file", file.FileName);
 
-                    var apiResponse = await httpClient.PostAsync("https://localhost:7211/api/logo/update", formContent);
+                    var apiResponse = await httpClient.PostAsync(_baseUrl + "logo/update", formContent);
                     if (!apiResponse.IsSuccessStatusCode)
                     {
                         if (apiResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -175,7 +183,7 @@ namespace teste_cliente.Controllers
                 new AuthenticationHeaderValue("Bearer", token);
 
             var apiResponse = await httpClient.GetAsync(
-                $"https://localhost:7211/api/logo/empresa/{id}");
+                _baseUrl + $"logo/empresa/{id}");
 
             if (apiResponse.StatusCode == HttpStatusCode.Forbidden)
                 return Forbid();

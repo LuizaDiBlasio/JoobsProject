@@ -1,18 +1,30 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using teste_cliente.Models;
+using Vereyon.Web;
 
 namespace teste_cliente.Controllers
 {
     public class ReviewController : Controller
     {
-        private readonly string apiBaseUrl = "https://localhost:7211/api/";
+        private readonly string apiBaseUrl;
+        private readonly IConfiguration _config;
+        private readonly IFlashMessage _flashMessage;
+
+        public ReviewController(IConfiguration config)
+        {
+            _config = config;
+            apiBaseUrl = _config["ApiSettings:BaseUrl"];
+
+        }
 
         public async Task<IActionResult> Index(int? empresaId)
         {
@@ -188,6 +200,42 @@ namespace teste_cliente.Controllers
 
             TempData["ErrorMessage"] = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage ?? "Erro desconhecido ao criar o review.";
             return RedirectToAction("Index", "OfertaEmprego");
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int idReview, int idEmpresa)
+        {
+
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token))
+                return RedirectToAction("Login", "Auth");
+
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var cookieHeader = HttpContext.Request.Headers["Cookie"].ToString();
+                System.Diagnostics.Debug.WriteLine("Cookie Header: " + cookieHeader);
+                if (!string.IsNullOrWhiteSpace(cookieHeader))
+                {
+                    httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
+                }
+
+                var response = await httpClient.DeleteAsync(apiBaseUrl + "review/" + idReview);
+                string apiResponse = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        return Forbid();
+                    }
+                    _flashMessage.Danger("Não foi possível apagar review.");
+                    return RedirectToAction("Details","Empresa", new { id = idEmpresa });
+                }
+            }
+ 
+             return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
         }
     }
 }

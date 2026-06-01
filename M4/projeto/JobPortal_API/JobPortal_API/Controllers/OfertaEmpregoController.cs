@@ -41,6 +41,7 @@ namespace JobPortal_API.Controllers
         public async Task<List<OfertaEmpregoDTO>> GetOfertaEmprego([FromQuery] string? search,
                                                                    [FromQuery] int? jornada,
                                                                    [FromQuery] int? concelho,
+                                                                   [FromQuery] string? faixaSalarial,
                                                                    [FromQuery] int? regimeTrabalho)
         {
             var query = _context.OfertaEmprego
@@ -87,6 +88,18 @@ namespace JobPortal_API.Controllers
             {
                 var jornadaEnumSelect = (JornadaEnum)jornada.Value;
                 query = query.Where(b => b.Jornada == jornadaEnumSelect);
+            }
+
+            //Filtro para faixa salarial
+            if (!string.IsNullOrEmpty(faixaSalarial))
+            {
+                var partes = faixaSalarial.Split('-');
+                if (partes.Length == 2 &&
+                    float.TryParse(partes[0], out float min) &&
+                    float.TryParse(partes[1], out float max))
+                {
+                    query = query.Where(o => o.Salario >= min && o.Salario <= max);
+                }
             }
 
             //  Projeta diretamente para o DTO (Lembra-te de limpar os .ToString() do AutoMapperProfile!)

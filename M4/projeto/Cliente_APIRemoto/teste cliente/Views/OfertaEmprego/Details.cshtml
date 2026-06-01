@@ -12,10 +12,10 @@
                 <div class="col-md-8">
                     <h1 class="job-title">@Model.Titulo</h1>
                     <div class="job-meta">
-                        <span><i class="fas fa-map-marker-alt me-2"></i> @Model.Concelho</span>
-                        <span><i class="far fa-clock me-2"></i> @Model.Jornada</span>
-                        <span><i class="fas fa-home me-2"></i> @Model.RegimeTrabalho</span>
-                        <span><i class="fas fa-user-tie me-2"></i> @Model.TipoContrato</span>
+                        <span><i class="fas fa-map-marker-alt me-2"></i> @Model.Concelho.GetDisplayName()</span>
+                        <span><i class="far fa-clock me-2"></i> @Model.Jornada.GetDisplayName()</span>
+                        <span><i class="fas fa-home me-2"></i> @Model.RegimeTrabalho.GetDisplayName()</span>
+                        <span><i class="fas fa-user-tie me-2"></i> @Model.TipoContrato.GetDisplayName()</span>
                         <span><i class="fas fa-euro-sign me-2"></i> @Model.Salario</span>
                     </div>
                 </div>
@@ -44,7 +44,56 @@
     <!-- Conteúdo principal -->
     <div class="container main-content mt-4">
         <div class="row">
-            <!-- Coluna da esquerda - Detalhes da oferta -->
+
+            <div class="col-md-4">
+                <div class="card company-card mb-4">
+                    <div class="card-body text-center">
+                        @if (!string.IsNullOrEmpty(Model.LogoEmpresaBase64))
+                        {
+                            <img src="data:image/jpeg;base64,@Model.LogoEmpresaBase64" alt="Logo Empresa" class="img-fluid company-logo" style="max-width: 120px;">
+                        }
+                        else
+                        {
+                            <img src="~/img/icone_perfil.png" alt="Logo Empresa" class="img-fluid company-logo mb-3" style="max-width: 120px;">
+                        }
+                        <br />
+                        <br />
+                        <partial name="_RatingDisplay" model="ViewBag.Reviews as List<teste_cliente.Models.Review>" />
+                    </div>
+                    <div class="card-body text-center">
+                        <span >@Model.Empresa.Nome</span>
+                    </div>
+                </div>
+
+                <div class="card job-info-card">
+                    <div class="card-body">
+                        <h3 class="info-title">Informações da Vaga</h3>
+                        <ul class="job-info-list">
+                            <li>
+                                <span class="info-label"><i class="far fa-clock me-2"></i> Jornada:</span>
+                                <span class="info-value">@Model.Jornada.GetDisplayName()</span>
+                            </li>
+                            <li>
+                                <span class="info-label"><i class="fas fa-euro-sign me-2"></i> Salário:</span>
+                                <span class="info-value">@Model.Salario</span>
+                            </li>
+                            <li>
+                                <span class="info-label"><i class="fas fa-user-tie me-2"></i> Tipo de Contrato:</span>
+                                <span class="info-value">@Model.TipoContrato.GetDisplayName()</span>
+                            </li>
+                            <li>
+                                <span class="info-label"><i class="fas fa-map-marker-alt me-2"></i> Concelho:</span>
+                                <span class="info-value">@Model.Concelho.GetDisplayName()</span>
+                            </li>
+                            <li>
+                                <span class="info-label"><i class="fas fa-home me-2"></i> Regime de Trabalho:</span>
+                                <span class="info-value">@Model.RegimeTrabalho.GetDisplayName()</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-md-8">
                 <div class="card content-card mb-4">
                     <div class="card-body">
@@ -55,53 +104,6 @@
                 </div>
             </div>
 
-            <!-- Coluna da direita - Informações da empresa -->
-            <div class="col-md-4">
-                <div class="card company-card mb-4">
-                    <div class="card-body text-center">
-                        @if (!string.IsNullOrEmpty(Model.LogoEmpresaBase64))
-                        {
-                            <img src="data:image/jpeg;base64,@Model.LogoEmpresaBase64" alt="Logo Empresa" class="img-fluid company-logo" style="max-width: 120px;">
-                        }
-                        else
-                        {
-                            <img src="~/img/logo-empresa-placeholder.png" alt="Logo Empresa" class="img-fluid company-logo mb-3">
-                        }
-                        <br />
-                        <br />
-                        <!-- Exibir a média de avaliações usando a partial -->
-                        <partial name="_RatingDisplay" model="ViewBag.Reviews as List<teste_cliente.Models.Review>" />                        
-                    </div>
-                </div>
-
-                <div class="card job-info-card">
-                    <div class="card-body">
-                        <h3 class="info-title">Informações da Vaga</h3>
-                        <ul class="job-info-list">
-                            <li>
-                                <span class="info-label"><i class="far fa-clock me-2"></i> Jornada:</span>
-                                <span class="info-value">@Model.Jornada</span>
-                            </li>
-                            <li>
-                                <span class="info-label"><i class="fas fa-euro-sign me-2"></i> Salário:</span>
-                                <span class="info-value">@Model.Salario</span>
-                            </li>
-                            <li>
-                                <span class="info-label"><i class="fas fa-user-tie me-2"></i> Tipo de Contrato:</span>
-                                <span class="info-value">@Model.TipoContrato</span>
-                            </li>
-                            <li>
-                                <span class="info-label"><i class="fas fa-map-marker-alt me-2"></i> Concelho:</span>
-                                <span class="info-value">@Model.Concelho</span>
-                            </li>
-                            <li>
-                                <span class="info-label"><i class="fas fa-home me-2"></i> Regime de Trabalho:</span>
-                                <span class="info-value">@Model.RegimeTrabalho</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="row mt-4 mb-5">

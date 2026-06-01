@@ -12,5 +12,8 @@ namespace teste_cliente.Models.ViewModels
         public RegimeTrabalhoEnum? RegimeTrabalho { get; set; }
 
         public ConcelhoEnum? Concelho {get; set; }
+
+        public string? FaixaSalarial {  get; set; }    
+
     }
 }

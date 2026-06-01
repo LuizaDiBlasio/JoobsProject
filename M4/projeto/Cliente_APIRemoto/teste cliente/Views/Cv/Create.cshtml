@@ -1,9 +1,10 @@
-﻿@model teste_cliente.Models.CV
+﻿@using teste_cliente.Helpers
+@using teste_cliente.Models.Enums
+@model teste_cliente.Models.CV
 
 @{
     ViewData["Title"] = "Currículo";
     var defaultImage = "/img/icone_perfil.png";
-    // Endpoint para a foto do candidato
     var candidatoId = Model.IdCandidatoCv;
     var fotoApi = @Url.Action("GetImage", "Foto", new { id = candidatoId });
 }
@@ -13,18 +14,16 @@
     <div asp-validation-summary="All" class="text-danger mb-3"></div> *@
     <h3 class="my-4 oferta_header">Currículo</h3>
 
-    <div class="row">
-        <!-- Coluna da esquerda: foto + resumo estático -->
-        <div class="col-md-4 text-center">
-            <img src="@fotoApi"
-                 onerror="this.onerror=null; this.src='@defaultImage'"
-                 alt="Foto de perfil"
-                 class="rounded-circle mb-3"
-                 style="width: 150px; height: 150px; object-fit: cover;" />
+    <!-- Coluna da esquerda: foto + resumo estático -->
+    <div class="col-md-4 text-center">
+        <img src="@fotoApi"
+             onerror="this.onerror=null; this.src='@defaultImage'"
+             alt="Foto de perfil"
+             class="rounded-circle mb-3"
+             style="width: 150px; height: 150px; object-fit: cover;" />
 
-            <h5 class="text-primary mb-3">@Model.Nome</h5>
-            <p class="text-muted">@Model.Localizacao</p>
-        </div>
+        <h5 class="text-primary mb-3">@Model.Nome</h5>
+    </div>
 
         <!-- Coluna da direita: formulário de edição -->
         <div class="col-md-8">
@@ -41,16 +40,20 @@
                         <span asp-validation-for="Nome" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="Localizacao" class="form-label">Localização</label>
-                        <input asp-for="Localizacao" class="form-control" />
-                        <span asp-validation-for="Localizacao" class="text-danger"></span>
+                    <label asp-for="Concelho" class="form-label">Concelho</label>
+                    <select asp-for="Concelho" asp-items="ViewBag.Concelhos" class="form-select">
+                            <option value="">-- Selecione um Concelho --</option>
+                        </select>
+                    <span asp-validation-for="Concelho" class="text-danger"></span>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="Educacao" class="form-label">Educação</label>
-                    <textarea asp-for="Educacao" class="form-control" rows="3"></textarea>
-                    <span asp-validation-for="Educacao" class="text-danger"></span>
+                <label asp-for="Escolaridade" class="form-label">Habilitações Literárias (Escolaridade)</label>
+                <select asp-for="Escolaridade" asp-items="ViewBag.Escolaridades" class="form-select">
+                        <option value="">-- Selecione a Escolaridade --</option>
+                    </select>
+                <span asp-validation-for="Escolaridade" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">

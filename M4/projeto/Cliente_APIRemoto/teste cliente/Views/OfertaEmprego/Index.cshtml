@@ -11,10 +11,8 @@
 <div class="search-barra">
     <div class="container search-container pt-4">
         <form asp-controller="OfertaEmprego" asp-action="Index" method="get">
-            <!-- Mudamos para uma row com alinhamento vertical centralizado e espaçamento controlado -->
             <div class="row g-2 align-items-end">
                 
-                <!-- Campo de Busca por Texto -->
                 <div class="col-xl-3 col-lg-3 col-md-6">
                     <label for="search" class="form-label fw-bold text-muted small">Palavra-chave</label>
                     <div class="input-group">
@@ -25,7 +23,6 @@
                     </div>
                 </div>
 
-                <!-- Campo de Concelho (Com pesquisa inteligente) -->
                 <div class="col-xl-3 col-lg-3 col-md-6">
                     <label asp-for="Concelho" class="form-label fw-bold text-muted small">Concelho</label>
                     <select asp-for="Concelho" class="form-select select2-searchable" asp-items="ViewBag.ConcelhosList">
@@ -33,7 +30,6 @@
                     </select>
                 </div>
 
-                <!-- Campo de Jornada -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
                     <label asp-for="Jornada" class="form-label fw-bold text-muted small">Jornada de trabalho</label>
                     <select asp-for="Jornada" class="form-select custom-select-filter" asp-items="ViewBag.JornadasList">
@@ -41,7 +37,6 @@
                     </select>
                 </div>
 
-                <!-- Campo de Regime de Trabalho -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
                     <label asp-for="RegimeTrabalho" class="form-label fw-bold text-muted small">Regime de trabalho</label>
                     <select asp-for="RegimeTrabalho" class="form-select custom-select-filter" asp-items="ViewBag.RegimeTrabalhoList">
@@ -49,13 +44,25 @@
                     </select>
                 </div>
 
-                <!-- Botão de Submit -->
                 <div class="col-xl-2 col-lg-2 col-md-4">
+                    <label for="FaixaSalarial" class="form-label fw-bold text-muted small">Faixa Salarial</label>
+                    <select asp-for="FaixaSalarial" class="form-select custom-select-filter">
+                        <option value="">Todas as ofertas</option>
+                        <option value="0-1000">Até 1000 €</option>
+                        <option value="1000-1500">De 1000 € a 1500 €</option>
+                        <option value="1500-2000">De 1500 € a 2000 €</option>
+                        <option value="2000-3000">De 2000 € a 3000 €</option>
+                        <option value="3000-999999">Mais de 3000 €</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mt-3 justify-content-end">
+                <div class="col-xl-2 col-lg-3 col-md-4">
                     <button type="submit" class="btn text-white custom-link-button w-100">
                         <i class="fas fa-filter me-2"></i>Filtrar
                     </button>
                 </div>
-
             </div>
         </form>
     </div>
@@ -93,6 +100,9 @@
 
                             <a asp-controller="Review" asp-action="Index" asp-route-empresaId="@item.IdEmpresa" class="text-muted small">Ver críticas ></a>
                         </div>
+                        <div class="card-body text-center">
+                        <span >@item.Empresa.Nome</span>
+                    </div>
                     </div>
 
                     <div class="col-md-3 d-flex flex-column align-items-start justify-content-center">
@@ -356,52 +366,36 @@
 }
 
 @section Scripts {
+
     <partial name="_ValidationScriptsPartial" /> 
-    <!-- Script do Select2 adicionado aqui -->
+    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <script>
         $(document).ready(function () {
-            // Botão dos favoritos via Fetch API
-            $('.toggle-favorito').on('click', function () {
-                const $el = $(this);
-                const id = parseInt($el.data('id'));
-                if (id <= 0) return;
-
-            // Ativa a pesquisa inteligente no campo Concelho
+            
+            // 1. ATIVAR O SELECT2 NOS CAMPOS DE CONCELHO
             $('.select2-searchable').select2({
                 placeholder: "Selecione ou digite um concelho...",
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
             });
 
-            // Código dos modais e reset de estrelas original mantido intacto...
-            $(document).on('show.bs.modal', '.modal', function () {
-                var modalId = $(this).attr('id').replace('reviewModal-', '');
-                var ratingStars = $('#rating-stars-' + modalId);
-                var stars = ratingStars.find('.fa-star');
+            // 2. LÓGICA DO BOTÃO DE FAVORITOS (VIA FETCH API)
+            $('.toggle-favorito').on('click', function () {
+                const $el = $(this);
+                const id = parseInt($el.data('id'));
+                
+                if (!id || id <= 0) return;
 
-                if (stars.length === 0) return;
-
-                var ratingInput = ratingStars.find('input[name="Rating"]');
-                stars.removeClass('fas').addClass('far');
-                ratingInput.val(0);
-            });
-
-            $(document).on('click', '.rating-stars .fa-star', function (e) {
-                e.preventDefault();
-                var $star = $(this);
-                var modalId = $star.closest('.modal').attr('id').replace('reviewModal-', '');
-                var ratingStars = $('#rating-stars-' + modalId);
-                var value = parseInt($star.data('value'));
-                var ratingInput = ratingStars.find('input[name="Rating"]');
-                var stars = ratingStars.find('.fa-star');
-
-                ratingInput.val(value);
-                ratingStars.siblings('#rating-error-' + modalId).text('');
-
-                var token = $('input[name="__RequestVerificationToken"]').val();
-
+                // Captura o AntiForgeryToken gerado pelo @Html.AntiForgeryToken() na página
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenInput ? tokenInput.value : '';
 
                 fetch('/OfertaEmprego/ToggleFavorito', {
                     method: 'POST',
@@ -411,13 +405,57 @@
                     },
                     body: `idOferta=${encodeURIComponent(id)}`
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error("Erro na requisição HTTP");
+                    return res.json();
+                })
                 .then(data => {
                     if (data.success) {
+                        // Alterna entre a estrela cheia (fas) e vazia (far)
                         $el.toggleClass('fas far');
+                        // Altera a cor dinamicamente com base no retorno do Controller
                         $el.css('color', data.isFavorito ? "#FFD700" : "#ccc");
+                        
+                        // Atualiza o Badge se a função global existir
                         if (typeof atualizarBadgeFavoritos === "function") {
                             atualizarBadgeFavoritos();
+                        }
+                    } else {
+                        alert(data.message || "Erro ao favoritar.");
+                    }
+                })
+                .catch(err => console.error("Erro ao processar favorito:", err));
+            });
+
+            // 3. EVENTOS DOS MODAIS DE CRÍTICAS / REVIEWS (Ajuste de reset de estrelas)
+            $(document).on('show.bs.modal', '.modal', function () {
+                var modalId = $(this).attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var stars = ratingStars.find('.fa-star');
+
+                if (stars.length === 0) return;
+
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                stars.removeClass('fas').addClass('far');
+                if(ratingInput.length > 0) ratingInput.val(0);
+            });
+
+            // 4. INTERAÇÃO DE CLIQUE NAS ESTRELAS DE AVALIAÇÃO
+            $(document).on('click', '.rating-stars .fa-star', function (e) {
+                e.preventDefault();
+                var $star = $(this);
+                var $modal = $star.closest('.modal');
+                if($modal.length === 0) return;
+
+                var modalId = $modal.attr('id').replace('reviewModal-', '');
+                var ratingStars = $('#rating-stars-' + modalId);
+                var value = parseInt($star.data('value'));
+                var ratingInput = ratingStars.find('input[name="Rating"]');
+                var stars = ratingStars.find('.fa-star');
+
+                ratingInput.val(value);
+                $('#rating-error-' + modalId).text('');
+
                 stars.each(function () {
                     var starValue = parseInt($(this).data('value'));
                     if (starValue <= value) {
@@ -428,6 +466,7 @@
                 });
             });
 
+            // 5. EFEITO HOVER NAS ESTRELAS DE AVALIAÇÃO
             $(document).on('mouseenter', '.rating-stars .fa-star', function () {
                 var $star = $(this);
                 var hoverValue = parseInt($star.data('value'));
@@ -458,63 +497,23 @@
                 });
             });
 
+            // 6. VALIDAÇÃO DO FORMULÁRIO DE ENVIO DE RATING
             $(document).on('submit', 'form', function (e) {
                 var ratingInput = $(this).find('input[name="Rating"]');
-                if(ratingInput.length === 0) return; // Ignora se for o form de pesquisa principal
+                if (ratingInput.length === 0) return; // Ignora se for o formulário de filtros principal
                 
                 var ratingValue = parseInt(ratingInput.val());
-                var ratingError = $(this).find('#rating-error-' + ratingInput.attr('id').split('-')[2]);
+                var formId = $(this).closest('.modal').attr('id');
+                if(!formId) return;
+                
+                var modalId = formId.replace('reviewModal-', '');
+                var ratingError = $('#rating-error-' + modalId);
 
                 if (ratingValue === 0 || isNaN(ratingValue)) {
                     ratingError.text('Por favor, selecione um rating de 1 a 5.');
                     e.preventDefault();
                 }
             });
-
-            // Botão dos favoritos
-            document.querySelectorAll('.toggle-favorito').forEach(el => {
-                el.addEventListener('click', function () {
-                    const id = parseInt(this.dataset.id);
-                    if (id <= 0) return;
-                    fetch('/OfertaEmprego/ToggleFavorito', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                        },
-                        body: `idOferta=${encodeURIComponent(id)}`
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.classList.toggle('fas');
-                            this.classList.toggle('far');
-                            this.style.color = data.isFavorito ? "#FFD700" : "#ccc";
-                            if(typeof atualizarBadgeFavoritos === "function") atualizarBadgeFavoritos();
-                        }
-                    }
-                })
-                .catch(err => console.error("Erro ao processar favorito:", err));
-            });
-        });
-
-
-    </script>
-
-     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            $('.select2-searchable').select2({
-                placeholder: "Selecione um concelho...",
-                allowClear: true,
-                language: {
-                    noResults: function() {
-                        return "Nenhum concelho encontrado";
-                    }
-                }
-            });
         });
     </script>
-
 }

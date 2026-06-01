@@ -345,8 +345,6 @@ namespace JobPortal_API.Utilities
 
                 return false;
             }
-
         }
-
     }
 }

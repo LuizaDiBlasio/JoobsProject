@@ -14,12 +14,21 @@ using teste_cliente.Models;
 using teste_cliente.Models.Dto;
 using teste_cliente.Models.Enums;
 using teste_cliente.Models.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace teste_cliente.Controllers
 {
     public class OfertaEmpregoController : Controller
     {
-        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, int page = 1)
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public OfertaEmpregoController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"]; 
+        }
+        public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, string? faixaSalarial, int page = 1)
         {
             
             int pageSize = 10;
@@ -34,9 +43,10 @@ namespace teste_cliente.Controllers
                 if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho}");
                 if (jornada.HasValue) queryParams.Add($"jornada={(int)jornada}");
                 if (regimeTrabalho.HasValue) queryParams.Add($"regimeTrabalho={(int)regimeTrabalho}");
+                if (!string.IsNullOrEmpty(faixaSalarial)) queryParams.Add($"faixaSalarial={Uri.EscapeDataString(faixaSalarial)}");
 
                 string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
-                string apiUrl = $"https://localhost:7211/api/oferta/TodasOfertas{queryString}";
+                string apiUrl = _baseUrl + $"oferta/TodasOfertas{queryString}";
 
 
                     // Buscar a lista de ofertas
@@ -56,7 +66,7 @@ namespace teste_cliente.Controllers
                     // Buscar as reviews para cada empresa
                     foreach (var idEmpresa in empresaIds)
                     {
-                        using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{idEmpresa}"))
+                        using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{idEmpresa}"))
                         {
                             if (reviewResponse.IsSuccessStatusCode)
                             {
@@ -104,9 +114,6 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            //Buscar listas 
-            var listas = LoadLists();
-
             var model = new IndexOfertaViewModel
             {
                 OfertaEmpregosList = ofertaList,
@@ -124,13 +131,11 @@ namespace teste_cliente.Controllers
             ViewBag.Concelho = concelho;
             ViewBag.Jornada = jornada;
             ViewBag.RegimeTrabalho = regimeTrabalho;
+            ViewBag.ConcelhosList = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.JornadasList = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
+            ViewBag.RegimeTrabalhoList = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
+            
 
-            if (listas != null)
-            {
-                ViewBag.ConcelhosList = listas.SelectListConcelhos;
-                ViewBag.JornadasList = listas.SelectListJornada;
-                ViewBag.RegimeTrabalhoList = listas.SelectListRegimeTrabalho;
-            }
 
             model.OfertaEmpregosList = ofertaList;
 
@@ -147,7 +152,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync($"https://localhost:7211/api/Logo/{idEmpresa}"))
+                using (var response = await httpClient.GetAsync(_baseUrl + $"Logo/{idEmpresa}"))
                 {   
 
                     if (response.IsSuccessStatusCode)
@@ -188,7 +193,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                string apiUrl = $"https://localhost:7211/api/Oferta/historicoEmpresa?idEmpresa={idEmpresa}";
+                string apiUrl = _baseUrl + $"Oferta/historicoEmpresa?idEmpresa={idEmpresa}";
 
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
@@ -226,7 +231,7 @@ namespace teste_cliente.Controllers
             //AQUI NÃO PRECISA DO TOKEN
             using (var httpClient = new HttpClient())
             {
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/oferta/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "oferta/BuscarPorId/" + id))
                 {   
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
@@ -248,12 +253,7 @@ namespace teste_cliente.Controllers
         {
             var model = new OfertaEmpregoViewModel();
 
-            var lists = LoadLists();
-
-            model.SelectListConcelhos = lists.SelectListConcelhos;
-            model.SelectListTiposContratos = lists.SelectListContratos;
-            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
-            model.SelectListJornada = lists.SelectListJornada;
+            LoadLists(model);
 
             return View(model);
                
@@ -289,7 +289,7 @@ namespace teste_cliente.Controllers
 
                     StringContent content = new StringContent(JsonConvert.SerializeObject(ofertaDTO), Encoding.UTF8, "application/json");
 
-                    using (var response = await httpClient.PostAsync("https://localhost:7211/api/Oferta/CriarOferta/", content))
+                    using (var response = await httpClient.PostAsync(_baseUrl + "Oferta/CriarOferta/", content))
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
@@ -310,12 +310,7 @@ namespace teste_cliente.Controllers
             }
 
 
-            var lists = LoadLists();
-
-            model.SelectListConcelhos = lists.SelectListConcelhos;
-            model.SelectListTiposContratos = lists.SelectListContratos;
-            model.SelectListRegimeTrabalho = lists.SelectListRegimeTrabalho;
-            model.SelectListJornada = lists.SelectListJornada;
+            LoadLists(model);
 
             return View(model);
            
@@ -324,17 +319,18 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            OfertaEmprego oferta = new OfertaEmprego();
-
+           
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
+            var model = new OfertaEmpregoViewModel();
 
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/EditarOferta/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/EditarOferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -347,15 +343,30 @@ namespace teste_cliente.Controllers
                     }
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
+                    var ofertaDTO = JsonConvert.DeserializeObject<OfertaEmpregoDTO>(apiResponse);
 
+                    //Preencher model 
+
+                    model.Salario = ofertaDTO.Salario;
+                    model.Titulo = ofertaDTO.Titulo;
+                    model.TipoContrato = ofertaDTO.TipoContrato;
+                    model.Concelho = ofertaDTO.Concelho;
+                    model.Descricao = ofertaDTO.Descricao;
+                    model.Jornada = ofertaDTO.Jornada;
+                    model.Requisitos = ofertaDTO.Requisitos;
+                    model.RegimeTrabalho = ofertaDTO.RegimeTrabalho;
+                    model.IdOferta = id;
+                    model.VagaDisponivel = ofertaDTO.VagaDisponivel;
+                    model.Contagem = ofertaDTO.Contagem;
+
+                    LoadLists(model);
                 }
-                return View(oferta);
+                return View(model);
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(Models.OfertaEmprego oferta)
+        public async Task<IActionResult> Edit(OfertaEmpregoViewModel model)
         {
             Candidato e = new Candidato();
 
@@ -367,9 +378,9 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                StringContent content = new StringContent(JsonConvert.SerializeObject(oferta), Encoding.UTF8, "application/json");
+                StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
 
-                using (var response = await httpClient.PutAsync("https://localhost:7211/api/Oferta/EditarOferta/" + oferta.IdOferta, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "Oferta/EditarOferta/" + model.IdOferta, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -380,13 +391,10 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     ViewBag.Result = "Success";
-                    e = JsonConvert.DeserializeObject<Candidato>(apiResponse);
                 }
                 return RedirectToAction("Historico");
 
             }
-
-            return View(e);
         }
 
         [HttpGet]
@@ -399,7 +407,7 @@ namespace teste_cliente.Controllers
                 // Incrementar a contagem apenas se o usuário for um Candidato
                 if (User.IsInRole("Candidato"))
                 {
-                    using (var response = await httpClient.PatchAsync($"https://localhost:7211/api/oferta/{id}/incrementarContagem", null))
+                    using (var response = await httpClient.PatchAsync(_baseUrl + $"oferta/{id}/incrementarContagem", null))
                     {
                         if (!response.IsSuccessStatusCode)
                         {
@@ -410,7 +418,7 @@ namespace teste_cliente.Controllers
                 }
 
                 // Buscar os detalhes da oferta
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/BuscarPorId/" + id))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
@@ -422,7 +430,7 @@ namespace teste_cliente.Controllers
 
                 // Buscar as reviews da empresa associada à oferta
                 List<Review> reviews = new List<Review>();
-                using (var reviewResponse = await httpClient.GetAsync($"https://localhost:7211/api/Review/empresa/{oferta.IdEmpresa}"))
+                using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{oferta.IdEmpresa}"))
                 {
                     if (reviewResponse.IsSuccessStatusCode)
                     {
@@ -438,25 +446,6 @@ namespace teste_cliente.Controllers
             }
         }
 
-        //[HttpGet]
-        //public async Task<IActionResult> Details(int id)
-        //{
-        //    OfertaEmprego oferta = new OfertaEmprego();
-        //    using (var httpClient = new HttpClient())
-        //    {
-        //        using (var response = await httpClient.GetAsync("https://localhost:7211/api/Oferta/" + id))
-        //        {
-        //            string apiResponse = await response.Content.ReadAsStringAsync();
-        //            oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
-
-        //        }
-
-        //        var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-        //        oferta.LogoEmpresaBase64 = logoEmpresaBase64;
-
-        //        return View(oferta);
-        //    }
-        //}
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -469,7 +458,7 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 
-                using (var response = await httpClient.DeleteAsync("https://localhost:7211/api/Oferta/" + id))
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "Oferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -574,7 +563,7 @@ namespace teste_cliente.Controllers
             List<OfertaEmprego> todasOfertas = new List<OfertaEmprego>();
             using (var httpClient = new HttpClient())
             {
-                string apiUrl = "https://localhost:7211/api/Oferta/TodasOfertas";
+                string apiUrl = _baseUrl + "Oferta/TodasOfertas";
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
                     if (response.IsSuccessStatusCode)
@@ -594,22 +583,15 @@ namespace teste_cliente.Controllers
         //ADIÇÃO DE CÓDIGO (métodos auxiliares)
 
         //____________ADIÇÂO DE CÓDIGO___________(carregamento de listas para index)
-        private ListsDTO LoadLists()
+        private void LoadLists( OfertaEmpregoViewModel model)
             {
-                var listsDTO = new ListsDTO();
+                model.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
 
-                //converter para selectlist
+                model.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
 
-                listsDTO.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+                model.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
 
-                listsDTO.SelectListContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
-
-                listsDTO.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
-
-                listsDTO.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>(); 
- 
-                return listsDTO;   
+                model.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
             }
-
     }
 }

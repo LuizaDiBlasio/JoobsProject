@@ -11,6 +11,14 @@ namespace teste_cliente.Controllers
 {
     public class FotoController : Controller
     {
+        private readonly IConfiguration _config;
+        private readonly string _baseUrl;
+
+        public FotoController(IConfiguration config)
+        {
+            _config = config;
+            _baseUrl = _config["ApiSettings:BaseUrl"];
+        }
         public async Task<IActionResult> Index()
         {
             List<Foto> fotoList = new List<Foto>();
@@ -22,7 +30,7 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync("https://localhost:7211/api/foto/TodasFotos"))
+                using (var response = await httpClient.GetAsync(_baseUrl + "foto/TodasFotos"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -80,7 +88,7 @@ namespace teste_cliente.Controllers
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 // Tenta buscar a foto atual do candidato
-                var checkResponse = await httpClient.GetAsync($"https://localhost:7211/api/foto/ByCandidato/{foto.IdCandidatoFoto}");
+                var checkResponse = await httpClient.GetAsync(_baseUrl + $"foto/ByCandidato/{foto.IdCandidatoFoto}");
 
                 if (checkResponse.IsSuccessStatusCode)
                 {
@@ -100,7 +108,7 @@ namespace teste_cliente.Controllers
                         // Atualiza a foto
                         foto.Id = existingPhoto.Id;
                         var contentPut = new StringContent(JsonConvert.SerializeObject(foto), Encoding.UTF8, "application/json");
-                        var putResponse = await httpClient.PutAsync($"https://localhost:7211/api/Foto/{foto.Id}", contentPut);
+                        var putResponse = await httpClient.PutAsync(_baseUrl + $"Foto/{foto.Id}", contentPut);
 
                         if (!putResponse.IsSuccessStatusCode)
                         {
@@ -126,7 +134,7 @@ namespace teste_cliente.Controllers
 
                     // Criar nova foto com POST
                     var contentPost = new StringContent(JsonConvert.SerializeObject(foto), Encoding.UTF8, "application/json");
-                    var postResponse = await httpClient.PostAsync("https://localhost:7211/api/Foto/CriarFoto", contentPost);
+                    var postResponse = await httpClient.PostAsync(_baseUrl + "Foto/CriarFoto", contentPost);
 
                     if (!postResponse.IsSuccessStatusCode)
                     {
@@ -162,7 +170,7 @@ namespace teste_cliente.Controllers
                 = new AuthenticationHeaderValue("Bearer", token);
 
             var apiResponse = await httpClient.GetAsync(
-                $"https://localhost:7211/api/foto/BuscarFotoPorIdCandidato/{id}");
+                _baseUrl + $"foto/BuscarFotoPorIdCandidato/{id}");
             if (!apiResponse.IsSuccessStatusCode)
             {
                 // devolve um ficheiro estático default  

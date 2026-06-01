@@ -18,8 +18,8 @@
                         <th scope="col">Data de Candidatura</th>
                         <th scope="col">Empresa</th>
                         <th scope="col">Título da Oferta</th>
-                        <th scope="col">Localização</th>
-                        <th scope="col">Regime Trabalho</th>
+                        <th scope="col">Concelho</th>
+                        <th scope="col">Regime de Trabalho</th>
                         <th scope="col">Jornada</th>
                     </tr>
                 </thead>
@@ -30,9 +30,9 @@
                             <td>@item.DataAplicacao.ToString("dd.MM.yyyy")</td>
                             <td>@item.NomeEmpresa</td>
                             <td>@item.Titulo</td>
-                            <td>@item.Localizacao</td>
-                            <td>@item.RegimeTrabalho</td>
-                            <td>@item.Jornada</td>
+                            <td>@item.Concelho.GetDisplayName()</td>
+                            <td>@item.RegimeTrabalho.GetDisplayName()</td>
+                            <td>@item.Jornada.GetDisplayName()</td>
                         </tr>
                     }
                 </tbody>

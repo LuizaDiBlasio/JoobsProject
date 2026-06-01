@@ -1,5 +1,10 @@
 ﻿@using System.Security.Claims
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor httpAcc
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@using teste_cliente.Helpers
+@using teste_cliente.Models.Enums
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -138,7 +143,7 @@
                                    data-bs-toggle="modal"
                                    data-bs-target="#favoritosModal">
 
-                                    <i class="bi bi-heart-fill fs-5"></i>
+                                    <i class="fas fa-star fs-5"></i>
                                     <span id="favoritosBadge"
                                           class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
                                           style="background-color: #F2994A;">
@@ -159,7 +164,7 @@
                                         <a class="dropdown-item" asp-controller="Candidato" asp-action="Details" asp-route-id="@idCandidato">Perfil</a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" asp-controller="Candidato" asp-action="HistoricoCandidaturas">Histórico</a>
+                                        <a class="dropdown-item" asp-controller="Candidato" asp-action="HistoricoCandidaturas">Minhas Candidaturas</a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" asp-controller="CV" asp-action="Create">CV</a>
@@ -288,24 +293,6 @@
     @Html.AntiForgeryToken()
 
     <script>
-            // Injetar o token JWT dos Claims do utilizador MVC para o JavaScript
-            const jwt = '@(User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value ?? "")';
-            const API_URL = 'https://localhost:7211/api/notifications';
-
-            const authHeaders = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${jwt}`
-            };
-
-            document.addEventListener("DOMContentLoaded", () => {
-                atualizarBadgeFavoritos();
-
-                // Verifica se o elemento do sino existe e se há token antes de procurar notificações
-                if (document.getElementById('notificationBadge') && jwt !== "") {
-                    fetchNotifications();
-                }
-            });
 
               // ================= NOTIFICAÇÕES =================
 
@@ -422,99 +409,99 @@ async function clearAllNotifications() {
                         return;
                     }
 
-                    const ids = await res.json();
-                    const badge = document.getElementById('favoritosBadge');
+                const ids = await res.json();
+                const badge = document.getElementById('favoritosBadge');
 
-                    if (badge) {
-                        badge.textContent = ids.length || '0';
-                    }
-                } catch (error) {
-                    console.error('Erro ao atualizar badge de favoritos:', error);
+                if (badge) {
+                    badge.textContent = ids.length || '0';
                 }
+            } catch (error) {
+                console.error('Erro ao atualizar badge de favoritos:', error);
             }
+        }
 
-            async function abrirFavoritos() {
-                try {
-                    const container = document.getElementById('favoritosContainer');
-                    container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
+        async function abrirFavoritos() {
+            try {
+                const container = document.getElementById('favoritosContainer');
+                container.innerHTML = '<p class="text-center">Carregando favoritos...</p>';
 
-                    const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
-                    if (!res.ok) {
-                        throw new Error(`Erro ao carregar favoritos: ${res.status}`);
-                    }
+                const res = await fetch('/OfertaEmprego/GetOfertasFavoritas');
+                if (!res.ok) {
+                    throw new Error(`Erro ao carregar favoritos: ${res.status}`);
+                }
 
-                    const ofertas = await res.json();
-                    container.innerHTML = '';
+                const ofertas = await res.json();
+                container.innerHTML = '';
 
-                    if (!ofertas || ofertas.length === 0) {
-                        container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                        return;
-                    }
+                if (!ofertas || ofertas.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                    return;
+                }
 
-                    ofertas.forEach(oferta => {
+                ofertas.forEach(oferta => {
 
-                    const idOferta = oferta.idOferta || oferta.IdOferta;
-                    const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
+                const idOferta = oferta.idOferta || oferta.IdOferta; 
+                const detailsUrl = `/OfertaEmprego/Details?id=${idOferta}`;
 
-                        const card = `
-                            <div class="col-md-6">
-                                <div class="card shadow-sm rounded-3 mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
-                                        <p class="card-text mb-1 text-muted">${oferta.localização || 'Localização não especificada'}</p>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
-                                            <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
-                                                <i class="fas fa-star"></i> Remover
-                                            </button>
-                                        </div>
+                    const card = `
+                        <div class="col-md-6">
+                            <div class="card shadow-sm rounded-3 mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">${oferta.titulo || 'Sem título'}</h5>
+                                    <p class="card-text mb-1 text-muted">${mapaConcelhos[oferta.concelho] || 'Localização não especificada'}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <a href="${detailsUrl}" class="btn btn-primary btn-sm" style="border-radius: 30px; background-color: #5de4d9; border: 0;">Ver detalhes</a>
+                                        <button class="btn btn-outline-warning btn-sm remove-favorito" data-id="${oferta.idOferta}" style="border-radius: 30px;">
+                                            <i class="fas fa-star"></i> Remover
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', card);
-                    });
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', card);
+                });
 
-                    document.querySelectorAll('.remove-favorito').forEach(btn => {
-                        btn.addEventListener('click', async function() {
-                            const id = this.getAttribute('data-id');
-                            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                            const res = await fetch('/OfertaEmprego/ToggleFavorito', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                    'RequestVerificationToken': token
-                                },
-                                body: `idOferta=${id}`
-                            });
-
-                            const result = await res.json();
-
-                            if (result.success) {
-                                this.closest('.col-md-6').remove();
-
-                                const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
-                                if (starIcon) {
-                                    starIcon.classList.remove('fas');
-                                    starIcon.classList.add('far');
-                                    starIcon.style.color = "#ccc";
-                                }
-
-                                atualizarBadgeFavoritos();
-
-                                if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
-                                    document.getElementById('favoritosContainer').innerHTML =
-                                        '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
-                                }
-                            }
+                document.querySelectorAll('.remove-favorito').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        const res = await fetch('/OfertaEmprego/ToggleFavorito', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token
+                            },
+                            body: `idOferta=${id}`
                         });
+
+                        const result = await res.json();
+
+                        if (result.success) {
+                            this.closest('.col-md-6').remove();
+
+                            const starIcon = document.querySelector(`.toggle-favorito[data-id="${id}"]`);
+                            if (starIcon) {
+                                starIcon.classList.remove('fas');
+                                starIcon.classList.add('far');
+                                starIcon.style.color = "#ccc";
+                            }
+
+                            atualizarBadgeFavoritos();
+
+                            if (document.querySelectorAll('#favoritosContainer .col-md-6').length === 0) {
+                                document.getElementById('favoritosContainer').innerHTML =
+                                    '<p class="text-center text-muted">Nenhuma oferta favorita.</p>';
+                            }
+                        }
                     });
-                } catch (error) {
-                    console.error('Erro ao carregar favoritos:', error);
-                    document.getElementById('favoritosContainer').innerHTML =
-                        '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
-                }
+                });
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+                document.getElementById('favoritosContainer').innerHTML =
+                    '<p class="text-center text-danger">Erro ao carregar ofertas favoritas: ' + error.message + '</p>';
             }
+        }
     </script>
 
     <script>
@@ -615,6 +602,6 @@ async function clearAllNotifications() {
     <script src="//cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
-
+    
 </body>
 </html>
