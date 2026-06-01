@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using teste_cliente.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using teste_cliente.Models.Enums;
 using teste_cliente.Helpers;
+using System.Linq;
 
 namespace teste_cliente.Controllers
 {
@@ -239,7 +241,7 @@ namespace teste_cliente.Controllers
             return View(e);
         }
 
- 
+
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
@@ -317,15 +319,15 @@ namespace teste_cliente.Controllers
                     string apiResponse = await response.Content.ReadAsStringAsync();
                 }
             }
-            
+
             // Verifica a role do usuário logado
             if (User.IsInRole("Admin"))
             {
-                return RedirectToAction("Index", "Empresa"); 
+                return RedirectToAction("Index", "Empresa");
             }
             else if (User.IsInRole("Empresa"))
             {
-                return RedirectToAction("Login", "Auth"); 
+                return RedirectToAction("Login", "Auth");
             }
             else
             {
@@ -370,6 +372,101 @@ namespace teste_cliente.Controllers
             }
 
             return RedirectToAction("Details", new { id });
+        }
+
+
+        // ==================================================================================================== //
+        // MÉTODOS DE PESQUISA DE CANDIDATOS
+
+        [Authorize(Roles = "Admin, Empresa")]
+        [HttpGet]
+        public IActionResult PesquisaCandidatos()
+        {
+            // 1. Validar e obter o Token JWT do utilizador autenticado
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token))
+                return RedirectToAction("Login", "Auth");
+
+            // Começa com a lista totalmente vazia para não listar ninguém ao abrir a página
+            List<Candidato> candidatos = new List<Candidato>();
+
+            // 2. Alimentar as ViewBags com os Enums convertidos para SelectList usando o EnumHelper
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
+
+            // Ninguém pesquisou ainda. Flag para o HTML mostrar a mensagem "Pronto para pesquisar!"
+            ViewBag.FoiPesquisado = false;
+
+            return View(candidatos);
+        }
+
+
+        [Authorize(Roles = "Admin, Empresa")]
+        [HttpPost]
+        public async Task<IActionResult> PesquisaCandidatos(ConcelhoEnum? concelho, EscolaridadeEnum? escolaridade)
+        {
+            // 1. Validar e obter o Token JWT do utilizador autenticado
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToAction("Login", "Auth");
+            }
+
+            // Instanciar a lista que receberá os candidatos filtrados
+            List<Candidato> candidatos = new List<Candidato>();
+
+            try
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    // 2. Construir o endereço da API passando os filtros por QueryString se existirem
+                    string url = "https://localhost:7211/api/candidato/Pesquisar?";
+                    if (concelho.HasValue) url += $"concelho={(int)concelho.Value}&";
+                    if (escolaridade.HasValue) url += $"escolaridade={(int)escolaridade.Value}";
+
+                    using (var response = await httpClient.GetAsync(url))
+                    {
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        {
+                            return Forbid();
+                        }
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+
+                            // Esta configuração faz o C# entender o formato "$values" e popular as listas internas automaticamente!
+                            var settings = new JsonSerializerSettings
+                            {
+                                MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
+                                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                            };
+
+                            candidatos = JsonConvert.DeserializeObject<List<Candidato>>(apiResponse, settings);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Erro ao comunicar com o servidor: " + ex.Message);
+            }
+
+            // 3. Alimentar as ViewBags com os Enums para reconstruir os dropdowns na View
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
+
+            // Converte para int? para bater certo com a lógica de comparação .ToString() do HTML
+            // Adicionando a interrogação (int?) para o C# aceitar o nulo do outro lado
+            ViewBag.ConcelhoSelecionado = (int?)concelho;
+            ViewBag.EscolaridadeSelecionado = (int?)escolaridade;
+
+            // O utilizador clicou no botão. Flag ativa para o HTML saber que foi uma pesquisa real
+            ViewBag.FoiPesquisado = true;
+
+            return View(candidatos);
         }
     }
 }

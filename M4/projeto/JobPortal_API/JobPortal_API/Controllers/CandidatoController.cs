@@ -5,6 +5,7 @@ using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
 using JobPortal_API.Migrations;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -236,6 +237,26 @@ namespace JobPortal_API.Controllers
             if (!result.Succeeded) return BadRequest(result.Errors);
 
             return Ok("Password alterada com sucesso");
+        }
+
+
+        [HttpGet("Pesquisar")]
+        public async Task<IActionResult> Pesquisar([FromQuery] ConcelhoEnum? concelho, [FromQuery] EscolaridadeEnum? escolaridade)
+        {
+            var query = _context.CV.AsQueryable(); // Ajusta para o nome da tua tabela de Candidatos/CVs
+
+            if (concelho.HasValue)
+            {
+                query = query.Where(c => c.Concelho == concelho.Value);
+            }
+
+            if (escolaridade.HasValue)
+            {
+                query = query.Where(c => c.Escolaridade == escolaridade.Value);
+            }
+
+            var resultados = await query.ToListAsync();
+            return Ok(resultados);
         }
     }
 }
