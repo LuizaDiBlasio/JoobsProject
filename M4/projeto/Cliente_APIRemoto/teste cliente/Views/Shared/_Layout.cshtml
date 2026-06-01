@@ -307,91 +307,110 @@
                 }
             });
 
-            // ================= NOTIFICAÇÕES =================
-                 async function fetchNotifications() {
-                try {
-                    const response = await fetch(API_URL, { headers: authHeaders });
-                    if (response.ok) {
-                        const data = await response.json();
+              // ================= NOTIFICAÇÕES =================
 
-                        const notifications = data.$values !== undefined ? data.$values : data;
+            const API_BASE_URL = '@Configuration["ApiSettings:BaseUrl"]';
+            const API_URL = `${API_BASE_URL}notifications`;
 
-                        renderNotifications(notifications);
-                    }
-                } catch (error) {
-                    console.error("Falha ao carregar notificações", error);
-                }
-            }
+            // 1. Obter o token de forma segura do Razor (fica vazio se o utilizador não estiver autenticado)
+            const jwtToken = '@(User.FindFirst("JWToken")?.Value)';
 
-            function renderNotifications(notifications) {
-                const list = document.getElementById('notificationList');
-                const badge = document.getElementById('notificationBadge');
+            // 2. Configurar os headers
+            const authHeaders = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${jwtToken}`
+            };
 
-                list.innerHTML = '';
+async function fetchNotifications() {
+    // IMPORTANTE: Só faz o fetch se existir um token válido
+    if (!jwtToken) return;
 
-               if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
-                    list.innerHTML = `
-                        <div class="text-center p-5 text-muted">
-                            <i class="far fa-bell-slash mb-3" style="font-size: 3rem; color: #dee2e6;"></i>
-                            <h6 class="text-secondary fw-normal mb-1">Caixa Limpa</h6>
-                            <p class="mb-0" style="font-size: 0.85rem;">Não tens novas notificações de momento.</p>
-                        </div>
-                    `;
-                    badge.style.display = 'none';
-                    return;
-                }
+    try {
+        const response = await fetch(API_URL, { headers: authHeaders });
+        if (response.ok) {
+            let data = await response.json();
+            
+            // O C# com ReferenceHandler.Preserve coloca a array dentro de $values.
+            // Precisamos de extrair a array real antes de a enviar para o renderNotifications.
+            const notificationsArray = data.$values ? data.$values : data;
+            
+            renderNotifications(notificationsArray);
+        } else {
+            console.error("Erro na API (Notificações):", response.status);
+        }
+    } catch (error) {
+        console.error("Falha ao carregar notificações", error);
+    }
+}
 
-                let unreadCount = 0;
+          function renderNotifications(notifications) {
+    const list = document.getElementById('notificationList');
+    const badge = document.getElementById('notificationBadge');
+    
+    list.innerHTML = ''; 
+    
+    if (!notifications || notifications.length === 0) {
+        list.innerHTML = '<div class="text-center p-3 text-muted">Sem notificações</div>';
+        badge.style.display = 'none';
+        return;
+    }
 
-                notifications.forEach(n => {
-                    if (!n.isRead) unreadCount++;
+    let unreadCount = 0;
 
-                    const item = document.createElement('div');
-                    item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
-                    item.innerHTML = `
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
-                                <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
-                            </div>
-                            <div class="notification-actions d-flex flex-column align-items-end">
-                                ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
-                                <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+    notifications.forEach(n => {
+        if (!n.isRead) unreadCount++;
 
-                if (unreadCount > 0) {
-                    badge.innerText = unreadCount;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
+        const item = document.createElement('div');
+        item.className = `notification-item ${n.isRead ? '' : 'unread'}`;
+        item.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="mb-1 text-sm" style="font-size: 0.9rem;">${n.message || 'Nova notificação'}</p>
+                    <small class="text-muted" style="font-size: 0.75rem;">${new Date(n.createdAt).toLocaleString('pt-PT')}</small>
+                </div>
+                <div class="notification-actions d-flex flex-column align-items-end">
+                    ${!n.isRead ? `<button class="btn btn-sm text-primary p-0 mb-1" onclick="markAsRead(${n.id})" title="Marcar como lida"><i class="fas fa-check-circle"></i></button>` : ''}
+                    <button class="btn btn-sm text-danger p-0" onclick="deleteNotification(${n.id})" title="Apagar"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+        list.appendChild(item);
+    });
 
-            async function markAsRead(id) {
-                await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
-                fetchNotifications();
-            }
+    if (unreadCount > 0) {
+        badge.innerText = unreadCount;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
 
-            async function markAllNotificationsRead() {
-                await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
-                fetchNotifications();
-            }
+async function markAsRead(id) {
+    if (!jwtToken) return;
+    await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
+    fetchNotifications(); 
+}
 
-            async function deleteNotification(id) {
-                await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
-                fetchNotifications();
-            }
+async function markAllNotificationsRead() {
+    if (!jwtToken) return;
+    await fetch(`${API_URL}/mark-all-read`, { method: 'POST', headers: authHeaders });
+    fetchNotifications();
+}
 
-            async function clearAllNotifications() {
-                if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
-                    await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
-                    fetchNotifications();
-                }
-            }
+async function deleteNotification(id) {
+    if (!jwtToken) return;
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
+    fetchNotifications();
+}
+
+async function clearAllNotifications() {
+    if (!jwtToken) return;
+    if(confirm("Tem a certeza que deseja limpar todas as notificações?")) {
+        await fetch(`${API_URL}/clear-all`, { method: 'DELETE', headers: authHeaders });
+        fetchNotifications();
+    }
+}
 
 
             // ================= FAVORITOS =================
