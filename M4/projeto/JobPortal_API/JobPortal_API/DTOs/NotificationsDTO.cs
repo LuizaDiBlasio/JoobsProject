@@ -4,7 +4,7 @@ namespace JobPortal_API.DTOs
 {
     public class NotificationsDTO
     {
-        public int IdNotification { get; set; }
+        public int NotificationId { get; set; }
         public string UserId { get; set; }
         [ForeignKey("UserId")]
 

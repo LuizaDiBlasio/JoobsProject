@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobPortal_API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260522104431_EnumConcelho_EnumContrato")]
-    partial class EnumConcelho_EnumContrato
+    [Migration("20260602111940_InitCreate")]
+    partial class InitCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -292,6 +292,8 @@ namespace JobPortal_API.Migrations
 
                     b.HasIndex("CandidatoIdCandidato");
 
+                    b.HasIndex("IdCandidatoFoto");
+
                     b.ToTable("Foto");
                 });
 
@@ -315,9 +317,37 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IdEmpresaFoto");
+
                     b.HasIndex("empresaIdEmpresa");
 
                     b.ToTable("LogoEmpresa");
+                });
+
+            modelBuilder.Entity("JobPortal_API.Models.Notifications", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"), 1L, 1);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notification")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("NotificationId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("JobPortal_API.Models.OfertaEmprego", b =>
@@ -337,9 +367,6 @@ namespace JobPortal_API.Migrations
 
                     b.Property<string>("Descricao")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EmpresaIdEmpresa")
-                        .HasColumnType("int");
 
                     b.Property<int>("IdEmpresa")
                         .HasColumnType("int");
@@ -371,7 +398,7 @@ namespace JobPortal_API.Migrations
 
                     b.HasKey("IdOferta");
 
-                    b.HasIndex("EmpresaIdEmpresa");
+                    b.HasIndex("IdEmpresa");
 
                     b.ToTable("OfertaEmprego");
                 });
@@ -610,11 +637,23 @@ namespace JobPortal_API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("JobPortal_API.Models.Candidato", null)
+                        .WithMany()
+                        .HasForeignKey("IdCandidatoFoto")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Candidato");
                 });
 
             modelBuilder.Entity("JobPortal_API.Models.LogoEmpresa", b =>
                 {
+                    b.HasOne("JobPortal_API.Models.Empresa", null)
+                        .WithMany()
+                        .HasForeignKey("IdEmpresaFoto")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("JobPortal_API.Models.Empresa", "empresa")
                         .WithMany("LogoEmpresa")
                         .HasForeignKey("empresaIdEmpresa")
@@ -628,7 +667,7 @@ namespace JobPortal_API.Migrations
                 {
                     b.HasOne("JobPortal_API.Models.Empresa", "Empresa")
                         .WithMany("OfertaEmprego")
-                        .HasForeignKey("EmpresaIdEmpresa")
+                        .HasForeignKey("IdEmpresa")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

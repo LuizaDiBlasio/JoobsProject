@@ -2,7 +2,6 @@
 using AutoMapper.QueryableExtensions;
 using JobPortal_API.Data;
 using JobPortal_API.DTOs;
-using JobPortal_API.Migrations;
 using JobPortal_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
