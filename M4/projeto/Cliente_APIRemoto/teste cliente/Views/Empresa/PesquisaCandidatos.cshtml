@@ -8,6 +8,15 @@
 
     <h2 class="mb-4"><i class="fa-solid fa-magnifying-glass me-2"></i> Pesquisa de Candidatos</h2>
 
+    <!-- ADICIONA ESTE BLOCO DE ALERTA AQUI -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="p-4 bg-light rounded-3 shadow-sm mb-5">
         <form method="post" asp-controller="Empresa" asp-action="PesquisaCandidatos" class="row g-3 align-items-end">
 
@@ -74,11 +83,7 @@
                 <div class="col-12 mb-3">
                     <div class="card border-0 shadow-sm p-4 hover-shadow">
                         <div class="row align-items-center">
-
-                            <div class="col-md-2 text-center">
-                                <img src="/images/default-avatar.png" alt="Foto Candidato" class="img-fluid rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover;" />
-                            </div>
-
+                           
                             <div class="col-md-7">
                                 <h4 class="fw-bold text-dark mb-2">@candidato.Nome</h4>
 
@@ -99,9 +104,12 @@
                             </div>
 
                             <div class="col-md-3 text-md-end text-center mt-3 mt-md-0">
-                                <a asp-controller="Candidato" asp-action="Details" asp-route-id="@candidato.IdCandidato"
-                                   class="btn btn-info text-white fw-bold px-4 py-2 rounded-3 shadow-sm" style="background-color: #4becde; border: none;">
-                                    Ver mais
+                                <a asp-action="DownloadPdf"
+                                   asp-controller="Cv"
+                                   asp-route-idCandidato="@candidato.IdCandidato"
+                                   class="btn btn-info text-white fw-bold shadow-sm"
+                                   style="background-color: #4becde; border: none;">
+                                    <i class="fa-solid fa-file-pdf me-1"></i> Visualizar CV
                                 </a>
                             </div>
 

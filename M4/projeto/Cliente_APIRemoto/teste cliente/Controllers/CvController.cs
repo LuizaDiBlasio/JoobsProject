@@ -16,7 +16,6 @@ using teste_cliente.Models.Enums;
 
 namespace teste_cliente.Controllers
 {
-    [Authorize(Roles = "Candidato")]
     public class CvController : Controller
     {
         private readonly string _baseUrl;
@@ -28,6 +27,7 @@ namespace teste_cliente.Controllers
             _baseUrl = _config["ApiSettings:BaseUrl"];
         }
 
+        [Authorize(Roles = "Candidato")]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -69,6 +69,7 @@ namespace teste_cliente.Controllers
         }
 
         // POST: Cv/Create  (criar ou atualizar)
+        [Authorize(Roles = "Candidato")]
         [HttpPost]
         public async Task<IActionResult> Create(CV cv)
         {
@@ -123,15 +124,36 @@ namespace teste_cliente.Controllers
             return RedirectToAction(nameof(Create));
         }
 
+
         // GET: Cv/DownloadPdf  —> gerar, guardar em FileCV e enviar ao browser
+        // ALTERAÇÃO: Permitir que Empresas e Admins também chamem este método
+        [Authorize(Roles = "Candidato, Admin, Empresa")]
         [HttpGet]
-        public async Task<IActionResult> DownloadPdf()
+        public async Task<IActionResult> DownloadPdf(int? idCandidato)
         {
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
 
-            var idCandidato = int.Parse(User.FindFirst("IdCandidato").Value);
+
+            //-------------------------------------
+            int idAlvo;
+
+            // Se veio um idCandidato nos parâmetros (Empresa a clicar), usamos esse ID.
+            // Se NÃO veio (Candidato a clicar no seu próprio menu), usamos o ID do utilizador logado.
+            if (idCandidato.HasValue)
+            {
+                idAlvo = idCandidato.Value;
+            }
+            else
+            {
+                var idClaim = User.FindFirst("IdCandidato")?.Value;
+                if (string.IsNullOrEmpty(idClaim)) return Unauthorized();
+                idAlvo = int.Parse(idClaim);
+            }
+            //-------------------------------------
+
+            //var idCandidato = int.Parse(User.FindFirst("IdCandidato").Value);
 
             // buscar CV atual
             CV cv;
@@ -139,7 +161,7 @@ namespace teste_cliente.Controllers
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var resp = await client.GetAsync(_baseUrl + $"cv/idCandidato?idCandidato={idCandidato}");
+                var resp = await client.GetAsync(_baseUrl + $"cv/idCandidato?idCandidato={idAlvo}");
                 if (!resp.IsSuccessStatusCode)
                 {
                     if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -148,9 +170,20 @@ namespace teste_cliente.Controllers
                         return Forbid();
                     }
 
+                    // -------------------------------------------
+
+                    // Se for a empresa e o CV não existir, volta para a pesquisa com erro detalhado
+                    if (User.IsInRole("Empresa"))
+                    {
+                        var corpoErro = await resp.Content.ReadAsStringAsync();
+                        TempData["ErrorMessage"] = $"API deu {resp.StatusCode} para o ID Alvo {idAlvo}. Resposta: {corpoErro}";
+                        return RedirectToAction("PesquisaCandidatos", "Empresa");
+                    }
+
+                    // -------------------------------------------
+
                     return RedirectToAction(nameof(Create));
-                }
-                    
+                }                   
 
                 cv = JsonConvert.DeserializeObject<CV>(await resp.Content.ReadAsStringAsync());
             }
@@ -162,7 +195,7 @@ namespace teste_cliente.Controllers
                     new AuthenticationHeaderValue("Bearer", token);
 
                 var respFoto = await httpFoto.GetAsync(
-                    _baseUrl + $"foto/BuscarFotoPorIdCandidato/{idCandidato}");
+                    _baseUrl + $"foto/BuscarFotoPorIdCandidato/{idAlvo}");
 
                 if (respFoto.IsSuccessStatusCode)
                 {
@@ -182,25 +215,36 @@ namespace teste_cliente.Controllers
             };
             var pdfBytes = await pdfResult.BuildFile(ControllerContext);
 
-            // upload do PDF ao API FileCV: tenta PUT e, se não existir, faz POST
-            using var upload = new HttpClient();
-            upload.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var form = new MultipartFormDataContent();
-            var byteContent = new ByteArrayContent(pdfBytes);
-            byteContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
-            form.Add(byteContent, "file", $"CV_{cv.Nome}.pdf");
-            form.Add(new StringContent(idCandidato.ToString()), "idCandidatoFile");
+            // Apenas faz o upload para a API se quem estiver a descarregar for o próprio Candidato
+            if (User.IsInRole("Candidato"))  // ----------------------------------------- LINHA
+            {  // ----------------------------------------- LINHA
+                // upload do PDF ao API FileCV: tenta PUT e, se não existir, faz POST
+                using var upload = new HttpClient();
+                upload.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var form = new MultipartFormDataContent();
+                var byteContent = new ByteArrayContent(pdfBytes);
+                byteContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/pdf");
+                form.Add(byteContent, "file", $"CV_{cv.Nome}.pdf");
+                form.Add(new StringContent(idAlvo.ToString()), "idCandidatoFile");
 
 
-            // 1) PUT para atualizar
-            var putResponse = await upload.PutAsync(_baseUrl + $"filecv/{idCandidato}", form);
-            // 2) se não existir, cria
-            if (putResponse.StatusCode == HttpStatusCode.NotFound)
-                await upload.PostAsync(_baseUrl + "filecv", form);
+                // 1) PUT para atualizar
+                var putResponse = await upload.PutAsync(_baseUrl + $"filecv/{idAlvo}", form);
+                // 2) se não existir, cria
+                if (putResponse.StatusCode == HttpStatusCode.NotFound)
+                    await upload.PostAsync(_baseUrl + "filecv", form);
+            } // ----------------------------------------- LINHA
 
             // devolver PDF ao browser
-            return File(pdfBytes, "application/pdf", $"CV_{cv.Nome}.pdf");
+            //return File(pdfBytes, "application/pdf", $"CV_{cv.Nome}.pdf");
+
+            // Força o browser a abrir a janela de guardar ficheiro/fazer download imediato
+            Response.Headers.Append("Content-Disposition", $"attachment; filename=CV_{cv.Nome}.pdf");
+
+            // devolver PDF ao browser
+            return File(pdfBytes, "application/pdf");
         }
     }
 }

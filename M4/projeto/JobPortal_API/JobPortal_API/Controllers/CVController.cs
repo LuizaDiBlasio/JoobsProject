@@ -38,6 +38,16 @@ namespace JobPortal_API.Controllers
         [HttpGet("idCandidato")]
         public async Task<ActionResult<CVDTO>> GetByCandidato([FromQuery] int idCandidato)
         {
+            // add 2/6
+            // Se for Administrador ou Empresa, ignoram totalmente a validação de propriedade do ID e avançam
+            if (User.IsInRole("Admin") || User.IsInRole("Empresa"))
+            {
+                // Salta direto para a busca do banco
+                return await BuscarCVNoBanco(idCandidato);
+            }
+            //-----------------------------------
+
+
             // ALTERAÇÃO: Validação de Segurança: Candidato só vê o próprio CV (Admin ignora o bloqueio)
             var identity = HttpContext.User.Identity as ClaimsIdentity;
             var idCandidatoClaim = identity?.FindFirst("IdCandidato")?.Value;
@@ -46,12 +56,31 @@ namespace JobPortal_API.Controllers
 
             int idCandidatoLogado = int.Parse(idCandidatoClaim);
 
-            if (idCandidatoLogado != idCandidato && !User.IsInRole("Admin") && !User.IsInRole("Empresa"))
+            if (idCandidatoLogado != idCandidato)
             {
                 return Forbid();
             }
             // Fim da ALTERAÇÃO
 
+            //var cv = await _context.CV
+            //    .Where(c => c.IdCandidatoCv == idCandidato)
+            //    .ProjectTo<CVDTO>(_mapper.ConfigurationProvider)
+            //    .FirstOrDefaultAsync();
+
+            //if (cv == null) return NotFound();
+
+            //return Ok(cv);  
+
+            // add 2/6
+            return await BuscarCVNoBanco(idCandidato);
+
+        }
+
+
+        // add 02/06
+        // Função auxiliar para evitar código repetido na busca
+        private async Task<ActionResult<CVDTO>> BuscarCVNoBanco(int idCandidato)
+        {
             var cv = await _context.CV
                 .Where(c => c.IdCandidatoCv == idCandidato)
                 .ProjectTo<CVDTO>(_mapper.ConfigurationProvider)
@@ -61,6 +90,7 @@ namespace JobPortal_API.Controllers
 
             return Ok(cv);
         }
+
 
         // POST api/cv
         [Authorize(Roles = "Admin, Candidato")]

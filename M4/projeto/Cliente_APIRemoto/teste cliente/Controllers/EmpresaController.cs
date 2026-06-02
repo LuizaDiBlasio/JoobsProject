@@ -405,14 +405,9 @@ namespace teste_cliente.Controllers
         [HttpPost]
         public async Task<IActionResult> PesquisaCandidatos(ConcelhoEnum? concelho, EscolaridadeEnum? escolaridade)
         {
-            // 1. Validar e obter o Token JWT do utilizador autenticado
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
-            if (string.IsNullOrEmpty(token))
-            {
-                return RedirectToAction("Login", "Auth");
-            }
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Auth");
 
-            // Instanciar a lista que receberá os candidatos filtrados
             List<Candidato> candidatos = new List<Candidato>();
 
             try
@@ -421,52 +416,72 @@ namespace teste_cliente.Controllers
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                    // 2. Construir o endereço da API passando os filtros por QueryString se existirem
-                    string url = "https://localhost:7211/api/candidato/Pesquisar?";
-                    if (concelho.HasValue) url += $"concelho={(int)concelho.Value}&";
-                    if (escolaridade.HasValue) url += $"escolaridade={(int)escolaridade.Value}";
+                    var queryParams = new List<string>();
+                    if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho.Value}");
+                    if (escolaridade.HasValue) queryParams.Add($"escolaridade={(int)escolaridade.Value}");
+
+                    string url = _baseUrl + "candidato/Pesquisar";
+                    if (queryParams.Any()) url += "?" + string.Join("&", queryParams);
 
                     using (var response = await httpClient.GetAsync(url))
                     {
-                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                        {
-                            return Forbid();
-                        }
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden) return Forbid();
 
                         if (response.IsSuccessStatusCode)
                         {
                             string apiResponse = await response.Content.ReadAsStringAsync();
 
-                            // Esta configuração faz o C# entender o formato "$values" e popular as listas internas automaticamente!
-                            var settings = new JsonSerializerSettings
-                            {
-                                MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
-                                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                            };
+                            // Desserializa com o DTO ajustado
+                            var dtoResult = JsonConvert.DeserializeObject<teste_cliente.Models.Dto.CandidatoPesquisaDTO>(apiResponse);
 
-                            candidatos = JsonConvert.DeserializeObject<List<Candidato>>(apiResponse, settings);
+                            if (dtoResult?.Candidatos != null)
+                            {
+                                foreach (var item in dtoResult.Candidatos)
+                                {
+                                    var candidatoReal = new Candidato
+                                    {
+                                        IdCandidato = item.IdCandidato,
+                                        Nome = item.Nome,
+                                        Email = item.Email,
+                                        Telefone = item.Telefone,
+                                        CV = new List<CV>() // Inicializa a lista que a tua View espera
+                                    };
+
+                                    // Se o candidato trouxer um CV, adiciona-o à lista do modelo
+                                    if (item.CV != null)
+                                    {
+                                        candidatoReal.CV.Add(new CV
+                                        {
+                                            Concelho = (ConcelhoEnum)item.CV.Concelho,
+                                            Escolaridade = (EscolaridadeEnum)item.CV.Escolaridade
+                                        });
+                                    }
+
+                                    candidatos.Add(candidatoReal);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            string erroApi = await response.Content.ReadAsStringAsync();
+                            ModelState.AddModelError("", $"Erro da API: {erroApi}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Erro ao comunicar com o servidor: " + ex.Message);
+                ModelState.AddModelError("", "Erro de comunicação: " + ex.Message);
             }
 
-            // 3. Alimentar as ViewBags com os Enums para reconstruir os dropdowns na View
             ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
             ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
-
-            // Converte para int? para bater certo com a lógica de comparação .ToString() do HTML
-            // Adicionando a interrogação (int?) para o C# aceitar o nulo do outro lado
             ViewBag.ConcelhoSelecionado = (int?)concelho;
             ViewBag.EscolaridadeSelecionado = (int?)escolaridade;
-
-            // O utilizador clicou no botão. Flag ativa para o HTML saber que foi uma pesquisa real
             ViewBag.FoiPesquisado = true;
 
             return View(candidatos);
         }
+
     }
 }
