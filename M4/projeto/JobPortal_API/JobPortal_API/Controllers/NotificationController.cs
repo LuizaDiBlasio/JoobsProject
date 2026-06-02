@@ -34,7 +34,7 @@ public class NotificationController : ControllerBase
         return Ok(notifications);
     }
 
-    [HttpPost("mark-read/{id}")]
+    [HttpPost("{id}")]
     public async Task<IActionResult> MarkAsRead(int id)
 
     {

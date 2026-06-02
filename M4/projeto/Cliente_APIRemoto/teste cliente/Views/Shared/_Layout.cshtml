@@ -458,7 +458,7 @@
 
             notifications.forEach(n => {
                 // ATENÇÃO: Ajustado para usar PascalCase (Id, IsRead, Message, CreatedAt) vindo do .NET
-                const id = n.Id || n.id;
+                const id = n.NotificationId || n.notificationId;
                 const isRead = n.IsRead !== undefined ? n.IsRead : n.isRead;
                 const message = n.Notification || n.notification || 'Nova notificação';
                 const createdAt = n.CreatedAt || n.createdAt;
@@ -494,7 +494,7 @@
 
         async function markAsRead(id) {
             if (!jwtToken) return;
-            await fetch(`${API_URL}/mark-read/${id}`, { method: 'POST', headers: authHeaders });
+            await fetch(`${API_URL}/${id}`, { method: 'POST', headers: authHeaders });
             fetchNotifications();
         }
 

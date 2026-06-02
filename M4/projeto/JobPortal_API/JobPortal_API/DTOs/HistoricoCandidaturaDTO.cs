@@ -10,7 +10,7 @@ namespace JobPortal_API.DTOs
 
         public int IdOferta { get; set; }
         public string Titulo { get; set; }
-        public ConcelhoEnum NomeConcelho { get; set; }
+        public ConcelhoEnum Concelho { get; set; }
         public RegimeTrabalhoEnum RegimeTrabalho { get; set; }
         public TipoContratoEnum TipoContrato { get; set; }
         public float? Salario { get; set; }

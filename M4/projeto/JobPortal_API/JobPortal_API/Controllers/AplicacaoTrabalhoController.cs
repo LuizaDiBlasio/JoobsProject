@@ -288,7 +288,7 @@ namespace JobPortal_API.Controllers
 
                                 IdOferta = o.IdOferta,
                                 Titulo = o.Titulo,
-                                NomeConcelho = o.Concelho,
+                                Concelho = o.Concelho,
                                 RegimeTrabalho = o.RegimeTrabalho,
                                 TipoContrato = o.TipoContrato,
                                 Salario = o.Salario,
