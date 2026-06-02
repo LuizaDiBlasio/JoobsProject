@@ -401,6 +401,12 @@ async function clearAllNotifications() {
 
 
             // ================= FAVORITOS =================
+                    const mapaConcelhos = @Html.Raw(Json.Serialize(
+                        Enum.GetValues(typeof(ConcelhoEnum))
+                                .Cast<ConcelhoEnum>()
+                                .ToDictionary(k => (int)k, v => v.GetDisplayName())
+                ));
+            document.addEventListener("DOMContentLoaded", atualizarBadgeFavoritos);
             async function atualizarBadgeFavoritos() {
                 try {
                     const res = await fetch('/OfertaEmprego/GetFavoritosIds');

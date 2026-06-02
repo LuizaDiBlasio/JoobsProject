@@ -21,6 +21,7 @@
                         <th>Data</th>
                         <th>Currículo</th>
                         <th>LinkedIn</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,6 +42,9 @@
                                 <a class="btn btn-warning btn-sm text-white" style="border-radius: 30px;" href="@candidatura.Candidato?.LinkedIn" target="_blank" rel="noopener noreferrer">
                                     Ver Perfil
                                 </a>
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-controller="Candidato" asp-route-id="@candidatura.IdCandidato" class="btn btn-warning btn-sm text-white" style="border-radius: 30px;">Ver mais</a>
                             </td>
                         </tr>
                     }
