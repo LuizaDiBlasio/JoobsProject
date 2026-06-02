@@ -6,7 +6,7 @@ namespace teste_cliente.Models
     public class Candidato
     {
         [Key]
-        public int IdCandidato { get; set; }
+        public int? IdCandidato { get; set; }
 
         [Required]
         public string Nome { get; set; }

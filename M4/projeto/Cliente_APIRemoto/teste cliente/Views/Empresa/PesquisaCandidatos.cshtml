@@ -1,0 +1,132 @@
+﻿@model IEnumerable<teste_cliente.Models.Candidato>
+
+@{
+    ViewData["Title"] = "Pesquisa de Candidatos";
+}
+
+<div class="container my-5">
+
+    <h2 class="mb-4"><i class="fa-solid fa-magnifying-glass me-2"></i> Pesquisa de Candidatos</h2>
+
+    <!-- ADICIONA ESTE BLOCO DE ALERTA AQUI -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="p-4 bg-light rounded-3 shadow-sm mb-5">
+        <form method="post" asp-controller="Empresa" asp-action="PesquisaCandidatos" class="row g-3 align-items-end">
+
+            <div class="col-md-5">
+                <label for="concelho" class="form-label fw-bold text-muted small">Concelho</label>
+                <select name="concelho" id="concelho" class="form-select border-0 shadow-sm py-2">
+                    <option value="">Todos os Concelhos...</option>
+                    @if (ViewBag.Concelhos != null)
+                    {
+                        foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Concelhos)
+                        {
+                            if (ViewBag.ConcelhoSelecionado != null && item.Value == ((int)ViewBag.ConcelhoSelecionado).ToString())
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+       
+            <div class="col-md-5">
+                <label for="escolaridade" class="form-label fw-bold text-muted small">Escolaridade Mínima</label>
+                <select name="escolaridade" id="escolaridade" class="form-select border-0 shadow-sm py-2">
+                    <option value="">Todas as Escolaridades</option>
+                    @if (ViewBag.Escolaridades != null)
+                    {
+                        foreach (var item in (IEnumerable<SelectListItem>)ViewBag.Escolaridades)
+                        {
+                            if (ViewBag.EscolaridadeSelecionado != null && item.Value == ((int)ViewBag.EscolaridadeSelecionado).ToString())
+                            {
+                                <option value="@item.Value" selected="selected">@item.Text</option>
+                            }
+                            else
+                            {
+                                <option value="@item.Value">@item.Text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-info w-100 py-2 text-white fw-bold shadow-sm" style="background-color: #4becde; border: none;">
+                    <i class="fa-solid fa-filter me-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <h3 class="mb-4 fw-bold">Resultados</h3>
+
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var candidato in Model)
+            {
+                var primeiroCV = candidato.CV?.FirstOrDefault();
+
+                <div class="col-12 mb-3">
+                    <div class="card border-0 shadow-sm p-4 hover-shadow">
+                        <div class="row align-items-center">
+                           
+                            <div class="col-md-7">
+                                <h4 class="fw-bold text-dark mb-2">@candidato.Nome</h4>
+
+                                <div class="d-flex flex-wrap gap-3 text-muted small">
+                                    <span>
+                                        <i class="fa-solid fa-location-dot me-1"></i>
+                                        @(primeiroCV != null ? primeiroCV.Concelho.ToString() : "Não definido")
+                                    </span>
+                                    <span>
+                                        <i class="fa-solid fa-graduation-cap me-1"></i>
+                                        @(primeiroCV != null ? primeiroCV.Escolaridade.ToString() : "Não especificada")
+                                    </span>
+                                    @if (candidato.Telefone.HasValue)
+                                    {
+                                        <span><i class="fa-solid fa-phone me-1"></i> @candidato.Telefone</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 text-md-end text-center mt-3 mt-md-0">
+                                <a asp-action="DownloadPdf"
+                                   asp-controller="Cv"
+                                   asp-route-idCandidato="@candidato.IdCandidato"
+                                   class="btn btn-info text-white fw-bold shadow-sm"
+                                   style="background-color: #4becde; border: none;">
+                                    <i class="fa-solid fa-file-pdf me-1"></i> Visualizar CV
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card border-0 shadow-sm p-5 text-center bg-white rounded-3">
+                    <i class="fa-solid fa-user-slash text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted fw-bold">Nenhum candidato encontrado.</h5>
+                    <p class="text-secondary small mb-0">Tente ajustar os filtros de pesquisa para obter resultados.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

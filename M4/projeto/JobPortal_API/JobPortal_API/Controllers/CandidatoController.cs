@@ -4,6 +4,7 @@ using JobPortal_API.Data;
 using JobPortal_API.DTOs;
 using JobPortal_API.Filters;
 using JobPortal_API.Models;
+using JobPortal_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -236,5 +237,46 @@ namespace JobPortal_API.Controllers
 
             return Ok("Password alterada com sucesso");
         }
+
+
+        [Authorize(Roles = "Admin, Empresa")]
+        [HttpGet("Pesquisar")]
+        public async Task<IActionResult> Pesquisar([FromQuery] ConcelhoEnum? concelho, [FromQuery] EscolaridadeEnum? escolaridade)
+        {
+            // Criamos o ponto de partida cruzando as duas tabelas diretamente via LINQ
+            var query = from cv in _context.CV
+                        join cand in _context.Candidato on cv.IdCandidatoCv equals cand.IdCandidato // Ajusta 'IdCandidatoCv' se o nome da FK no CV for diferente (ex: IdCandidato)
+                        select new { cv, cand };
+
+            // Aplica os filtros na tabela de CV
+            if (concelho.HasValue)
+            {
+                query = query.Where(x => x.cv.Concelho == concelho.Value);
+            }
+
+            if (escolaridade.HasValue)
+            {
+                query = query.Where(x => x.cv.Escolaridade == escolaridade.Value);
+            }
+
+            var dadosDoBanco = await query.ToListAsync();
+
+            // Formata o resultado no formato exato que o DTO do teu Cliente precisa
+            var candidatosFormatados = dadosDoBanco.Select(x => new
+            {
+                IdCandidato = x.cand.IdCandidato,
+                Nome = x.cand.Nome,
+                Email = x.cand.Email,
+                Telefone = x.cand.Telefone,
+                CV = new
+                {
+                    Concelho = (int)x.cv.Concelho,
+                    Escolaridade = (int)x.cv.Escolaridade
+                }
+            }).ToList();
+
+            return Ok(new { candidatos = candidatosFormatados });
+        }
+
     }
 }

@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using teste_cliente.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using teste_cliente.Models.Enums;
 using teste_cliente.Helpers;
+using System.Linq;
 
 namespace teste_cliente.Controllers
 {
@@ -239,7 +241,7 @@ namespace teste_cliente.Controllers
             return View(e);
         }
 
- 
+
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
@@ -317,15 +319,15 @@ namespace teste_cliente.Controllers
                     string apiResponse = await response.Content.ReadAsStringAsync();
                 }
             }
-            
+
             // Verifica a role do usuário logado
             if (User.IsInRole("Admin"))
             {
-                return RedirectToAction("Index", "Empresa"); 
+                return RedirectToAction("Index", "Empresa");
             }
             else if (User.IsInRole("Empresa"))
             {
-                return RedirectToAction("Login", "Auth"); 
+                return RedirectToAction("Login", "Auth");
             }
             else
             {
@@ -371,5 +373,115 @@ namespace teste_cliente.Controllers
 
             return RedirectToAction("Details", new { id });
         }
+
+
+        // ==================================================================================================== //
+        // MÉTODOS DE PESQUISA DE CANDIDATOS
+
+        [Authorize(Roles = "Admin, Empresa")]
+        [HttpGet]
+        public IActionResult PesquisaCandidatos()
+        {
+            // 1. Validar e obter o Token JWT do utilizador autenticado
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token))
+                return RedirectToAction("Login", "Auth");
+
+            // Começa com a lista totalmente vazia para não listar ninguém ao abrir a página
+            List<Candidato> candidatos = new List<Candidato>();
+
+            // 2. Alimentar as ViewBags com os Enums convertidos para SelectList usando o EnumHelper
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
+
+            // Ninguém pesquisou ainda. Flag para o HTML mostrar a mensagem "Pronto para pesquisar!"
+            ViewBag.FoiPesquisado = false;
+
+            return View(candidatos);
+        }
+
+
+        [Authorize(Roles = "Admin, Empresa")]
+        [HttpPost]
+        public async Task<IActionResult> PesquisaCandidatos(ConcelhoEnum? concelho, EscolaridadeEnum? escolaridade)
+        {
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Auth");
+
+            List<Candidato> candidatos = new List<Candidato>();
+
+            try
+            {
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    var queryParams = new List<string>();
+                    if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho.Value}");
+                    if (escolaridade.HasValue) queryParams.Add($"escolaridade={(int)escolaridade.Value}");
+
+                    string url = _baseUrl + "candidato/Pesquisar";
+                    if (queryParams.Any()) url += "?" + string.Join("&", queryParams);
+
+                    using (var response = await httpClient.GetAsync(url))
+                    {
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden) return Forbid();
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string apiResponse = await response.Content.ReadAsStringAsync();
+
+                            // Desserializa com o DTO ajustado
+                            var dtoResult = JsonConvert.DeserializeObject<teste_cliente.Models.Dto.CandidatoPesquisaDTO>(apiResponse);
+
+                            if (dtoResult?.Candidatos != null)
+                            {
+                                foreach (var item in dtoResult.Candidatos)
+                                {
+                                    var candidatoReal = new Candidato
+                                    {
+                                        IdCandidato = item.IdCandidato,
+                                        Nome = item.Nome,
+                                        Email = item.Email,
+                                        Telefone = item.Telefone,
+                                        CV = new List<CV>() // Inicializa a lista que a tua View espera
+                                    };
+
+                                    // Se o candidato trouxer um CV, adiciona-o à lista do modelo
+                                    if (item.CV != null)
+                                    {
+                                        candidatoReal.CV.Add(new CV
+                                        {
+                                            Concelho = (ConcelhoEnum)item.CV.Concelho,
+                                            Escolaridade = (EscolaridadeEnum)item.CV.Escolaridade
+                                        });
+                                    }
+
+                                    candidatos.Add(candidatoReal);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            string erroApi = await response.Content.ReadAsStringAsync();
+                            ModelState.AddModelError("", $"Erro da API: {erroApi}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Erro de comunicação: " + ex.Message);
+            }
+
+            ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
+            ViewBag.ConcelhoSelecionado = (int?)concelho;
+            ViewBag.EscolaridadeSelecionado = (int?)escolaridade;
+            ViewBag.FoiPesquisado = true;
+
+            return View(candidatos);
+        }
+
     }
 }
