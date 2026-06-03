@@ -265,16 +265,16 @@ namespace JobPortal_API.Controllers
                     // gera um link de confirmação para o email
                     string tokenLink = _config["WebAppSettings:BaseUrl"] + $"Auth/RecoverPassword?userId={user.Id}&token={Uri.EscapeDataString(myToken)}"; // garante que o token seja codificado corretamente mesmo com caracteres especiais
 
-                    APIResponse response = _mailHelper.SendEmail(dto.Email, "Retrieve your password", $"<h1>Retrieve your password, token expires in one hour</h1>" +
-                   $"<br><br><a href = \"{tokenLink}\">Click here to reset your password</a>"); //Contruir email e enviá-lo com o link
+                    APIResponse response = _mailHelper.SendEmail(dto.Email, "Recuperação de password", $"<h1>Recupere sua password, token expira em uma hora</h1>" +
+                   $"<br><br><a href = \"{tokenLink}\">Clique aqui para criar uma nova password</a>"); //Contruir email e enviá-lo com o link
 
                     if (response.IsSuccess) //se conseguiu enviar o email
                     {
-                        return StatusCode(200, new { Message = "A link to retrieve password has been sent to your email" });
+                        return StatusCode(200, new { Message = "Foi enviado para o seu email um link de recuperação de password" });
                     }
 
                     //se não conseguiu enviar email:
-                    return StatusCode(500, new { Message = "Unable to retrieve password, please contact admin" });
+                    return StatusCode(500, new { Message = "Não foi possível recuperar senha, favor contactar admin" });
 
                 }
 

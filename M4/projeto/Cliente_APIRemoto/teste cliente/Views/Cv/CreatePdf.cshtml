@@ -1,4 +1,5 @@
 ﻿@model teste_cliente.Models.CV
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment WebHostEnvironment
 
 @{
     Layout = null;
@@ -11,15 +12,34 @@
     }
     else
     {
-        imgSrc = Url.Content("~/img/icone_perfil.png");
+        // imgSrc = Url.Content("~/img/icone_perfil.png");
+    
+        var caminhoFisico = System.IO.Path.Combine(WebHostEnvironment.WebRootPath, "img", "icone_perfil.png");
+
+        if (System.IO.File.Exists(caminhoFisico))
+        {
+            var bytesIcone = System.IO.File.ReadAllBytes(caminhoFisico);
+            var base64Icone = Convert.ToBase64String(bytesIcone);
+            imgSrc = $"data:image/png;base64,{base64Icone}";
+        }
+        else
+        {
+            imgSrc = ""; // Fallback caso o ficheiro suma
+        }
     }    
 }
 
 <div class="container mt-4" style="font-family: Arial, sans-serif; color: #333;">
     <div class="text-center mb-4">
-        <img src="@imgSrc"
-			 alt="Foto de perfil"<a href="c:\users\formando\source\repos\upskill_projetcs\m4\projeto\cliente_apiremoto\teste cliente\views\cv\createpdf.cshtml">c:\users\formando\source\repos\upskill_projetcs\m4\projeto\cliente_apiremoto\teste cliente\views\cv\createpdf.cshtml</a>
-             style="width:120px; height:120px; object-fit:cover; border-radius:50%;" />
+        
+        <div style="width: 120px; height: 120px; overflow: hidden; border-radius: 60px; display: inline-block;">
+            <img src="@imgSrc"
+                 onerror="this.onerror=null; this.src='@imgSrc'"
+                 alt="Foto de perfil"
+                 width="120"
+                 height="120"
+                 style="display: block; max-width: 100%; height: auto;" />
+        </div>
 
         <h1 style="margin-top: 10px; font-size: 24px;">@Model.Nome</h1>
 
