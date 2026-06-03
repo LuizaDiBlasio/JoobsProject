@@ -66,7 +66,7 @@
                 <p id="errorMessage"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="continueButton">Continuar</button>
+                <button type="button" class="btn btn-primary" id="continueButton">Cancelar</button>
             </div>
         </div>
     </div>
@@ -88,7 +88,7 @@
             currentIdOferta = idOferta;
             console.log('Chamando downloadCV com idCandidato: ' + idCandidato + ', idOferta: ' + idOferta);
 
-            const response = await fetch('/FileCV/Download?idCandidato=' + idCandidato);
+            const response = await fetch('/Cv/DownloadPdf?idCandidato=' + idCandidato);
             if (response.ok && response.headers.get('content-type').includes('application/pdf')) {
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -109,7 +109,7 @@
             }
         } catch (error) {
             console.log('Erro no downloadCV: ' + error.message);
-            jQuery('#errorMessage').text('Ocorreu um erro ao tentar baixar o currículo.');
+            jQuery('#errorMessage').text('Candidato não possui CV na plataforma.');
             jQuery('#continueButton').attr('onclick', `window.location.href='/OfertaEmprego/Historico?idOferta=${currentIdOferta}'`);
             jQuery('#errorModal').modal('show');
         }

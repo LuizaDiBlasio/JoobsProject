@@ -193,19 +193,22 @@
 
             </form>
 
-
-            <!-- Separador e mensagem para apagar a conta -->
-            <hr class="my-4" />
-            <div>
-                <p class="lead">Pretende eliminar a sua conta?</p>
-                <form asp-controller="Candidato"
-                      asp-action="Delete"
-                      asp-route-id="@Model.IdCandidato"
-                      method="get"
-                      onsubmit="return confirm('Tem certeza?');">
-                    <button type="submit" class="btn btn-danger" style="border-radius: 30px;">Apagar conta</button>
-                </form>
-            </div>
+            @if (User.IsInRole("Candidato"))
+            {
+                <!-- Separador e mensagem para apagar a conta -->
+                <hr class="my-4" />
+                <div>
+                    <p class="lead">Pretende eliminar a sua conta?</p>
+                    <form asp-controller="Candidato"
+                          asp-action="Delete"
+                          asp-route-id="@Model.IdCandidato"
+                          method="get"
+                          onsubmit="return confirm('Tem certeza?');">
+                        <button type="submit" class="btn btn-danger" style="border-radius: 30px;">Apagar conta</button>
+                    </form>
+                </div>
+            }
+            
 
         </div>
     </div>

@@ -104,6 +104,12 @@
                             </div>
 
                             <div class="col-md-3 text-md-end text-center mt-3 mt-md-0">
+                                <a href="@Url.Action("Details", "Candidato", new { id = candidato.IdCandidato })"
+                                   class="btn text-white fw-bold shadow-sm"
+                                   style="background-color: coral; border: none; margin: 10px; padding: .375rem .75rem; font-size: 1rem;">
+                                    Ver Perfil
+                                </a>
+
                                 <a asp-action="DownloadPdf"
                                    asp-controller="Cv"
                                    asp-route-idCandidato="@candidato.IdCandidato"
