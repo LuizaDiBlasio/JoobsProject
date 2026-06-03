@@ -19,8 +19,8 @@
             <div class="btn-group">
                 <button type="submit" class="btn-register">Login</button>
 
-                @* _________ADIÇÃO DE CÓDIGO__________(ForgotPassword)*@
-                <a href="@Url.Action("ForgotPassword")" class="btn-register">Recuperar Password</a>
+                
+                <a href="@Url.Action("ForgotPassword")" class="btn-register btn-recovery">Recuperar Password</a>
             </div>
            
         </form>
@@ -50,6 +50,41 @@
 </div>
 
 <style>
+
+    .btn-group {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px; 
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .btn-register {
+        background-color: #F89B3D;
+        color: white;
+        border: none;
+        border-radius: 30px;
+        padding: 0.6rem 1rem;
+        width: 48%; 
+        font-weight: bold;
+        text-align: center;
+        text-decoration: none;
+        font-size: 0.9rem; 
+        display: inline-block; 
+        box-sizing: border-box;
+    }
+
+        .btn-register:hover {
+            background-color: #5de4d9;
+            color: white;
+        }
+
+    /* Se quiser aplicar estilos ou margens específicas apenas ao botão da direita */
+    .btn-recovery {
+        /* Caso queira dar um ajuste extra fino de margem para a direita */
+        /* margin-left: 5px; */
+    }
+
     .separator {
         display: flex;
         align-items: center;

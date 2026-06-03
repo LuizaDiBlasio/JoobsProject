@@ -1,5 +1,8 @@
 ﻿@model teste_cliente.Models.Empresa
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 @section Styles {
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
     <style>
@@ -130,7 +133,7 @@
                     </div>
                     <div class="form-group col-md-6">
                         <label asp-for="Concelho">Concelho</label>
-                        <select asp-for="Concelho" class="form-control" asp-items="ViewBag.Concelhos">
+                        <select asp-for="Concelho" class="form-select select2-searchable" asp-items="ViewBag.Concelhos">
                             <option value="">Selecione um Concelho</option>
                         </select>
                         <span asp-validation-for="Concelho" class="text-danger"></span>
@@ -376,6 +379,24 @@
                     e.preventDefault();
                     errors.forEach(err => err.field.textContent = err.msg);
                 }
+                });
+            });
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+        <script>
+            $(document).ready(function () {
+                // 2. ATIVAR O SELECT2 NOS CAMPOS DE CONCELHO
+                $('.select2-searchable').select2({
+                    placeholder: "Selecione ou digite um concelho...",
+                    allowClear: true,
+                    width: '100%',
+                    language: {
+                        noResults: function() {
+                            return "Nenhum concelho encontrado";
+                        }
+                    }
                 });
             });
         </script>

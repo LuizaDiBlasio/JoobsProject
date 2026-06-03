@@ -1,5 +1,8 @@
 ﻿@model IEnumerable<teste_cliente.Models.Candidato>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
 @{
     ViewData["Title"] = "Pesquisa de Candidatos";
 }
@@ -22,7 +25,7 @@
 
             <div class="col-md-5">
                 <label for="concelho" class="form-label fw-bold text-muted small">Concelho</label>
-                <select name="concelho" id="concelho" class="form-select border-0 shadow-sm py-2">
+                <select name="concelho" id="concelho" class="form-select select2-searchable">
                     <option value="">Todos os Concelhos...</option>
                     @if (ViewBag.Concelhos != null)
                     {
@@ -136,3 +139,27 @@
         }
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // 2. ATIVAR O SELECT2 NOS CAMPOS DE CONCELHO
+            $('.select2-searchable').select2({
+                placeholder: "Selecione ou digite um concelho...",
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
+            });
+        });
+    </script>
+}
