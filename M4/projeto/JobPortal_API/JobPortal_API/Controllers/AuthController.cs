@@ -24,9 +24,10 @@ namespace JobPortal_API.Controllers
         private readonly IUserHelper _userHelper;
         private readonly IConfiguration _configuration;
         private readonly IMailHelper _mailHelper;
+        private readonly IConfiguration _config;
 
         public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ApplicationDbContext context,
-            IUserHelper userHelper, IConfiguration configuration, IMailHelper mailHelper)
+            IUserHelper userHelper, IConfiguration configuration, IMailHelper mailHelper, IConfiguration config)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -34,6 +35,7 @@ namespace JobPortal_API.Controllers
             _userHelper = userHelper;
             _configuration = configuration;
             _mailHelper = mailHelper;
+            _config = config;
         }
 
         [HttpPost("register")]
@@ -261,7 +263,7 @@ namespace JobPortal_API.Controllers
                     string myToken = await _userHelper.GeneratePasswordResetTokenAsync(user); //gerar o token
 
                     // gera um link de confirmação para o email
-                    string tokenLink = $"http://localhost:5020/Auth/RecoverPassword?userId={user.Id}&token={Uri.EscapeDataString(myToken)}"; // garante que o token seja codificado corretamente mesmo com caracteres especiais
+                    string tokenLink = _config["WebAppSettings:BaseUrl"] + $"Auth/RecoverPassword?userId={user.Id}&token={Uri.EscapeDataString(myToken)}"; // garante que o token seja codificado corretamente mesmo com caracteres especiais
 
                     APIResponse response = _mailHelper.SendEmail(dto.Email, "Retrieve your password", $"<h1>Retrieve your password, token expires in one hour</h1>" +
                    $"<br><br><a href = \"{tokenLink}\">Click here to reset your password</a>"); //Contruir email e enviá-lo com o link

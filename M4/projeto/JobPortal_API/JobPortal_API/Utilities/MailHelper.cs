@@ -53,7 +53,9 @@ namespace JobPortal_API.Utilities
             {
                 using (var client = new MailKit.Net.Smtp.SmtpClient())// usa o protocolo Smtp para envio de emails
                 {
-                    client.Connect(smtp, int.Parse(port), false); //conecta ao email
+                    //client.Connect(smtp, int.Parse(port), false); //conecta ao email
+                    client.Connect(smtp, int.Parse(port), MailKit.Security.SecureSocketOptions.StartTls);
+                    client.AuthenticationMechanisms.Remove("XOAUTH2");
                     client.Authenticate(from, password); //autentica
                     client.Send(message); //envia
                     client.Disconnect(true); //fecha conexão

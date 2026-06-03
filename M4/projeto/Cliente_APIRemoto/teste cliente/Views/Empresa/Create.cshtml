@@ -24,7 +24,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="Concelho" class="control-label"></label>
-                <select asp-for="Concelho" asp-items="ViewBag.Concelhos" class="form-control form-select">
+                <select asp-for="Concelho" asp-items="ViewBag.Concelhos" class="form-select select2-searchable">
                     <option value="">-- Selecione um Concelho --</option>
                 </select>
                 <span asp-validation-for="Concelho" class="text-danger"></span>
@@ -72,4 +72,22 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // 2. ATIVAR O SELECT2 NOS CAMPOS DE CONCELHO
+            $('.select2-searchable').select2({
+                placeholder: "Selecione ou digite um concelho...",
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function() {
+                        return "Nenhum concelho encontrado";
+                    }
+                }
+            });
+        });
+    </script>
 }

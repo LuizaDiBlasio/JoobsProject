@@ -236,11 +236,11 @@ namespace teste_cliente.Controllers
 
                 if (apiCall.IsSuccessStatusCode)
                 {
-                    _flashMessage.Confirmation("A retrieve password link has been sent to your email");
+                    _flashMessage.Confirmation("Foi enviado para o seu email um link de recuperação de password");
                     return View(model);
                 }
 
-                _flashMessage.Danger("Unable to send link, please contact admin.");
+                _flashMessage.Danger("Não foi possível recuperar senha, favor contactar admin");
                 return View(model);
             }
             catch (Exception)

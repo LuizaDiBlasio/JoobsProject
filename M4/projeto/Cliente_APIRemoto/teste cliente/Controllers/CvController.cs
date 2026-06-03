@@ -13,6 +13,7 @@ using System.Text;
 using teste_cliente.Helpers;
 using teste_cliente.Models;
 using teste_cliente.Models.Enums;
+using Vereyon.Web;
 
 namespace teste_cliente.Controllers
 {
@@ -20,11 +21,13 @@ namespace teste_cliente.Controllers
     {
         private readonly string _baseUrl;
         private readonly IConfiguration _config;
+        private readonly IFlashMessage _flashMessage;
 
-        public CvController(IConfiguration config)
+        public CvController(IConfiguration config, IFlashMessage flash)
         {
             _config = config;
             _baseUrl = _config["ApiSettings:BaseUrl"];
+            _flashMessage = flash;
         }
 
         [Authorize(Roles = "Candidato")]
@@ -97,6 +100,9 @@ namespace teste_cliente.Controllers
                 {                
                     return Forbid();
                 }
+
+                _flashMessage.Confirmation("Seu currículo foi editado com sucesso!");
+
             }
             else
             {
@@ -105,6 +111,7 @@ namespace teste_cliente.Controllers
                 {
                     return Forbid();
                 }
+                _flashMessage.Confirmation("Seu currículo foi publicado com sucesso!");
             }
                 
 
