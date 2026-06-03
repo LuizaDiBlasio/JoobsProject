@@ -1,0 +1,109 @@
+﻿@model teste_cliente.Models.Candidato
+
+@{
+    ViewData["Title"] = "Perfil - Visualização";
+}
+
+<div class="container" style="padding-top:30px; padding-bottom:40px">
+
+    <h3 class="my-4 oferta_header">Perfil</h3>
+
+    <div class="row">
+        <div class="col-md-4 text-center">
+            @{
+                var defaultImage = "/img/icone_perfil.png";
+            }
+
+            @if (Model != null)
+            {
+                <img src="@Url.Action("GetImage", "Foto", new { id = Model.IdCandidato })"
+                     onerror="this.onerror=null;this.src='@defaultImage'"
+                     alt="Foto de perfil"
+                     class="rounded-circle mb-3"
+                     style="width: 150px; height: 150px; object-fit: cover;" />
+            }
+            else
+            {
+                <img src="@defaultImage"
+                     alt="Foto de perfil"
+                     class="rounded-circle mb-3"
+                     style="width: 150px; height: 150px; object-fit: cover;" />
+                <p class="text-danger">Erro ao carregar candidato.</p>
+            }
+
+            <br />
+
+            <h5 class="text-primary">@Model.Nome</h5>
+            <p class="text-muted mb-5">@Model.Email</p>
+
+            <div class="text-start mt-5">
+                <h5 style="color:#5de4d9"><strong>Informação:</strong></h5>
+                <p><strong>Nome:</strong>&nbsp;&nbsp;@Model.Nome</p>
+                <p><strong>Email:</strong>&nbsp;&nbsp;@Model.Email</p>
+                <p><strong>Telefone:</strong>&nbsp;&nbsp;@Model.Telefone</p>
+                <p><strong>Morada:</strong>&nbsp;&nbsp;@Model.Morada</p>
+                <p>
+                    <strong>Data de nascimento:</strong>&nbsp;&nbsp;
+                    @(Model.DataNasc.HasValue? Model.DataNasc.Value.ToString("dd/MM/yyyy") : "")
+                </p>
+                <p><strong>LinkedIn:</strong>&nbsp;&nbsp;@Model.LinkedIn</p>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <flash dismissable="true" />
+            <br />
+            <h5 class="mb-3 fw-bold">Detalhes do candidato:</h5>
+
+            <div class="row">
+                <div class="form-group col-md-6 mb-3">
+                    <label class="fw-bold text-muted">Nome</label>
+                    <div class="form-control bg-light text-muted">@Model.Nome</div>
+                </div>
+
+                <div class="form-group col-md-6 mb-3">
+                    <label class="fw-bold text-muted">Telefone</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-light text-muted">+351</span>
+                        </div>
+                        <div class="form-control bg-light text-muted">@Model.Telefone</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group col-md-6 mb-3">
+                    <label class="fw-bold text-muted">Email</label>
+                    <div class="form-control bg-light text-muted">@Model.Email</div>
+                </div>
+
+                <div class="form-group col-md-6 mb-3">
+                    <label class="fw-bold text-muted">Data de nascimento</label>
+                    <div class="form-control bg-light text-muted">
+                        @(Model.DataNasc.HasValue? Model.DataNasc.Value.ToString("dd/MM/yyyy") : "")
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="fw-bold text-muted">Morada</label>
+                <div class="form-control bg-light text-muted">@Model.Morada</div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="fw-bold text-muted">LinkedIn</label>
+                <div class="form-control bg-light text-muted">
+                    @if (!string.IsNullOrEmpty(Model.LinkedIn))
+                    {
+                        <a href="@Model.LinkedIn" target="_blank" class="text-decoration-none">@Model.LinkedIn</a>
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

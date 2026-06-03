@@ -98,6 +98,39 @@ namespace teste_cliente.Controllers
             }
             return View(candidato);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Perfil(int id)
+        {
+            Candidato candidato = new Candidato();
+
+            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+            if (string.IsNullOrEmpty(token))
+                return RedirectToAction("Login", "Auth");
+
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
+                        return Forbid();
+                    }
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return NotFound();
+                    }
+
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    candidato = JsonConvert.DeserializeObject<Candidato>(apiResponse);
+                }
+            }
+            return View(candidato);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult Create()
