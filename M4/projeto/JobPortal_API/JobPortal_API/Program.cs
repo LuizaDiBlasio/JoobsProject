@@ -18,12 +18,13 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("https://localhost:5020") // Your Razor Pages URL
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("https://jobportal.pt", "https://www.jobportal.pt")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
 });
 
 // 2. Add DbContext & Identity
@@ -37,6 +38,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 // 3. Merged Authentication & JWT Bearer Configuration
 var jwtSecretKey = builder.Configuration["Jwt:Key"] ?? "minha-chave-jwt-supersecreta-32bytes!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "https://api.jobportal.pt";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "https://jobportal.pt";
 
 builder.Services.AddAuthentication(options =>
 {
@@ -50,16 +53,16 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
 
-        // Validation rules (Adjust true/false based on your strictness needs)
+        // Validation rules
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        ValidIssuer = "JobPortalAPI",
-        ValidAudience = "JobPortalAPI",
+        ValidIssuer = jwtIssuer,       // Atualizado para ler a configuração
+        ValidAudience = jwtAudience,   // Atualizado para ler a configuração
 
         // Map roles correctly for [Authorize(Roles="Admin")]
         RoleClaimType = ClaimTypes.Role
-    };  
+    };
 });
 
 // 4. Register Services & Repositories
@@ -70,7 +73,6 @@ builder.Services.AddScoped<VerificaOfertaDeEmpresaFilter>();
 builder.Services.AddScoped<IMailHelper, MailHelper>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddTransient<SeedDB>();
-
 builder.Services.AddResponseCaching();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
@@ -86,7 +88,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "JobPortal_API", Version = "v1" });
-
 
     // Configuração de segurança para o cadeado (JWT)
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -117,7 +118,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -135,17 +135,19 @@ else
 }
 
 app.UseExceptionHandler("/error");
+
+// Redirecionamento de HTTPS deve vir o mais cedo possível no pipeline
+app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseRouting();
+
 // Habilitar Seed 
 using (var scope = app.Services.CreateScope())
 {
     var seeder = scope.ServiceProvider.GetRequiredService<SeedDB>();
     await seeder.SeedAsync();
 }
-
-
-app.UseHttpsRedirection();
 
 // IMPORTANT: CORS must be between UseRouting and UseAuthentication
 app.UseCors("AllowFrontend");
