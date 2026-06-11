@@ -52,7 +52,4 @@ Manutenção e refatoração de código legado, com correção de **bugs** e acr
 
 ---
 
-## 📞 Contato
-
-- [LinkedIn](https://www.linkedin.com/in/brenolucena)
-- [GitHub](https://github.com/Brenorml)
+**Para correr o projeto referir ao Readme.txt na pasta M4/projeto/utils**
