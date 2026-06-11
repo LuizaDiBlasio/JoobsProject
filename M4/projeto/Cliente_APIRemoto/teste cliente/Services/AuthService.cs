@@ -26,7 +26,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = obj,
-                Url = villaUrl + "Auth/login", // Restored to use your variable
+                Url = villaUrl + "api/Auth/login", // Restored to use your variable
             });
         }
 
@@ -36,7 +36,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = obj,
-                Url = villaUrl + "Auth/register", // Restored to use your variable
+                Url = villaUrl + "api/Auth/register", // Restored to use your variable
             });
         }
 
@@ -46,7 +46,7 @@ namespace teste_cliente.Services
             {
                 ApiType = SD.ApiType.POST,
                 Data = dto,
-                Url = villaUrl + "Auth/google-login", // Restored to use your variable
+                Url = villaUrl + "api/Auth/google-login", // Restored to use your variable
             });
         }
     }

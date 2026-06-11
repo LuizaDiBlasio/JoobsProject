@@ -4,6 +4,7 @@ using teste_cliente.Controllers;
 using teste_cliente.Services;
 using teste_cliente.Services.IServices;
 using Vereyon.Web;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddFlashMessage();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddDistributedMemoryCache();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("https://api.jobportal.pt");
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<NoticiasController>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -28,11 +29,20 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
+
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(100);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 var app = builder.Build();
@@ -50,7 +60,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+
+app.UseForwardedHeaders();
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseStatusCodePagesWithReExecute("/Home/Error/{0}");

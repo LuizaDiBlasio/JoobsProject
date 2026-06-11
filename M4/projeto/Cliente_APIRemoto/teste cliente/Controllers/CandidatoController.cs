@@ -20,13 +20,13 @@ namespace teste_cliente.Controllers
         private readonly IConfiguration _config;
         private readonly IFlashMessage _flashMessage;
 
-        public CandidatoController(IConfiguration config, IFlashMessage flashMessage) 
-        { 
+        public CandidatoController(IConfiguration config, IFlashMessage flashMessage)
+        {
             _config = config;
             _baseUrl = _config["ApiSettings:BaseUrl"];
             _flashMessage = flashMessage;
         }
-        
+
         [Authorize(Roles = "Admin, Candidato")]
         public async Task<IActionResult> Index()
         {
@@ -39,12 +39,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarTodos"))
+
+                // Confirmado com o Swagger: /api/candidato/BuscarTodos
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/candidato/BuscarTodos"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -66,7 +66,6 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Get(int id)
         {
@@ -80,11 +79,11 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
+                // Confirmado com o Swagger: /api/candidato/BuscarPorId/{id}
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/candidato/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -112,11 +111,10 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/candidato/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -138,7 +136,6 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-        
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -151,11 +148,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/EditarCandidato/" + id))
+
+                // Confirmado com o Swagger: /api/candidato/EditarCandidato/{id}
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/candidato/EditarCandidato/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -165,12 +163,11 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     candidato = JsonConvert.DeserializeObject<Candidato>(apiResponse);
-
                 }
                 return View(candidato);
             }
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Candidato candidato)
         {
@@ -184,11 +181,10 @@ namespace teste_cliente.Controllers
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.PutAsync(_baseUrl + "candidato/EditarCandidato/" + candidato.IdCandidato, content))
+                using (var response = await httpClient.PutAsync(_baseUrl + "api/candidato/EditarCandidato/" + candidato.IdCandidato, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -198,11 +194,10 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                 }
-               
+
                 return RedirectToAction("Details", new { id = candidato.IdCandidato });
             }
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Details(int id)
@@ -217,18 +212,15 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                // Tenta buscar o candidato pela API
-                using (var response = await httpClient.GetAsync(_baseUrl + "candidato/BuscarPorId/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/candidato/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        //vai cair aqui quando o filtro da API devolver 403
                         return Forbid();
                     }
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        // 404, 500…
                         return NotFound();
                     }
 
@@ -236,22 +228,20 @@ namespace teste_cliente.Controllers
                     candidato = JsonConvert.DeserializeObject<Candidato>(apiResponse);
                 }
 
-                // Se não encontrar o candidato, redireciona para a Home ou para outra página
                 if (candidato == null)
                 {
                     TempData["ErrorMessage"] = "Candidato não encontrado ou a conta foi apagada.";
                     return RedirectToAction("Index", "Home");
                 }
 
-                // Verifica se a foto existe para este candidato
-                using (var fotoResponse = await httpClient.GetAsync(_baseUrl + $"foto/BuscarFotoPorIdCandidato/{id}"))
+                // Chame de foto unificada
+                using (var fotoResponse = await httpClient.GetAsync(_baseUrl + $"api/foto/BuscarFotoPorIdCandidato/{id}"))
                 {
                     if (fotoResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
-                    
+
                     ViewBag.FotoExiste = fotoResponse.IsSuccessStatusCode;
                 }
             }
@@ -263,8 +253,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
-            Console.WriteLine($"MVC.Delete chamado com id = {id}");
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
@@ -274,14 +262,13 @@ namespace teste_cliente.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 var cookieHeader = HttpContext.Request.Headers["Cookie"].ToString();
-                System.Diagnostics.Debug.WriteLine("Cookie Header: " + cookieHeader);
                 if (!string.IsNullOrWhiteSpace(cookieHeader))
                 {
                     httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
                 }
 
-                var response = await httpClient.DeleteAsync(_baseUrl + "candidato/DeletarCandidato/" + id);
-                string apiResponse = await response.Content.ReadAsStringAsync();
+                // Confirmado com o Swagger: /api/candidato/DeletarCandidato/{id}
+                var response = await httpClient.DeleteAsync(_baseUrl + "api/candidato/DeletarCandidato/" + id);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -294,27 +281,20 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            // Verifica a role do usuário
             if (User.IsInRole("Admin"))
             {
-                // Admin apenas redireciona
                 TempData["SuccessMessage"] = "Candidato apagado com sucesso.";
-                return RedirectToAction("Index", "Candidato"); // Exemplo: lista de candidatos
+                return RedirectToAction("Index", "Candidato");
             }
             else if (User.IsInRole("Candidato"))
             {
-                // 1) Limpa o cookie de autenticação
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                // 2) Limpa a sessão
                 HttpContext.Session.Clear();
-                // 3) Mensagem
                 TempData["SuccessMessage"] = "Conta apagada com sucesso.";
-                // 4) Redireciona para Home
                 return RedirectToAction("Index", "Home");
             }
             else
             {
-                // fallback seguro
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -336,11 +316,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync(_baseUrl + $"aplicacao/historico-candidato?idCandidato={idCandidato}"))
-                {   
+
+                // Mapeamento mantido para a rota de histórico
+                using (var response = await httpClient.GetAsync(_baseUrl + $"api/aplicacao/historico-candidato?idCandidato={idCandidato}"))
+                {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -362,23 +343,24 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
             var dto = new
             {
                 IdCandidato = id,
                 CurrentPassword = currentPassword,
                 NewPassword = newPassword
             };
+
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization =
-                 new AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var content = new StringContent(
                 JsonConvert.SerializeObject(dto),
                 Encoding.UTF8,
                 "application/json");
 
-            var response = await httpClient.PostAsync(
-                _baseUrl + "candidato/ChangePassword/" + id, content);
+            // Confirmado com o Swagger: /api/candidato/ChangePassword/{id}
+            var response = await httpClient.PostAsync(_baseUrl + "api/candidato/ChangePassword/" + id, content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -387,11 +369,10 @@ namespace teste_cliente.Controllers
             else
             {
                 var error = await response.Content.ReadAsStringAsync();
-                _flashMessage.Confirmation("Erro: " + error) ;
+                _flashMessage.Danger("Erro: " + error);
             }
 
             return RedirectToAction("Details", new { id });
         }
-
     }
 }

@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NuGet.Common;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Text;
 using teste_cliente.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace teste_cliente.Controllers
 {
@@ -20,6 +19,7 @@ namespace teste_cliente.Controllers
             _config = config;
             _baseUrl = _config["ApiSettings:BaseUrl"];
         }
+
         public async Task<IActionResult> Index()
         {
             List<LogoEmpresa> logoList = new List<LogoEmpresa>();
@@ -32,11 +32,11 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "Logo"))
+                // CORREÇÃO: Adicionado prefixo "api/" e corrigido para minúsculas conforme o Swagger
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/logo"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -51,15 +51,16 @@ namespace teste_cliente.Controllers
 
             return View(logoList);
         }
+
         [HttpGet]
         public ViewResult Create()
         {
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> Create(LogoEmpresa logo)
         {
-
             if (Request.Form.Files.Count > 0)
             {
                 var file = Request.Form.Files.FirstOrDefault();
@@ -82,9 +83,10 @@ namespace teste_cliente.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(logo), Encoding.UTF8, "application/json");
-                using (var response = await httpClient.PostAsync(_baseUrl + "Logo/", content))
-                {   
 
+                // CORREÇÃO: Alinhado para o POST "api/logo" sem barras duplas residuais no final
+                using (var response = await httpClient.PostAsync(_baseUrl + "api/logo", content))
+                {
                     if (response.IsSuccessStatusCode)
                     {
                         string apiResponse = await response.Content.ReadAsStringAsync();
@@ -94,10 +96,8 @@ namespace teste_cliente.Controllers
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
-                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                             return Forbid();
                         }
-                        // Log ou tratamento de erro
                         var errorResponse = await response.Content.ReadAsStringAsync();
                         ModelState.AddModelError("", $"API Error: {errorResponse}");
                         return View(logo);
@@ -107,20 +107,16 @@ namespace teste_cliente.Controllers
             return RedirectToAction("Index");
         }
 
-        // Ação proxy para criar/atualizar o logo
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdateLogo()
         {
-            // Obtém o valor do campo oculto "IdEmpresaFoto" do formulário
             var idEmpresaStr = Request.Form["IdEmpresaFoto"].ToString();
             if (string.IsNullOrEmpty(idEmpresaStr) || !int.TryParse(idEmpresaStr, out int idEmpresa))
             {
                 ModelState.AddModelError("", "Id da Empresa inválido.");
-                // Como não temos um ID válido, redireciona para o Index da Empresa (ou outra página de erro)
                 return RedirectToAction("Index", "Empresa");
             }
 
-            // Verifica se foi enviado um ficheiro
             var file = Request.Form.Files.FirstOrDefault();
             if (file == null || file.Length == 0)
             {
@@ -139,7 +135,6 @@ namespace teste_cliente.Controllers
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
 
-            // Prepara o conteúdo multipart/form-data para enviar para a API
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -151,22 +146,22 @@ namespace teste_cliente.Controllers
                     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
                     formContent.Add(fileContent, "file", file.FileName);
 
-                    var apiResponse = await httpClient.PostAsync(_baseUrl + "logo/update", formContent);
+                    // CORREÇÃO: Atualizado com "api/" e ajustado o "Update" com "U" maiúsculo conforme exige o Swagger
+                    var apiResponse = await httpClient.PostAsync(_baseUrl + "api/logo/Update", formContent);
                     if (!apiResponse.IsSuccessStatusCode)
                     {
                         if (apiResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
-                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                             return Forbid();
                         }
-                        
+
                         var errorMessage = await apiResponse.Content.ReadAsStringAsync();
                         TempData["ErrorMessage"] = $"Erro ao atualizar o logo: {errorMessage}";
                         return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
                     }
                 }
             }
-            TempData["SuccessMessage"] = "Logo atualizado com sucesso.";
+            TempData["SuccessMessage"] = "Logo updated successfully.";
             return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
         }
 
@@ -179,29 +174,23 @@ namespace teste_cliente.Controllers
                 return Forbid();
 
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var apiResponse = await httpClient.GetAsync(
-                _baseUrl + $"logo/empresa/{id}");
+            // CORREÇÃO: Adicionado o prefixo "api/" para bater com o GET do Swagger (/api/logo/empresa/{idEmpresa})
+            var apiResponse = await httpClient.GetAsync(_baseUrl + $"api/logo/empresa/{id}");
 
             if (apiResponse.StatusCode == HttpStatusCode.Forbidden)
                 return Forbid();
 
-            // Se a API devolveu diretamente o arquivo binário (image/jpeg)
             if (apiResponse.Content.Headers.ContentType?.MediaType?.StartsWith("image/") == true)
             {
                 var imageBytes = await apiResponse.Content.ReadAsByteArrayAsync();
                 return File(imageBytes, apiResponse.Content.Headers.ContentType.MediaType);
             }
 
-            // Se a API devolveu JSON (caso não exista logo), vamos retornar a imagem padrão
-            // (ou poderíamos detectar 404 acima e saltar direto para o default)
-            var defaultPath = Path.Combine(
-                Directory.GetCurrentDirectory(), "wwwroot", "img", "icone_perfil.png");
+            var defaultPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "icone_perfil.png");
             var defaultBytes = System.IO.File.ReadAllBytes(defaultPath);
             return File(defaultBytes, "image/png");
         }
-
     }
 }

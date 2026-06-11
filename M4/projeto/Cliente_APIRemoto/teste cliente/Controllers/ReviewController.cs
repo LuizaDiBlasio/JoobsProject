@@ -19,11 +19,11 @@ namespace teste_cliente.Controllers
         private readonly IConfiguration _config;
         private readonly IFlashMessage _flashMessage;
 
-        public ReviewController(IConfiguration config)
+        public ReviewController(IConfiguration config, IFlashMessage flashMessage)
         {
             _config = config;
             apiBaseUrl = _config["ApiSettings:BaseUrl"];
-
+            _flashMessage = flashMessage;
         }
 
         public async Task<IActionResult> Index(int? empresaId)
@@ -36,8 +36,8 @@ namespace teste_cliente.Controllers
             {
                 using (var httpClient = new HttpClient())
                 {
-                    // Obter reviews da empresa
-                    using (var response = await httpClient.GetAsync($"{apiBaseUrl}review/empresa/{empresaId}"))
+                    // CORREÇÃO: Adicionado o prefixo "api/" para listar as reviews da empresa conforme o Swagger
+                    using (var response = await httpClient.GetAsync($"{apiBaseUrl}api/review/empresa/{empresaId}"))
                     {
                         if (!response.IsSuccessStatusCode)
                         {
@@ -50,8 +50,8 @@ namespace teste_cliente.Controllers
                         }
                     }
 
-                    // Obter dados da empresa
-                    using (var response = await httpClient.GetAsync($"{apiBaseUrl}empresa/public/BuscarPorId/{empresaId}"))
+                    // CORREÇÃO: Rota corrigida com o padrão real unificado "api/empresa/BuscarPorId/{id}"
+                    using (var response = await httpClient.GetAsync($"{apiBaseUrl}api/empresa/BuscarPorId/{empresaId}"))
                     {
                         if (!response.IsSuccessStatusCode)
                         {
@@ -70,8 +70,11 @@ namespace teste_cliente.Controllers
                         var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
                         if (string.IsNullOrEmpty(token))
                             return RedirectToAction("Login", "Auth");
+
                         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                        using (var response = await httpClient.GetAsync($"{apiBaseUrl}logo/{empresaId}"))
+
+                        // CORREÇÃO: Rota atualizada para o padrão correto do Swagger "api/logo/empresa/{id}"
+                        using (var response = await httpClient.GetAsync($"{apiBaseUrl}api/logo/empresa/{empresaId}"))
                         {
                             if (response.IsSuccessStatusCode)
                             {
@@ -86,7 +89,6 @@ namespace teste_cliente.Controllers
                             {
                                 if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                                 {
-                                    // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                                     return Forbid();
                                 }
                             }
@@ -98,7 +100,7 @@ namespace teste_cliente.Controllers
             ViewBag.Empresa = empresa;
             ViewBag.LogoBase64 = logoBase64;
             return View(reviewList);
-        }        
+        }
 
         [HttpPost]
         [Authorize]
@@ -108,7 +110,7 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
-            // Log dos valores recebidos
+
             Console.WriteLine("Valores recebidos: IdEmpresa={0}, Rating={1}, Titulo={2}, Descricao={3}, NomeUsuario={4}, DataCriacao={5}",
                 review.IdEmpresa, review.Rating, review.Titulo, review.Descricao, review.NomeUsuario, review.DataCriacao);
 
@@ -116,19 +118,17 @@ namespace teste_cliente.Controllers
             {
                 review.DataCriacao = DateTime.Now;
 
-                // Buscar o nome do candidato com base no email
                 string email = User.Identity.Name ?? "Usuário Anônimo";
                 string nomeCandidato = email;
-
-                
 
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    
+
                     try
                     {
-                        var response = await httpClient.GetAsync($"{apiBaseUrl}candidato/BuscarPorId/{idCandidato}");
+                        // CORREÇÃO: Adicionado prefixo "api/" e corrigido para "BuscarPorId" com o d minúsculo
+                        var response = await httpClient.GetAsync($"{apiBaseUrl}api/candidato/BuscarPorId/{idCandidato}");
                         if (response.IsSuccessStatusCode)
                         {
                             string apiResponse = await response.Content.ReadAsStringAsync();
@@ -139,7 +139,6 @@ namespace teste_cliente.Controllers
                         {
                             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                             {
-                                // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                                 return Forbid();
                             }
                             if (!response.IsSuccessStatusCode)
@@ -168,7 +167,8 @@ namespace teste_cliente.Controllers
                         Encoding.UTF8,
                         "application/json");
 
-                    using (var response = await httpClient.PostAsync($"{apiBaseUrl}review", content))
+                    // CORREÇÃO: Adicionado o prefixo "api/" para submeter a nova avaliação no POST do Swagger
+                    using (var response = await httpClient.PostAsync($"{apiBaseUrl}api/review", content))
                     {
                         string responseContent = await response.Content.ReadAsStringAsync();
                         Console.WriteLine("Resposta da API: Status = " + response.StatusCode + ", Corpo = " + responseContent);
@@ -181,14 +181,12 @@ namespace teste_cliente.Controllers
                         {
                             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                             {
-                                // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                                 return Forbid();
                             }
                             if (!response.IsSuccessStatusCode)
                             {
                                 return NotFound();
                             }
-                            
                         }
                     }
                 }
@@ -205,7 +203,6 @@ namespace teste_cliente.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int idReview, int idEmpresa)
         {
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
@@ -221,7 +218,8 @@ namespace teste_cliente.Controllers
                     httpClient.DefaultRequestHeaders.Add("Cookie", cookieHeader);
                 }
 
-                var response = await httpClient.DeleteAsync(apiBaseUrl + "review/" + idReview);
+                // CORREÇÃO: Adicionado o prefixo "api/" para invocar o DELETE do Swagger /api/review/{id}
+                var response = await httpClient.DeleteAsync(apiBaseUrl + "api/review/" + idReview);
                 string apiResponse = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
@@ -231,12 +229,11 @@ namespace teste_cliente.Controllers
                         return Forbid();
                     }
                     _flashMessage.Danger("Não foi possível apagar review.");
-                    return RedirectToAction("Details","Empresa", new { id = idEmpresa });
+                    return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
                 }
             }
- 
-             return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
+
+            return RedirectToAction("Details", "Empresa", new { id = idEmpresa });
         }
     }
 }
-

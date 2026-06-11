@@ -12,6 +12,7 @@ using JobPortal_API.Filters;
 using System.Security.Claims;
 using System.Text;
 using JobPortal_API.Utilities.Interfaces;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("https://jobportal.pt", "https://www.jobportal.pt")
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
 
@@ -116,6 +118,13 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -137,7 +146,8 @@ else
 app.UseExceptionHandler("/error");
 
 // Redirecionamento de HTTPS deve vir o mais cedo possível no pipeline
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+app.UseForwardedHeaders();
 
 app.UseStaticFiles();
 app.UseRouting();

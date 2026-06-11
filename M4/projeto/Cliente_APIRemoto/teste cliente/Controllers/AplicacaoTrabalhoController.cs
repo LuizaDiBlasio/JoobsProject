@@ -18,8 +18,8 @@ namespace teste_cliente.Controllers
         {
             _config = config;
             _baseUrl = _config["ApiSettings:BaseUrl"];
-
         }
+
         public async Task<IActionResult> Index()
         {
             List<AplicacaoTrabalho> aplicacaoList = new List<AplicacaoTrabalho>();
@@ -31,11 +31,10 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync( _baseUrl + "aplicacao/BuscarTodas"))
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/aplicacao/BuscarTodas"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -57,7 +56,6 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Get(int id)
         {
@@ -65,14 +63,14 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/BuscarPorID/" + id))
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/aplicacao/BuscarPorID/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -93,25 +91,24 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Create(Models.AplicacaoTrabalho aplicacao)
         {
-           
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
             using (var httpClient = new HttpClient())
             {
                 StringContent content = new StringContent(JsonConvert.SerializeObject(aplicacao), Encoding.UTF8, "application/json");
-                    
+
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                    
-                using (var response = await httpClient.PostAsync(_baseUrl + "aplicacao/CriarAplicacao/", content))
+
+                // CORREÇÃO: Removida a barra '/' extra que estava no fim do URL
+                using (var response = await httpClient.PostAsync(_baseUrl + "api/aplicacao/CriarAplicacao", content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -138,12 +135,11 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/EditarAplicacao/" + id))
+
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/aplicacao/EditarAplicacao/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -152,7 +148,6 @@ namespace teste_cliente.Controllers
                     }
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     aplicacao = JsonConvert.DeserializeObject<AplicacaoTrabalho>(apiResponse);
-
                 }
                 return View(aplicacao);
             }
@@ -172,12 +167,11 @@ namespace teste_cliente.Controllers
                 StringContent content = new StringContent(JsonConvert.SerializeObject(aplicacao), Encoding.UTF8, "application/json");
 
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.PutAsync(_baseUrl + "aplicacao/EditarAplicacao/" + aplicacao.IdAplicacao, content))
+
+                using (var response = await httpClient.PutAsync(_baseUrl + "api/aplicacao/EditarAplicacao/" + aplicacao.IdAplicacao, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -189,10 +183,7 @@ namespace teste_cliente.Controllers
                     e = JsonConvert.DeserializeObject<AplicacaoTrabalho>(apiResponse);
                 }
                 return RedirectToAction("Index");
-
             }
-
-            return View(e);
         }
 
         [HttpGet]
@@ -207,12 +198,11 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.GetAsync(_baseUrl + "aplicacao/BuscarPorID/" + id))
+
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/aplicacao/BuscarPorID/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -222,11 +212,11 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     aplicacao = JsonConvert.DeserializeObject<AplicacaoTrabalho>(apiResponse);
-
                 }
                 return View(aplicacao);
             }
         }
+
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -239,11 +229,10 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.DeleteAsync(_baseUrl + "aplicacao/DeletarAplicacao/" + id))
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "api/aplicacao/DeletarAplicacao/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -269,18 +258,15 @@ namespace teste_cliente.Controllers
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
 
-            // Verifica se já existe candidatura
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
                 httpClient.BaseAddress = new Uri(_baseUrl);
-                
-                var response = await httpClient.GetAsync($"aplicacao/verificar?idOferta={id}&idCandidato={idCandidato}");
+
+                var response = await httpClient.GetAsync($"api/aplicacao/verificar?idOferta={id}&idCandidato={idCandidato}");
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
-                    // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                     return Forbid();
                 }
                 if (!response.IsSuccessStatusCode)
@@ -288,14 +274,11 @@ namespace teste_cliente.Controllers
                     return NotFound();
                 }
 
-                if (response.IsSuccessStatusCode)
+                bool jaExiste = bool.Parse(await response.Content.ReadAsStringAsync());
+                if (jaExiste)
                 {
-                    bool jaExiste = bool.Parse(await response.Content.ReadAsStringAsync());
-                    if (jaExiste)
-                    {
-                        TempData["Mensagem"] = "Já submeteste uma candidatura para esta oferta.";
-                        return RedirectToAction("Details", "OfertaEmprego", new { id = id });
-                    }
+                    TempData["Mensagem"] = "Já submeteste uma candidatura para esta oferta.";
+                    return RedirectToAction("Details", "OfertaEmprego", new { id = id });
                 }
 
                 // Criar nova candidatura
@@ -308,7 +291,8 @@ namespace teste_cliente.Controllers
                 var json = JsonConvert.SerializeObject(novaAplicacao);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var postResponse = await httpClient.PostAsync("aplicacao/CriarAplicacao", content);
+                // CORREÇÃO ESSENCIAL: Faltava adicionar o prefixo "api/" nesta linha!
+                var postResponse = await httpClient.PostAsync("api/aplicacao/CriarAplicacao", content);
                 if (!postResponse.IsSuccessStatusCode)
                 {
                     TempData["Mensagem"] = "Ocorreu um erro ao candidatar-te.";
@@ -332,14 +316,13 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                string apiUrl = _baseUrl + $"aplicacao/idOferta?idOferta={idOferta}";
+
+                string apiUrl = _baseUrl + $"api/aplicacao/idOferta?idOferta={idOferta}";
 
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)

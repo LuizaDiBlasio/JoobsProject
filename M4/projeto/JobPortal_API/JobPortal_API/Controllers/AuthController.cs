@@ -41,19 +41,41 @@ namespace JobPortal_API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterationRequestDTO model)
         {
-            var user = new ApplicationUser
+            if (model == null)
             {
-                UserName = model.UserName,
-                Email = model.Email
-            };
+                return BadRequest(new { mensagem = "Os dados do registo não podem estar vazios." });
+            }
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            // Iniciar uma transação para garantir consistência entre o Identity e o DbContext
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (result.Succeeded)
+            try
             {
-                await _userManager.AddToRoleAsync(user, model.Role); // "Admin", "Candidato", "Empresa"
+                var user = new ApplicationUser
+                {
+                    UserName = model.UserName,
+                    Email = model.Email
+                };
 
-                // ALTERAÇÃO: Validação para Candidato (ignora maiúsculas/minúsculas)
+                // 1. Criar Utilizador no Identity
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (!result.Succeeded)
+                {
+                    // Retorna os erros específicos do Identity (ex: password fraca, email duplicado)
+                    return BadRequest(new { mensagem = "Erro na validação do utilizador.", erros = result.Errors });
+                }
+
+                // 2. Atribuir Role
+                var roleResult = await _userManager.AddToRoleAsync(user, model.Role);
+                if (!roleResult.Succeeded)
+                {
+                    await _userManager.DeleteAsync(user); // Remove o user criado se a role falhar
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { mensagem = "Erro ao atribuir a role.", erros = roleResult.Errors });
+                }
+
+                // 3. Criar o perfil específico (Candidato ou Empresa)
                 if (model.Role != null && model.Role.Equals("Candidato", StringComparison.OrdinalIgnoreCase))
                 {
                     var candidato = new Candidato
@@ -64,7 +86,6 @@ namespace JobPortal_API.Controllers
                     };
                     _context.Candidato.Add(candidato);
                 }
-                // ALTERAÇÃO: Validação para Empresa (ignora maiúsculas/minúsculas tbm)
                 else if (model.Role != null && model.Role.Equals("Empresa", StringComparison.OrdinalIgnoreCase))
                 {
                     var empresa = new Empresa
@@ -75,12 +96,42 @@ namespace JobPortal_API.Controllers
                     };
                     _context.Empresa.Add(empresa);
                 }
+                else
+                {
+                    // Se a role enviada não for válida, cancela tudo
+                    await _userManager.DeleteAsync(user);
+                    await transaction.RollbackAsync();
+                    return BadRequest(new { mensagem = $"A role '{model.Role}' não é válida. Escolha 'Candidato' ou 'Empresa'." });
+                }
 
+                // 4. Gravar o Perfil na Base de Dados
                 await _context.SaveChangesAsync();
 
-                return Ok(new { mensagem = "User created successfully"});
+                // Se tudo correu bem, confirma a transação no SQL Server
+                await transaction.CommitAsync();
+
+                return Ok(new { mensagem = "User created successfully" });
             }
-            return BadRequest(result.Errors);
+            catch (Exception ex)
+            {
+                // Se houver qualquer falha (ex: erro no SQL), desfaz as alterações
+                await transaction.RollbackAsync();
+
+                // Captura a mensagem mais profunda (geralmente o erro real do SQL Server)
+                var erroReal = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+
+                Console.WriteLine($"ERRO NO REGISTO: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"INNER EXCEPTION: {erroReal}");
+
+                // Retorna o erro detalhado para conseguires ver no Frontend (F12 -> Network)
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro interno ao processar registo.",
+                    detalhe = ex.Message,
+                    erroInterno = erroReal,
+                    stackTrace = ex.StackTrace
+                });
+            }
         }
 
         [HttpPost("login")]

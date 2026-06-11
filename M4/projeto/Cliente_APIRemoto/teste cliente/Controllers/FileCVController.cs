@@ -33,7 +33,7 @@ namespace teste_cliente.Controllers
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var response = await _httpClient.GetAsync(_baseUrl + $"filecv/por-candidato/{idCandidato}");
+                var response = await _httpClient.GetAsync(_baseUrl + $"api/filecv/por-candidato/{idCandidato}");
 
                 Console.WriteLine($"Resposta da API: Status {response.StatusCode}");
 

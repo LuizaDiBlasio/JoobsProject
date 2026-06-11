@@ -183,31 +183,48 @@
 
     <script>
         function handleCredentialResponse(response) {
-            const googleToken = response.credential;
+        // 1. Capturar o Token JWT original enviado pela Google
+        const googleToken = response.credential;
 
-            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
-            const verificationToken = tokenElement ? tokenElement.value : '';
+        // 2. Procurar o Antiforgery Token gerado pelo formulário Razor
+        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+        const verificationToken = tokenElement ? tokenElement.value : '';
 
-            fetch('/Auth/GoogleLogin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': verificationToken
-                },
-                body: JSON.stringify(googleToken)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.isSuccess) {
-                    window.location.href = data.redirectUrl;
-                } else {
-                    alert(data.message || 'Erro ao fazer login com o Google.');
-                }
-            })
-            .catch(err => {
-                console.error('Erro no login do Google:', err);
-                alert('Ocorreu um erro ao comunicar com o servidor.');
-            });
+        // 3. Fazer o pedido POST para o controlador local do Frontend
+        fetch('/Auth/GoogleLogin', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        'RequestVerificationToken': verificationToken
+        },
+        // CORREÇÃO: Enviamos como um objeto JSON estruturado.
+        // Isto garante que o .NET consiga ler o valor corretamente no [FromBody].
+        body: JSON.stringify({ credential: googleToken })
+        })
+        .then(async res => {
+        // Validação de segurança para capturar respostas inesperadas (como páginas HTML de erro)
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+        return res.json();
+        } else {
+        const textError = await res.text();
+        console.error("O servidor devolveu uma resposta inesperada (não é JSON):", textError);
+        throw new Error("Ocorreu um erro no servidor. Verifique os logs da aplicação.");
+        }
+        })
+        .then(data => {
+        // 4. Analisar a resposta enviada pelo AuthController do Frontend
+        if (data.isSuccess) {
+        // Redireciona o utilizador autenticado para a página inicial
+        window.location.href = data.redirectUrl;
+        } else {
+        alert(data.message || 'Erro ao fazer login com o Google.');
+        }
+        })
+        .catch(err => {
+        console.error('Erro no fluxo de login do Google:', err);
+        alert(err.message || 'Ocorreu um erro ao comunicar com o servidor.');
+        });
         }
     </script>
 }

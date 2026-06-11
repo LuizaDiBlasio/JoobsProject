@@ -36,11 +36,11 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/BuscarTodas"))
+                // CORREÇÃO: Adicionado o prefixo "api/" conforme o Swagger
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/empresa/BuscarTodas"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -76,11 +76,11 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/" + id))
+                // CORREÇÃO: Rota alterada para o padrão correto do Swagger "api/empresa/BuscarPorId/{id}"
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/empresa/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -95,16 +95,13 @@ namespace teste_cliente.Controllers
             return View(empresa);
         }
 
-
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public ActionResult Create()
         {
             ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
-
             return View();
         }
-
 
         [HttpPost]
         public async Task<IActionResult> Create(Models.Empresa empresa)
@@ -120,11 +117,12 @@ namespace teste_cliente.Controllers
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                     StringContent content = new StringContent(JsonConvert.SerializeObject(empresa), Encoding.UTF8, "application/json");
-                    using (var response = await httpClient.PostAsync(_baseUrl + "empresa/", content))
+
+                    // CORREÇÃO: Higienização de barras e inclusão do prefixo padrão da API
+                    using (var response = await httpClient.PostAsync(_baseUrl + "api/empresa", content))
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
-                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                             return Forbid();
                         }
                         if (!response.IsSuccessStatusCode)
@@ -141,7 +139,6 @@ namespace teste_cliente.Controllers
             return RedirectToAction("Index");
         }
 
-
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -155,11 +152,11 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.GetAsync(_baseUrl + "empresa/" + id))
+                // CORREÇÃO: Rota mapeada com base no padrão "api/empresa/BuscarPorId/{id}"
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/empresa/BuscarPorId/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -172,27 +169,20 @@ namespace teste_cliente.Controllers
                 }
 
                 ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
-
                 return View(empresa);
             }
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Edit(Models.Empresa empresa)
         {
-            // Verifica se as validações (incluindo a das redes sociais) passaram
             if (!ModelState.IsValid)
             {
-                // IMPORTANTE: Como a View Details precisa das Reviews, 
-                // temos que carregá-las de novo antes de retornar a view
                 List<Review> reviews = new List<Review>();
                 using (var httpClient = new HttpClient())
                 {
-                    //var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
-                    //httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                    var respRev = await httpClient.GetAsync(_baseUrl + $"review/empresa/{empresa.IdEmpresa}");
+                    // CORREÇÃO: Rota de reviews higienizada com o prefixo "api/"
+                    var respRev = await httpClient.GetAsync(_baseUrl + $"api/review/empresa/{empresa.IdEmpresa}");
                     if (respRev.IsSuccessStatusCode)
                     {
                         var jsonRev = await respRev.Content.ReadAsStringAsync();
@@ -201,14 +191,10 @@ namespace teste_cliente.Controllers
                 }
 
                 ViewBag.Reviews = reviews;
-
                 return View("Details", empresa);
             }
 
-
-            // ---------------------------------------------------------------------------------------------------- //
             Empresa e = new Empresa();
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
@@ -216,14 +202,13 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 StringContent content = new StringContent(JsonConvert.SerializeObject(empresa), Encoding.UTF8, "application/json");
-
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                using (var response = await httpClient.PutAsync(_baseUrl + "empresa/EditarEmpresa/" + empresa.IdEmpresa, content))
+                // CORREÇÃO: Rota do PUT corrigida com o prefixo "api/" conforme o Swagger
+                using (var response = await httpClient.PutAsync(_baseUrl + "api/empresa/EditarEmpresa/" + empresa.IdEmpresa, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -237,10 +222,7 @@ namespace teste_cliente.Controllers
                 }
                 return RedirectToAction("Details", new { id = empresa.IdEmpresa });
             }
-
-            return View(e);
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Details(int id)
@@ -249,7 +231,6 @@ namespace teste_cliente.Controllers
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
 
-            // 1. Carregar a empresa
             Empresa empresa = null;
             List<Review> reviews = new List<Review>();
 
@@ -257,7 +238,8 @@ namespace teste_cliente.Controllers
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var respEmp = await httpClient.GetAsync(_baseUrl + $"empresa/BuscarPorId/{id}");
+                // CORREÇÃO: Rota unificada com o padrão "api/empresa/BuscarPorId/{id}" do Swagger
+                var respEmp = await httpClient.GetAsync(_baseUrl + $"api/empresa/BuscarPorId/{id}");
                 if (respEmp.IsSuccessStatusCode)
                 {
                     var jsonEmp = await respEmp.Content.ReadAsStringAsync();
@@ -267,7 +249,6 @@ namespace teste_cliente.Controllers
                 {
                     if (respEmp.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!respEmp.IsSuccessStatusCode)
@@ -279,8 +260,8 @@ namespace teste_cliente.Controllers
                 if (empresa == null)
                     return RedirectToAction("Index", "Home");
 
-                // 2. Carregar as reviews da API
-                var respRev = await httpClient.GetAsync(_baseUrl + $"review/empresa/{id}");
+                // CORREÇÃO: Rota de reviews atualizada com "api/"
+                var respRev = await httpClient.GetAsync(_baseUrl + $"api/review/empresa/{id}");
                 if (respRev.IsSuccessStatusCode)
                 {
                     var jsonRev = await respRev.Content.ReadAsStringAsync();
@@ -289,12 +270,9 @@ namespace teste_cliente.Controllers
             }
 
             ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
-
-            // 3. Passar para a View
             ViewBag.Reviews = reviews;
             return View(empresa);
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -306,7 +284,9 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.DeleteAsync(_baseUrl + "empresa/DeletarEmpresa/" + id))
+
+                // CORREÇÃO: Rota do DELETE atualizada com o prefixo "api/"
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "api/empresa/DeletarEmpresa/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
@@ -320,7 +300,6 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            // Verifica a role do usuário logado
             if (User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index", "Empresa");
@@ -331,10 +310,9 @@ namespace teste_cliente.Controllers
             }
             else
             {
-                return RedirectToAction("Login", "Auth"); // fallback seguro
+                return RedirectToAction("Login", "Auth");
             }
         }
-
 
         [Authorize(Roles = "Empresa,Admin")]
         [HttpPost]
@@ -343,23 +321,24 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
+
             var dto = new
             {
                 IdEmpresa = id,
                 CurrentPassword = currentPassword,
                 NewPassword = newPassword
             };
+
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization =
-                 new AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var content = new StringContent(
                 JsonConvert.SerializeObject(dto),
                 Encoding.UTF8,
                 "application/json");
 
-            var response = await httpClient.PostAsync(
-                _baseUrl + "empresa/ChangePassword/" + id, content);
+            // CORREÇÃO: Rota do POST de alteração de senha corrigida com o prefixo "api/"
+            var response = await httpClient.PostAsync(_baseUrl + "api/empresa/ChangePassword/" + id, content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -374,7 +353,6 @@ namespace teste_cliente.Controllers
             return RedirectToAction("Details", new { id });
         }
 
-
         // ==================================================================================================== //
         // MÉTODOS DE PESQUISA DE CANDIDATOS
 
@@ -382,24 +360,18 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public IActionResult PesquisaCandidatos()
         {
-            // 1. Validar e obter o Token JWT do utilizador autenticado
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
 
-            // Começa com a lista totalmente vazia para não listar ninguém ao abrir a página
             List<Candidato> candidatos = new List<Candidato>();
 
-            // 2. Alimentar as ViewBags com os Enums convertidos para SelectList usando o EnumHelper
             ViewBag.Concelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
             ViewBag.Escolaridades = EnumHelper.ObterSelectListDoEnum<EscolaridadeEnum>();
-
-            // Ninguém pesquisou ainda. Flag para o HTML mostrar a mensagem "Pronto para pesquisar!"
             ViewBag.FoiPesquisado = false;
 
             return View(candidatos);
         }
-
 
         [Authorize(Roles = "Admin, Empresa")]
         [HttpPost]
@@ -420,7 +392,8 @@ namespace teste_cliente.Controllers
                     if (concelho.HasValue) queryParams.Add($"concelho={(int)concelho.Value}");
                     if (escolaridade.HasValue) queryParams.Add($"escolaridade={(int)escolaridade.Value}");
 
-                    string url = _baseUrl + "candidato/Pesquisar";
+                    // CORREÇÃO: Rota de pesquisa ajustada com o prefixo obrigatório "api/" conforme o Swagger
+                    string url = _baseUrl + "api/candidato/Pesquisar";
                     if (queryParams.Any()) url += "?" + string.Join("&", queryParams);
 
                     using (var response = await httpClient.GetAsync(url))
@@ -430,8 +403,6 @@ namespace teste_cliente.Controllers
                         if (response.IsSuccessStatusCode)
                         {
                             string apiResponse = await response.Content.ReadAsStringAsync();
-
-                            // Desserializa com o DTO ajustado
                             var dtoResult = JsonConvert.DeserializeObject<teste_cliente.Models.Dto.CandidatoPesquisaDTO>(apiResponse);
 
                             if (dtoResult?.Candidatos != null)
@@ -444,10 +415,9 @@ namespace teste_cliente.Controllers
                                         Nome = item.Nome,
                                         Email = item.Email,
                                         Telefone = item.Telefone,
-                                        CV = new List<CV>() // Inicializa a lista que a tua View espera
+                                        CV = new List<CV>()
                                     };
 
-                                    // Se o candidato trouxer um CV, adiciona-o à lista do modelo
                                     if (item.CV != null)
                                     {
                                         candidatoReal.CV.Add(new CV
@@ -482,6 +452,5 @@ namespace teste_cliente.Controllers
 
             return View(candidatos);
         }
-
     }
 }

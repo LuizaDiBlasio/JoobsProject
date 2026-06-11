@@ -33,8 +33,8 @@ namespace teste_cliente.Controllers
             _configuration = configuration;
             _flashMessage = flashMessage;
             _baseUrl = _configuration["ApiSettings:BaseUrl"];
-
         }
+
         [HttpGet]
         public IActionResult Login()
         {
@@ -48,24 +48,19 @@ namespace teste_cliente.Controllers
         {
             APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
 
-
             if (response != null && response.IsSuccess)
             {
                 var json0 = Convert.ToString(response.Result);
-
                 LoginResponseDTO model = (response.Result as JObject)?.ToObject<LoginResponseDTO>();
 
                 Console.WriteLine(model);
 
-
-                ///////////////
                 var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
                 identity.AddClaim(new Claim(ClaimTypes.Name, (model.User.UserName).Trim()));
                 identity.AddClaim(new Claim(ClaimTypes.Role, model.User.Role));
 
                 if (model.User.Role == SD.Role_Candidato)
                 {
-                    // lê o IdCandidato que já veio dentro do token JWT
                     var handler = new JwtSecurityTokenHandler();
                     var jwt = handler.ReadJwtToken(model.Token);
                     var idCandidato = jwt.Claims.First(c => c.Type == "IdCandidato").Value;
@@ -74,21 +69,18 @@ namespace teste_cliente.Controllers
 
                 if (model.User.Role == SD.Role_Empresa)
                 {
-                    // lê o IdEmpresa que já veio dentro do JWT
                     var handler = new JwtSecurityTokenHandler();
                     var jwt = handler.ReadJwtToken(model.Token);
                     var idEmpresa = jwt.Claims.First(c => c.Type == "IdEmpresa").Value;
                     identity.AddClaim(new Claim("IdEmpresa", idEmpresa));
                 }
-                /////////////////
 
-                // adiciona o claim com o token
                 identity.AddClaim(new Claim("JWToken", model.Token));
 
                 var principal = new ClaimsPrincipal(identity);
                 var props = new AuthenticationProperties
                 {
-                    IsPersistent = true,                           // persiste além da sessão atual
+                    IsPersistent = true,
                     ExpiresUtc = DateTimeOffset.UtcNow.AddHours(3)
                 };
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
@@ -97,16 +89,13 @@ namespace teste_cliente.Controllers
             }
             else
             {
-                // se a API devolveu 401 (credenciais inválidas)
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     ModelState.AddModelError(string.Empty, "Utilizador ou password inválidos. Tente novamente.");
                 }
                 else
                 {
-                    // fallback para qualquer outra mensagem de erro
-                    var msg = response.ErrorMessages.FirstOrDefault()
-                              ?? "Ocorreu um erro inesperado. Tente novamente.";
+                    var msg = response.ErrorMessages.FirstOrDefault() ?? "Ocorreu um erro inesperado. Tente novamente.";
                     ModelState.AddModelError(string.Empty, msg);
                 }
                 return View(obj);
@@ -116,7 +105,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public IActionResult Register()
         {
-            //LoginRequestDTO obj = new();
             return View();
         }
 
@@ -126,64 +114,66 @@ namespace teste_cliente.Controllers
         {
             using (var httpClient = new HttpClient())
             {
-                // Serializa o objeto de registro em JSON
                 StringContent content = new StringContent(
                     JsonConvert.SerializeObject(obj),
                     Encoding.UTF8,
                     "application/json"
                 );
 
-                // Chamada para o endpoint centralizado da API
-                using (var response = await httpClient.PostAsync(_baseUrl + "Auth/register", content))
+                // CORREÇÃO: Adicionado o prefixo "api/" ao endpoint de registo centralizado
+                using (var response = await httpClient.PostAsync(_baseUrl + "api/Auth/register", content))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Resposta da API: {apiResponse}"); // Log para depuração
+                    Console.WriteLine($"Resposta da API: {apiResponse}");
 
                     if (response.IsSuccessStatusCode)
                     {
-                        string role = obj.Role?.Trim(); // Usa a role enviada no formulário como fallback
-
+                        string role = obj.Role?.Trim();
                         try
                         {
-                            // Tenta desserializar como APIResponse
                             var responseData = JsonConvert.DeserializeObject<APIResponse>(apiResponse);
                             var result = responseData?.Result as JObject;
-
-                            // Extrai a role do JSON, se disponível
                             if (result != null)
                             {
-                                // Tenta direto no result (ex.: { "role": "Admin" })
-                                role = result["role"]?.ToString()?.Trim();
-                                // Tenta em um objeto user aninhado (ex.: { "user": { "role": "Admin" } })
-                                if (string.IsNullOrEmpty(role))
-                                {
-                                    role = result["user"]?["role"]?.ToString()?.Trim();
-                                }
+                                role = result["role"]?.ToString()?.Trim() ?? result["user"]?["role"]?.ToString()?.Trim();
                             }
-
-                            Console.WriteLine($"Role extraída: {role}");
                         }
-                        catch (Newtonsoft.Json.JsonException ex)
-                        {
-                            // Se a desserialização falhar, usa a role do formulário
-                            Console.WriteLine($"Erro ao desserializar resposta: {ex.Message}\nResposta: {apiResponse}");
-                            Console.WriteLine($"Usando role do formulário: {role}");
-                        }
+                        catch { }
 
-                        // Define a URL de redirecionamento com base na role
                         string redirectUrl = (role == SD.Role_Candidato || role == SD.Role_Empresa)
                             ? Url.Action("Login", "Auth")
                             : Url.Action("Index", "Home");
 
-                        // Exibe o modal de sucesso
                         return View("Success", ("Conta criada com sucesso!!!", redirectUrl));
                     }
                     else
                     {
-                        // Mostra o erro vindo da API
-                        Console.WriteLine($"Erro na API: {apiResponse}");
-                        ModelState.AddModelError(string.Empty, "Erro ao registrar usuário ");
-                        return View();
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Erro da API: {errorContent}");
+
+                        try
+                        {
+                            var jsonArray = JArray.Parse(errorContent);
+                            foreach (var item in jsonArray)
+                            {
+                                var errorDesc = item["description"]?.ToString() ?? item["Description"]?.ToString();
+                                if (!string.IsNullOrEmpty(errorDesc))
+                                {
+                                    ModelState.AddModelError(string.Empty, errorDesc);
+                                }
+                            }
+
+                            if (ModelState.ErrorCount == 0)
+                            {
+                                ModelState.AddModelError(string.Empty, "MISTÉRIO 1: " + errorContent);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            ModelState.AddModelError(string.Empty, "MISTÉRIO 2: " + errorContent);
+                        }
+
+                        return View(obj);
                     }
                 }
             }
@@ -191,13 +181,9 @@ namespace teste_cliente.Controllers
 
         public async Task<IActionResult> Logout()
         {
-
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             HttpContext.Session.Clear();
             return RedirectToAction("Index", "Home");
-            //await HttpContext.SignOutAsync();
-            //HttpContext.Session.SetString(SD.SessionToken, "");
-            //return RedirectToAction("Index", "OfertaEmprego");
         }
 
         public async Task<IActionResult> AccessDenied()
@@ -205,23 +191,12 @@ namespace teste_cliente.Controllers
             return View();
         }
 
-        //_____ADIÇÃO DE CÓDIGO____
-        /// <summary>
-        /// Displays ForgotPassword View
-        /// </summary>
-        /// <returns>IActionResult of the view</returns>
-        //Get da _ForgotPasswordPartial
+        [HttpGet]
         public IActionResult ForgotPassword()
         {
             return View();
         }
 
-        //_____ADIÇÃO DE CÓDIGO____
-        /// <summary>
-        /// Call API to send a retrieve password link to user
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns>A json containing the API call outcome</returns>
         [HttpPost]
         public async Task<IActionResult> ForgotPassword(ForgotPassword model)
         {
@@ -232,7 +207,8 @@ namespace teste_cliente.Controllers
 
             try
             {
-                var apiCall = await _httpClient.PostAsync(_baseUrl + "Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
+                // CORREÇÃO: Adicionado o prefixo "api/" para o endpoint de esquecimento de password
+                var apiCall = await _httpClient.PostAsync(_baseUrl + "api/Auth/GenerateForgotPasswordTokenAndEmail", jsonContent);
 
                 if (apiCall.IsSuccessStatusCode)
                 {
@@ -247,21 +223,12 @@ namespace teste_cliente.Controllers
             {
                 return View("Error500");
             }
-
         }
 
-
-        //_______ADIÇÃO DE CODIGO______
-        /// <summary>
-        /// Displays the view for recovering the user's password after email confirmation.
-        /// </summary>
-        /// <param name="userId">The ID of the user.</param>
-        /// <param name="token">The email confirmation token.</param>
-        /// <returns>The password recover view or a "NotAuthorized" view if parameters are invalid.</returns>
-        //Get do RecoverPassword
+        [HttpGet]
         public IActionResult RecoverPassword(string userId, string token)
         {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token)) //verificar parâmetros
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
             {
                 return View("AccessDenied");
             }
@@ -270,37 +237,26 @@ namespace teste_cliente.Controllers
             {
                 UserId = userId,
                 Token = token,
-                Password = string.Empty  //ainda não foi colocada a senha
+                Password = string.Empty
             };
 
             return View(model);
         }
 
-
-        //_______ADIÇÃO DE CODIGO______
-        /// <summary>
-        /// Processes the user's password recover request.
-        /// </summary>
-        /// <param name="model">The model containing the username, reset token, and new password.</param>
-        /// <returns>The password recover view with a success or error message.</returns>
         [HttpPost]
-        public async Task<IActionResult> RequestResetPassword(RecoverPassword model) //recebo modelo preechido com dados para recover da password
+        public async Task<IActionResult> RequestResetPassword(RecoverPassword model)
         {
-            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Token)) //verificar parâmetros (se o token for null, quer dizer que processo falhou e não autoriza)
+            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Token))
             {
-                return View("AccessDenied"); ;
+                return View("AccessDenied");
             }
 
             var dto = new ResetPasswordDTO
             {
                 Token = model.Token,
-
                 UserId = model.UserId,
-
                 Password = model.Password
-
             };
-
 
             var jsonContent = new StringContent(
                System.Text.Json.JsonSerializer.Serialize(dto, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
@@ -315,40 +271,37 @@ namespace teste_cliente.Controllers
 
             try
             {
-                var apiCall = await _httpClient.PostAsync(_baseUrl + "Auth/ResetPassword", jsonContent);
-
-
+                var apiCall = await _httpClient.PostAsync(_baseUrl + "api/Auth/ResetPassword", jsonContent);
                 var response = await apiCall.Content.ReadFromJsonAsync<APIResponse>(options);
 
                 if (apiCall.IsSuccessStatusCode)
                 {
                     _flashMessage.Confirmation(response.Message);
-
                     return View("RecoverPassword", new RecoverPassword());
                 }
 
                 _flashMessage.Danger(response.Message);
-
                 return View("RecoverPassword", new RecoverPassword());
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 _flashMessage.Danger($"Unable to reset password, please contact admin");
-
                 return View("RecoverPassword", new RecoverPassword());
             }
         }
+
         [HttpPost]
-        public async Task<IActionResult> GoogleLogin([FromBody] string credential)
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestModel request)
         {
-            if (string.IsNullOrEmpty(credential))
+            if (request == null || string.IsNullOrEmpty(request.Credential))
                 return Json(new { isSuccess = false, message = "Token inválido." });
 
             var googleDto = new GoogleLoginDTO
             {
-                IdToken = credential
+                IdToken = request.Credential
             };
 
+            // Nota: O _authService internamente já foi corrigido para usar "api/Auth/google-login"
             APIResponse response = await _authService.GoogleLoginAsync<APIResponse>(googleDto);
 
             if (response != null && response.IsSuccess)
@@ -382,6 +335,11 @@ namespace teste_cliente.Controllers
             }
 
             return Json(new { isSuccess = false, message = "Falha ao autenticar com o Google." });
+        }
+
+        public class GoogleLoginRequestModel
+        {
+            public string Credential { get; set; }
         }
     }
 }

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using NuGet.Common;
 using System.Net.Http.Headers;
-using System.Text;
 using teste_cliente.Models;
 using Microsoft.AspNetCore.Authorization;
 
@@ -19,6 +18,7 @@ namespace teste_cliente.Controllers
             _config = config;
             _baseUrl = _config["ApiSettings:BaseUrl"];
         }
+
         public async Task<IActionResult> Index()
         {
             List<Foto> fotoList = new List<Foto>();
@@ -30,11 +30,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using (var response = await httpClient.GetAsync(_baseUrl + "foto/TodasFotos"))
+
+                // CORREÇÃO: Adicionado o prefixo "api/" conforme o teu Swagger
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/foto/TodasFotos"))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -61,7 +62,6 @@ namespace teste_cliente.Controllers
         {
             try
             {
-                // Verificar se há um arquivo enviado
                 if (Request.Form.Files.Count > 0)
                 {
                     file = Request.Form.Files.FirstOrDefault();
@@ -76,7 +76,7 @@ namespace teste_cliente.Controllers
                     return RedirectToAction("Details", "Candidato", new { id = foto.IdCandidatoFoto });
                 }
 
-            var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
+                var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
                 if (string.IsNullOrEmpty(token))
                     return RedirectToAction("Login", "Auth");
 
@@ -84,11 +84,10 @@ namespace teste_cliente.Controllers
 
                 Console.WriteLine($"Buscando foto para IdCandidatoFoto: {foto.IdCandidatoFoto}");
 
-                // Tenta buscar a foto atual do candidato
-
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                // Tenta buscar a foto atual do candidato
-                var checkResponse = await httpClient.GetAsync(_baseUrl + $"foto/ByCandidato/{foto.IdCandidatoFoto}");
+
+                // CORREÇÃO: Adicionado o prefixo obrigatório "api/" na verificação por candidato
+                var checkResponse = await httpClient.GetAsync(_baseUrl + $"api/foto/ByCandidato/{foto.IdCandidatoFoto}");
 
                 if (checkResponse.IsSuccessStatusCode)
                 {
@@ -105,10 +104,11 @@ namespace teste_cliente.Controllers
                             return RedirectToAction("Details", "Candidato", new { id = foto.IdCandidatoFoto });
                         }
 
-                        // Atualiza a foto
                         foto.Id = existingPhoto.Id;
                         var contentPut = new StringContent(JsonConvert.SerializeObject(foto), Encoding.UTF8, "application/json");
-                        var putResponse = await httpClient.PutAsync(_baseUrl + $"Foto/{foto.Id}", contentPut);
+
+                        // CORREÇÃO: Corrigido o recurso para "api/foto/" em minúsculas para respeitar o roteamento do Plesk
+                        var putResponse = await httpClient.PutAsync(_baseUrl + $"api/foto/{foto.Id}", contentPut);
 
                         if (!putResponse.IsSuccessStatusCode)
                         {
@@ -132,9 +132,10 @@ namespace teste_cliente.Controllers
                     var errorResponse = await checkResponse.Content.ReadAsStringAsync();
                     Console.WriteLine($"Foto não encontrada para IdCandidatoFoto: {foto.IdCandidatoFoto}, Status: {checkResponse.StatusCode}, Resposta: {errorResponse}");
 
-                    // Criar nova foto com POST
                     var contentPost = new StringContent(JsonConvert.SerializeObject(foto), Encoding.UTF8, "application/json");
-                    var postResponse = await httpClient.PostAsync(_baseUrl + "Foto/CriarFoto", contentPost);
+
+                    // CORREÇÃO: Rota alterada com o prefixo "api/foto/" e corrigido para minúsculas
+                    var postResponse = await httpClient.PostAsync(_baseUrl + "api/foto/CriarFoto", contentPost);
 
                     if (!postResponse.IsSuccessStatusCode)
                     {
@@ -165,24 +166,23 @@ namespace teste_cliente.Controllers
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization
-                = new AuthenticationHeaderValue("Bearer", token);
 
-            var apiResponse = await httpClient.GetAsync(
-                _baseUrl + $"foto/BuscarFotoPorIdCandidato/{id}");
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // CORREÇÃO: Adicionado o prefixo obrigatório "api/" para buscar a imagem
+            var apiResponse = await httpClient.GetAsync(_baseUrl + $"api/foto/BuscarFotoPorIdCandidato/{id}");
+
             if (!apiResponse.IsSuccessStatusCode)
             {
-                // devolve um ficheiro estático default  
                 var defaultPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img/icone_perfil.png");
                 var bytes_alternativo = await System.IO.File.ReadAllBytesAsync(defaultPath);
                 return File(bytes_alternativo, "image/png");
             }
+
             Console.WriteLine($"[GetImage] Foto encontrada para id={id}. Retornando imagem!");
             var bytes = await apiResponse.Content.ReadAsByteArrayAsync();
             return File(bytes, "image/jpeg");
         }
-
-
     }
 }

@@ -26,15 +26,14 @@ namespace teste_cliente.Controllers
         public OfertaEmpregoController(IConfiguration config)
         {
             _config = config;
-            _baseUrl = _config["ApiSettings:BaseUrl"]; 
+            _baseUrl = _config["ApiSettings:BaseUrl"];
         }
+
         public async Task<IActionResult> Index(JornadaEnum? jornada, ConcelhoEnum? concelho, RegimeTrabalhoEnum? regimeTrabalho, string? search, string? faixaSalarial, int page = 1)
         {
-            
             int pageSize = 10;
             List<OfertaEmpregoDTO> ofertaList = new List<OfertaEmpregoDTO>();
 
-            //AQUI NÃO É PRECISO O TOKEN
             using (var httpClient = new HttpClient())
             {
                 var queryParams = new List<string>();
@@ -46,51 +45,47 @@ namespace teste_cliente.Controllers
                 if (!string.IsNullOrEmpty(faixaSalarial)) queryParams.Add($"faixaSalarial={Uri.EscapeDataString(faixaSalarial)}");
 
                 string queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
-                string apiUrl = _baseUrl + $"oferta/TodasOfertas{queryString}";
 
+                // CORREÇÃO: Adicionado o prefixo "api/" e corrigido para minúsculas "oferta"
+                string apiUrl = _baseUrl + $"api/oferta/TodasOfertas{queryString}";
 
-                    // Buscar a lista de ofertas
-                    using (var response = await httpClient.GetAsync(apiUrl))
+                using (var response = await httpClient.GetAsync(apiUrl))
+                {
+                    if (response.IsSuccessStatusCode)
                     {
-                        if (response.IsSuccessStatusCode)
-                        {
                         string apiResponse = await response.Content.ReadAsStringAsync();
-                            ofertaList = JsonConvert.DeserializeObject<List<OfertaEmpregoDTO>>(apiResponse) ?? new List<OfertaEmpregoDTO>(); 
-                        }
+                        ofertaList = JsonConvert.DeserializeObject<List<OfertaEmpregoDTO>>(apiResponse) ?? new List<OfertaEmpregoDTO>();
                     }
+                }
 
-                    // Obter IDs únicos de empresas para buscar as reviews
-                    var empresaIds = ofertaList.Select(o => o.IdEmpresa).Distinct().ToList();
-                    var reviewsByEmpresa = new Dictionary<int, List<Review>>();
+                var empresaIds = ofertaList.Select(o => o.IdEmpresa).Distinct().ToList();
+                var reviewsByEmpresa = new Dictionary<int, List<Review>>();
 
-                    // Buscar as reviews para cada empresa
-                    foreach (var idEmpresa in empresaIds)
+                foreach (var idEmpresa in empresaIds)
+                {
+                    // CORREÇÃO: Adicionado "api/" e corrigido "review" para minúsculas
+                    using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"api/review/empresa/{idEmpresa}"))
                     {
-                        using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{idEmpresa}"))
+                        if (reviewResponse.IsSuccessStatusCode)
                         {
-                            if (reviewResponse.IsSuccessStatusCode)
-                            {
-                                string reviewApiResponse = await reviewResponse.Content.ReadAsStringAsync();
-                                var reviews = JsonConvert.DeserializeObject<List<Review>>(reviewApiResponse);
-                                reviewsByEmpresa[idEmpresa] = reviews ?? new List<Review>();
-                            }
-                            else
-                            {
-                                reviewsByEmpresa[idEmpresa] = new List<Review>();
-                            }
+                            string reviewApiResponse = await reviewResponse.Content.ReadAsStringAsync();
+                            var reviews = JsonConvert.DeserializeObject<List<Review>>(reviewApiResponse);
+                            reviewsByEmpresa[idEmpresa] = reviews ?? new List<Review>();
+                        }
+                        else
+                        {
+                            reviewsByEmpresa[idEmpresa] = new List<Review>();
                         }
                     }
+                }
 
-                    // Buscar o logo e associar as reviews a cada oferta
-                    foreach (var oferta in ofertaList)
-                    {
-                        var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
-                        oferta.LogoEmpresaBase64 = logoEmpresaBase64;
+                foreach (var oferta in ofertaList)
+                {
+                    var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
+                    oferta.LogoEmpresaBase64 = logoEmpresaBase64;
 
-                        // Associar as reviews da empresa à oferta via ViewData ou uma propriedade temporária
-                        ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
-                    }
-                
+                    ViewData[$"Reviews_{oferta.IdOferta}"] = reviewsByEmpresa.ContainsKey(oferta.IdEmpresa) ? reviewsByEmpresa[oferta.IdEmpresa] : new List<Review>();
+                }
             }
 
             int totalItems = ofertaList.Count;
@@ -100,7 +95,6 @@ namespace teste_cliente.Controllers
                 .Take(pageSize)
                 .ToList();
 
-            // 🔽 FAVORITOS via Cookie
             var identity = HttpContext.User.Identity as ClaimsIdentity;
             var idClaim = identity?.FindFirst("IdCandidato");
             List<int> favoritos = new();
@@ -122,8 +116,6 @@ namespace teste_cliente.Controllers
                 RegimeTrabalho = regimeTrabalho
             };
 
-
-            // 🔽 Enviar info para  a View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
             ViewBag.Search = search;
@@ -134,27 +126,23 @@ namespace teste_cliente.Controllers
             ViewBag.ConcelhosList = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
             ViewBag.JornadasList = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
             ViewBag.RegimeTrabalhoList = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
-            
-
 
             model.OfertaEmpregosList = ofertaList;
 
             return View(model);
         }
 
-
         private async Task<string> GetLogoByEmpresaId(int idEmpresa)
         {
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
 
-
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.GetAsync(_baseUrl + $"Logo/{idEmpresa}"))
-                {   
 
+                // CORREÇÃO: Rota corrigida com o padrão real do Swagger "api/logo/empresa/{id}"
+                using (var response = await httpClient.GetAsync(_baseUrl + $"api/logo/empresa/{idEmpresa}"))
+                {
                     if (response.IsSuccessStatusCode)
                     {
                         string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -165,7 +153,6 @@ namespace teste_cliente.Controllers
                             return Convert.ToBase64String(logoData.Logo);
                         }
                     }
-
                 }
             }
             return null;
@@ -192,14 +179,14 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                string apiUrl = _baseUrl + $"Oferta/historicoEmpresa?idEmpresa={idEmpresa}";
+
+                // CORREÇÃO: Adicionado o prefixo "api/" e corrigido "oferta" para minúsculas
+                string apiUrl = _baseUrl + $"api/oferta/historicoEmpresa?idEmpresa={idEmpresa}";
 
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -215,24 +202,22 @@ namespace teste_cliente.Controllers
             return View("Historico", ofertasEmpresa);
         }
 
-
         [HttpGet]
         public IActionResult Get()
         {
             return View();
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Get(int id)
         {
             OfertaEmprego oferta = new OfertaEmprego();
 
-            //AQUI NÃO PRECISA DO TOKEN
             using (var httpClient = new HttpClient())
             {
-                using (var response = await httpClient.GetAsync(_baseUrl + "oferta/BuscarPorId/" + id))
-                {   
+                // CORREÇÃO: Adicionado "api/" e corrigido "oferta" para minúsculas
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/oferta/BuscarPorId/" + id))
+                {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                 }
@@ -240,25 +225,13 @@ namespace teste_cliente.Controllers
             return View(oferta);
         }
 
-        //___________MODIFICAÇÃO DE CODIGO_________(Get com lista de comboboxes)
-        //[HttpGet]
-        //public ActionResult Create()
-        //{
-        //    return View();
-        //}
-
-        // ______________ADIÇÃO DE CÓDIGO____________
         [HttpGet]
         public async Task<IActionResult> Create()
         {
             var model = new OfertaEmpregoViewModel();
-
             LoadLists(model);
-
             return View(model);
-               
         }
-
 
         [HttpPost]
         public async Task<IActionResult> Create(OfertaEmpregoViewModel model)
@@ -268,32 +241,31 @@ namespace teste_cliente.Controllers
                 var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
                 if (string.IsNullOrEmpty(token))
                     return RedirectToAction("Login", "Auth");
+
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                    //converter de model para DTO
                     var ofertaDTO = new OfertaEmpregoDTO
                     {
                         Concelho = model.Concelho,
                         TipoContrato = model.TipoContrato,
                         RegimeTrabalho = model.RegimeTrabalho,
-                        Jornada = model.Jornada,    
+                        Jornada = model.Jornada,
                         Titulo = model.Titulo,
                         Requisitos = model.Requisitos,
                         VagaDisponivel = true,
                         Descricao = model.Descricao,
                         Salario = model.Salario
-
                     };
 
                     StringContent content = new StringContent(JsonConvert.SerializeObject(ofertaDTO), Encoding.UTF8, "application/json");
 
-                    using (var response = await httpClient.PostAsync(_baseUrl + "Oferta/CriarOferta/", content))
+                    // CORREÇÃO: Adicionado "api/", corrigido para minúsculas e limpo caractere "/" extra do final da rota
+                    using (var response = await httpClient.PostAsync(_baseUrl + "api/oferta/CriarOferta", content))
                     {
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
-                            // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                             return Forbid();
                         }
                         if (!response.IsSuccessStatusCode)
@@ -301,25 +273,19 @@ namespace teste_cliente.Controllers
                             string erroDetalhado = await response.Content.ReadAsStringAsync();
                             return NotFound();
                         }
-                        //string apiResponse = await response.Content.ReadAsStringAsync();
-                        //model = JsonConvert.DeserializeObject<OfertaEmpregoDTO>(apiResponse);
                     }
                 }
 
                 return RedirectToAction("Index");
             }
 
-
             LoadLists(model);
-
             return View(model);
-           
         }
 
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-           
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
@@ -329,12 +295,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/EditarOferta/" + id))
+
+                // CORREÇÃO: Adicionado "api/" e corrigido "oferta" para minúsculas
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/oferta/EditarOferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -344,8 +310,6 @@ namespace teste_cliente.Controllers
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     var ofertaDTO = JsonConvert.DeserializeObject<OfertaEmpregoDTO>(apiResponse);
-
-                    //Preencher model 
 
                     model.Salario = ofertaDTO.Salario;
                     model.Titulo = ofertaDTO.Titulo;
@@ -368,8 +332,6 @@ namespace teste_cliente.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(OfertaEmpregoViewModel model)
         {
-            Candidato e = new Candidato();
-
             var token = User.Claims.FirstOrDefault(c => c.Type == "JWToken")?.Value;
             if (string.IsNullOrEmpty(token))
                 return RedirectToAction("Login", "Auth");
@@ -377,23 +339,21 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
+
                 StringContent content = new StringContent(JsonConvert.SerializeObject(model), Encoding.UTF8, "application/json");
 
-                using (var response = await httpClient.PutAsync(_baseUrl + "Oferta/EditarOferta/" + model.IdOferta, content))
+                // CORREÇÃO: Adicionado "api/" e corrigido para minúsculas "oferta"
+                using (var response = await httpClient.PutAsync(_baseUrl + "api/oferta/EditarOferta/" + model.IdOferta, content))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
-                    
 
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     ViewBag.Result = "Success";
                 }
                 return RedirectToAction("Historico");
-
             }
         }
 
@@ -404,33 +364,32 @@ namespace teste_cliente.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                // Incrementar a contagem apenas se o usuário for um Candidato
                 if (User.IsInRole("Candidato"))
                 {
-                    using (var response = await httpClient.PatchAsync(_baseUrl + $"oferta/{id}/incrementarContagem", null))
+                    // CORREÇÃO: Adicionado o prefixo "api/" e corrigido para minúsculas
+                    using (var response = await httpClient.PatchAsync(_baseUrl + $"api/oferta/{id}/incrementarContagem", null))
                     {
                         if (!response.IsSuccessStatusCode)
                         {
-                            // Logar erro, se necessário, mas não bloquear a exibição dos detalhes
                             Console.WriteLine($"Erro ao incrementar contagem: {response.StatusCode}");
                         }
                     }
                 }
 
-                // Buscar os detalhes da oferta
-                using (var response = await httpClient.GetAsync(_baseUrl + "Oferta/BuscarPorId/" + id))
+                // CORREÇÃO: Adicionado "api/" e corrigido "oferta" para minúsculas
+                using (var response = await httpClient.GetAsync(_baseUrl + "api/oferta/BuscarPorId/" + id))
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     oferta = JsonConvert.DeserializeObject<OfertaEmprego>(apiResponse);
                 }
 
-                // Buscar o logo da empresa
                 var logoEmpresaBase64 = await GetLogoByEmpresaId(oferta.IdEmpresa);
                 oferta.LogoEmpresaBase64 = logoEmpresaBase64;
 
-                // Buscar as reviews da empresa associada à oferta
                 List<Review> reviews = new List<Review>();
-                using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"Review/empresa/{oferta.IdEmpresa}"))
+
+                // CORREÇÃO: Adicionado "api/" e corrigido "review" para minúsculas
+                using (var reviewResponse = await httpClient.GetAsync(_baseUrl + $"api/review/empresa/{oferta.IdEmpresa}"))
                 {
                     if (reviewResponse.IsSuccessStatusCode)
                     {
@@ -439,13 +398,11 @@ namespace teste_cliente.Controllers
                     }
                 }
 
-                // Passar as reviews para a view via ViewBag
                 ViewBag.Reviews = reviews ?? new List<Review>();
 
                 return View(oferta);
             }
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
@@ -457,12 +414,12 @@ namespace teste_cliente.Controllers
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                
-                using (var response = await httpClient.DeleteAsync(_baseUrl + "Oferta/" + id))
+
+                // CORREÇÃO: Adicionado "api/" e corrigido para minúsculas "oferta"
+                using (var response = await httpClient.DeleteAsync(_baseUrl + "api/oferta/" + id))
                 {
                     if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // retorna 403 ao browser ou redireciona para uma página de AccessDenied
                         return Forbid();
                     }
                     if (!response.IsSuccessStatusCode)
@@ -542,7 +499,6 @@ namespace teste_cliente.Controllers
         [HttpGet]
         public async Task<IActionResult> GetOfertasFavoritas()
         {
-            // 1. Obter os IDs dos favoritos do cookie
             var identity = HttpContext.User.Identity as ClaimsIdentity;
             var idClaim = identity?.FindFirst("IdCandidato");
             if (idClaim == null)
@@ -559,11 +515,11 @@ namespace teste_cliente.Controllers
                 favoritosIds = JsonConvert.DeserializeObject<List<int>>(cookieValue) ?? new List<int>();
             }
 
-            // 2. Buscar todas as ofertas da API
             List<OfertaEmprego> todasOfertas = new List<OfertaEmprego>();
             using (var httpClient = new HttpClient())
             {
-                string apiUrl = _baseUrl + "Oferta/TodasOfertas";
+                // CORREÇÃO: Adicionado o prefixo "api/" e corrigido para minúsculas "oferta"
+                string apiUrl = _baseUrl + "api/oferta/TodasOfertas";
                 using (var response = await httpClient.GetAsync(apiUrl))
                 {
                     if (response.IsSuccessStatusCode)
@@ -574,24 +530,17 @@ namespace teste_cliente.Controllers
                 }
             }
 
-            // 3. Filtrar apenas as favoritas
             var ofertasFavoritas = todasOfertas.Where(o => favoritosIds.Contains(o.IdOferta)).ToList();
 
             return Json(ofertasFavoritas);
         }
 
-        //ADIÇÃO DE CÓDIGO (métodos auxiliares)
-
-        //____________ADIÇÂO DE CÓDIGO___________(carregamento de listas para index)
-        private void LoadLists( OfertaEmpregoViewModel model)
-            {
-                model.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
-
-                model.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
-
-                model.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
-
-                model.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
-            }
+        private void LoadLists(OfertaEmpregoViewModel model)
+        {
+            model.SelectListConcelhos = EnumHelper.ObterSelectListDoEnum<ConcelhoEnum>();
+            model.SelectListTiposContratos = EnumHelper.ObterSelectListDoEnum<TipoContratoEnum>();
+            model.SelectListJornada = EnumHelper.ObterSelectListDoEnum<JornadaEnum>();
+            model.SelectListRegimeTrabalho = EnumHelper.ObterSelectListDoEnum<RegimeTrabalhoEnum>();
+        }
     }
 }
