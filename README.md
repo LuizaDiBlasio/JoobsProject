@@ -52,4 +52,4 @@ Manutenção e refatoração de código legado, com correção de **bugs** e acr
 
 ---
 
-**Para correr o projeto referir ao Readme.txt na pasta M4/projeto/utils**
+**Para correr o projeto recorrer ao Readme.txt na pasta M4/projeto/utils**
