@@ -19,6 +19,11 @@ BaseUrl tem de apontar para https://localhost:5020/ (Frontend).
 No campo Jwt, alterar Issuer para https://localhost:7211 e alterar Audience para https://localhost:5020
 ConnectionString, alterar para localhost com os dados correspondentes
 
+Método GenerateJwtToken, atualizar para:
+
+                issuer: "JobPortalAPI",
+                audience: "JobPortalAPI",
+
 NuGet Package Manager:
 
 Correr Update-Database para criar a base de dados localmente
