@@ -209,8 +209,8 @@ namespace JobPortal_API.Controllers
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: "JobPortalAPI",
-                audience: "JobPortalAPI",
+                issuer: "https://api.jobportal.pt",
+                audience: "https://jobportal.pt",
                 claims: claims,
                 expires: DateTime.Now.AddHours(3),
                 signingCredentials: creds
