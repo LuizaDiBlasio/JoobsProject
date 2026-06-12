@@ -1,0 +1,5 @@
+FEATURE - Candidato: Possibilidade preencher campos do CV importando dados do LinkedIn
+MINOR FIX - Erro de count de visualizações nas ofertas de emprego (quando clicamos em candidatar volta a contar)
+FEATURE - Criar um módulo Candidato que possa ser abstraído da aplicação e integrado noutras páginas como plug-in
+FEATURE - Newsletter: Checkbox no Register e Perfil + sistema de envio de sugestão de vagas mediante localização do candidato)
+FEATURE - Empresa: Possibilidade de responder a avaliações feitas pelos candidatos
